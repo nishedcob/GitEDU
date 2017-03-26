@@ -1,0 +1,5 @@
+Django==1.10.6
+psycopg2==2.7.1
+python-gitlab==0.20
+requests==2.13.0
+six==1.10.0
