@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_auth_lti',
+    'django_app_lti',
 ]
 
 MIDDLEWARE = [
@@ -47,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_auth_lti.middleware.LTIAuthMiddleware',
 ]
 
 ROOT_URLCONF = 'GitEDU.urls'
@@ -118,3 +121,32 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'django_auth_lti.backends.LTIAuthBackend',
+)
+
+LTI_SETUP = {
+    "TOOL_TITLE": "GitEDU",
+    "TOOL_DESCRIPTION": "Sistema para Programar en Linea",
+    "LAUNCH_URL": "lti:launch",
+    "LAUNCH_REDIRECT_URL": "ideApp:index",
+    "INITIALIZE_MODELS": resource_and_course_users,
+    "EXTENSION_PARAMETERS": {
+        "10.10.10.10": {
+            "privacy_level": "public",
+            "course_navigation": {
+                "enabled": "true",
+                "default": "disabled",
+                "text": "GitEDU LMS Playground",
+            }
+        }
+    }
+}
+
+LTI_OAUTH_CREDENTIALS = {
+    "mykey": "b2e0158c3cb4ddb0202d",
+    "myotherkey": "57b3a14734566c49bcaf",
+}
+
