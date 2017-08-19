@@ -1,6 +1,6 @@
 Django==1.10.6
--e git+https://github.com/Harvard-ATG/django-app-lti.git@f7d8d3f085fbc96f5acbff405610050cffd2b274#egg=django-app-lti
--e git+https://github.com/Harvard-University-iCommons/django-auth-lti.git@76ec7e049946abbd8e2b55bbcd90dc86df0f66ea#egg=django-auth-lti
+-e git+https://github.com/nishedcob/django-app-lti.git@db5d4320fad192be1d17c849f7845e3f69d642d3#egg=django-app-lti
+-e git+https://github.com/nishedcob/django-auth-lti.git@164b23597e2a06bbb7c807871499433ebee7d316#egg=django-auth-lti
 django-braces==1.3.1
 httplib2==0.10.3
 -e git+https://github.com/nishedcob/ims_lti_py.git@c04dae729656e5c0ee689830bae1955e520f6fdb#egg=ims_lti_py-develop
