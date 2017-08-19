@@ -3,7 +3,7 @@ Django==1.10.6
 -e git+https://github.com/Harvard-University-iCommons/django-auth-lti.git@76ec7e049946abbd8e2b55bbcd90dc86df0f66ea#egg=django-auth-lti
 django-braces==1.3.1
 httplib2==0.10.3
-ims-lti-py==0.6
+-e git+https://github.com/tophatmonocle/ims_lti_py.git@979244d83c2e6420d2c1941f58e52f641c56ad12#egg=ims_lti_py-develop
 lxml==3.8.0
 oauth2==1.9.0.post1
 pkg-resources==0.0.0

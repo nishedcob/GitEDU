@@ -137,7 +137,7 @@ LTI_SETUP = {
     "TOOL_DESCRIPTION": "Sistema para Programar en Linea",
     "LAUNCH_URL": "lti:launch",
     "LAUNCH_REDIRECT_URL": "ideApp:index",
-    "INITIALIZE_MODELS": resource_and_course_users,
+    "INITIALIZE_MODELS": False,
     "EXTENSION_PARAMETERS": {
         "10.10.10.10": {
             "privacy_level": "public",
