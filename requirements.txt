@@ -1,11 +1,11 @@
 Django==1.10.6
--e git+https://github.com/nishedcob/django-app-lti.git@db5d4320fad192be1d17c849f7845e3f69d642d3#egg=django-app-lti
--e git+https://github.com/nishedcob/django-auth-lti.git@164b23597e2a06bbb7c807871499433ebee7d316#egg=django-auth-lti
+-e git+https://github.com/nishedcob/django-app-lti.git@38b32989e22b189345e421b183684f9b5453e99a#egg=django-app-lti
+-e git+https://github.com/nishedcob/django-auth-lti.git@0e1109ce59ea752f84c6c9e77557333ec430421d#egg=django-auth-lti
 django-braces==1.3.1
 httplib2==0.10.3
--e git+https://github.com/nishedcob/ims_lti_py.git@c04dae729656e5c0ee689830bae1955e520f6fdb#egg=ims_lti_py-develop
+-e git+https://github.com/nishedcob/ims_lti_py.git@a6576d7892ea4f69b76572788b118aaa4cdcf749#egg=ims_lti_py
 lxml==3.8.0
-oauth2==1.9.0.post1
+-e git+https://github.com/nishedcob/python-oauth2.git@176fc35aa35d626afcb6a23459482a4c96782c88#egg=oauth2
 pkg-resources==0.0.0
 psycopg2==2.7.1
 python-gitlab==0.20
