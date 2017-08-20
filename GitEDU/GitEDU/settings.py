@@ -46,7 +46,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -137,8 +137,8 @@ LTI_SETUP = {
     "TOOL_TITLE": "GitEDU",
     "TOOL_DESCRIPTION": "Sistema para Programar en Linea",
     "LAUNCH_URL": "lti:launch",
-    "LAUNCH_REDIRECT_URL": "ideApp:index",
-    "INITIALIZE_MODELS": False,
+    "LAUNCH_REDIRECT_URL": "ideApp:decode",
+    "INITIALIZE_MODELS": "resource_and_course_users",
     "EXTENSION_PARAMETERS": {
         "10.10.10.10": {
             "privacy_level": "public",
@@ -152,7 +152,7 @@ LTI_SETUP = {
 }
 
 LTI_OAUTH_CREDENTIALS = {
-    "mykey": "b2e0158c3cb4ddb0202d",
-    "myotherkey": "57b3a14734566c49bcaf",
+    "GitEduLMS_Playground": "b2e0158c3cb4ddb0202d",
+    "GitEduLMS_Playground_2": "57b3a14734566c49bcaf",
 }
 

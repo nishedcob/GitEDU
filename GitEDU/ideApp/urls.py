@@ -13,16 +13,13 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import url, include
-from django.contrib import admin
+from django.conf.urls import url
 
-#from ideApp import urls as ide_urls
-import ideApp.urls
+from . import views
 
-import django_app_lti.urls
-
+appname = "ideApp"
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-    url(r'^lti/', include(django_app_lti.urls, namespace="lti")),
-    url(r'^ide/', include(ideApp.urls, namespace="ideApp")),
+    url(r'^(?P<class_id>[0-9]*)/$', views.EditorClassView.as_view(), name="class"),
+    url(r'^(?P<class_id>[0-9]*)/(?P<assignment_id>[0-9]*)$', views.EditorAssignmentView.as_view(), name="assignment"),
+    url(r'^decode/(?P<resource_id>[0-9]$)$', views.DecodeView.as_view(), name="decode"),
 ]
