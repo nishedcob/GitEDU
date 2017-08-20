@@ -137,7 +137,7 @@ LTI_SETUP = {
     "TOOL_TITLE": "GitEDU",
     "TOOL_DESCRIPTION": "Sistema para Programar en Linea",
     "LAUNCH_URL": "lti:launch",
-    "LAUNCH_REDIRECT_URL": "ideApp:decode",
+    "LAUNCH_REDIRECT_URL": "auth:lti_decode",
     "INITIALIZE_MODELS": "resource_and_course_users",
     "EXTENSION_PARAMETERS": {
         "10.10.10.10": {

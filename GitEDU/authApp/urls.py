@@ -13,18 +13,11 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import url, include
-from django.contrib import admin
+from django.conf.urls import url
 
-#from ideApp import urls as ide_urls
-import ideApp.urls
-import authApp.urls
+from . import views
 
-import django_app_lti.urls
-
+appname = "authApp"
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-    url(r'^auth/', include(authApp.urls, namespace="auth")),
-    url(r'^lti/', include(django_app_lti.urls, namespace="lti")),
-    url(r'^ide/', include(ideApp.urls, namespace="ide")),
+    url(r'^lti/decode/(?P<resource_id>[0-9]$)$', views.DecodeView.as_view(), name="lti_decode"),
 ]
