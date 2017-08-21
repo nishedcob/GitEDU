@@ -17,11 +17,14 @@ from django.conf.urls import url
 from django.contrib.auth import views as auth_views
 
 from . import views
+from GitEDU import settings
 
 appname = "authApp"
 urlpatterns = [
     url(r'^lti/decode/(?P<resource_id>[0-9]$)$', views.DecodeView.as_view(), name="lti_decode"),
     url("^login", auth_views.login, {'template_name': 'auth/login.html'}, name='login'),
     url("^logout", auth_views.logout, {'template_name': 'auth/logout.html', 'next_page': 'auth:login'}, name='logout'),
-    url("^register", views.RegistrationView.as_view(), name='registration'),
 ]
+
+if settings.ENABLE_REGISTRATION:
+    urlpatterns.append(url("^register", views.RegistrationView.as_view(), name='registration'))

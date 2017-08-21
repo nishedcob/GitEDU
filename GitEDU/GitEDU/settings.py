@@ -163,3 +163,4 @@ LTI_OAUTH_CREDENTIALS = {
     "GitEduLMS_Playground_2": "57b3a14734566c49bcaf",
 }
 
+ENABLE_REGISTRATION = True
