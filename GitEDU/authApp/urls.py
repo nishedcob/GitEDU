@@ -28,9 +28,20 @@ urlpatterns = [
 login_template = 'auth/login'
 
 if settings.ENABLE_REGISTRATION:
-    urlpatterns.append(url("^register/student", views.StudentRegistrationView.as_view(), name='registration-student'))
-    urlpatterns.append(url("^register/teacher", views.TeacherRegistrationView.as_view(), name='registration-teacher'))
-    login_template = login_template + ".reg"
+    if settings.ENABLE_STUDENT_REGISTRATION or settings.ENABLE_TEACHER_REGISTRATION:
+        login_template = login_template + ".reg"
+        if settings.ENABLE_STUDENT_REGISTRATION:
+            urlpatterns.append(url("^register/student", views.StudentRegistrationView.as_view(),
+                                   name='registration-student'))
+            if not settings.ENABLE_TEACHER_REGISTRATION:
+                login_template = login_template + ".stu"
+        if settings.ENABLE_TEACHER_REGISTRATION:
+            urlpatterns.append(url("^register/teacher", views.TeacherRegistrationView.as_view(),
+                                   name='registration-teacher'))
+            if not settings.ENABLE_STUDENT_REGISTRATION:
+                login_template = login_template + ".tea"
+    else:
+        login_template = login_template + ".noreg"
 else:
     login_template = login_template + ".noreg"
 
