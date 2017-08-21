@@ -1,3 +1,6 @@
 {% extends 'auth/login.html' %}
 
-{% block registration %}<a href="{% url 'auth:registration' %}">No tengo cuenta</a>{% endblock %}
+{% block registration %}
+    <a href="{% url 'auth:registration-student' %}">No tengo cuenta (soy Estudiante)</a>
+    <a href="{% url 'auth:registration-teacher' %}">No tengo cuenta (soy Docente)</a>
+{% endblock %}

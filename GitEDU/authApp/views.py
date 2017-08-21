@@ -30,10 +30,14 @@ class RegistrationView(View):
 
     form_class = RegistrationForm
     template = 'auth/registration.html'
+    role = "Usuario"
+
+    def user_post_registration(self, user):
+        pass
 
     def get(self, request):
         form = self.form_class()
-        return render(request=request, template_name=self.template, context={'form': form})
+        return render(request=request, template_name=self.template, context={'form': form, 'role': self.role})
 
     def post(self, request):
         form = self.form_class(request.POST)
@@ -43,6 +47,23 @@ class RegistrationView(View):
             user.first_name = form.cleaned_data['first_name']
             user.last_name = form.cleaned_data['last_name']
             user.save()
+            self.user_post_registration(user=user)
             return redirect('auth:login')
         else:
-            return render(request=request, template_name=self.template, context={'form': form})
+            return render(request=request, template_name=self.template, context={'form': form, 'role': self.role})
+
+
+class StudentRegistrationView(RegistrationView):
+
+    role = "Estudiante"
+
+    def user_post_registration(self, user):
+        pass
+
+
+class TeacherRegistrationView(RegistrationView):
+
+    role = "Docente"
+
+    def user_post_registration(self, user):
+        pass

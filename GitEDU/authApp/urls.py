@@ -28,7 +28,8 @@ urlpatterns = [
 login_template = 'auth/login'
 
 if settings.ENABLE_REGISTRATION:
-    urlpatterns.append(url("^register", views.RegistrationView.as_view(), name='registration'))
+    urlpatterns.append(url("^register/student", views.StudentRegistrationView.as_view(), name='registration-student'))
+    urlpatterns.append(url("^register/teacher", views.TeacherRegistrationView.as_view(), name='registration-teacher'))
     login_template = login_template + ".reg"
 else:
     login_template = login_template + ".noreg"
