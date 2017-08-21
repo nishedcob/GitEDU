@@ -23,6 +23,6 @@
     <button class="btn btn-success btn-lg"  type="submit">Login</button>
 
   </form>
-    <a href="{% url 'auth:registration' %}">No tengo cuenta</a>
+    {% block registration %}<a href="{% url 'auth:registration' %}">No tengo cuenta</a>{% endblock %}
     </div>
 {% endblock %}

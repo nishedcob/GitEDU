@@ -22,9 +22,17 @@ from GitEDU import settings
 appname = "authApp"
 urlpatterns = [
     url(r'^lti/decode/(?P<resource_id>[0-9]$)$', views.DecodeView.as_view(), name="lti_decode"),
-    url("^login", auth_views.login, {'template_name': 'auth/login.html'}, name='login'),
     url("^logout", auth_views.logout, {'template_name': 'auth/logout.html', 'next_page': 'auth:login'}, name='logout'),
 ]
 
+login_template = 'auth/login'
+
 if settings.ENABLE_REGISTRATION:
     urlpatterns.append(url("^register", views.RegistrationView.as_view(), name='registration'))
+    login_template = login_template + ".reg"
+else:
+    login_template = login_template + ".noreg"
+
+login_template = login_template + ".html"
+print("Using Login Template: %s" % login_template)
+urlpatterns.append(url("^login", auth_views.login, {'template_name': login_template}, name='login'))
