@@ -1,8 +1,11 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views import View
 from django.http import JsonResponse
+from django.contrib.auth.models import User
 
 from django_app_lti import models as lti_models
+
+from .forms import RegistrationForm
 
 # Create your views here.
 
@@ -21,3 +24,25 @@ class DecodeView(View):
     def post(self, request, resource_id):
         print("POST %s" % resource_id)
         pass
+
+
+class RegistrationView(View):
+
+    form_class = RegistrationForm
+    template = 'auth/registration.html'
+
+    def get(self, request):
+        form = self.form_class()
+        return render(request=request, template_name=self.template, context={'form': form})
+
+    def post(self, request):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            user = User.objects.create_user(username=form.cleaned_data['username'],
+                                            password=form.cleaned_data['password'], email=form.cleaned_data['email'])
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.save()
+            return redirect('login')
+        else:
+            return render(request=request, template_name=self.template, context={'form': form})

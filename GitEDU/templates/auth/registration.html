@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Registro{% endblock %}
+
+{% block content %}
+
+  <h2><nav  id=""  class="navbar navbar-default navbar-fixed-top navbar-custom affix-top">Registro</nav></h2>
+    <div class="formularios">
+  <form method="post" >
+    {% csrf_token %}
+ {{ form.errors }}
+      <table display="block"; >
+      {% for field in form %}
+          <tr>
+                <td >{{ field.label_tag }}</td>
+                <td style="padding: 0.8%">{{ field }}</td>
+          <td> {{ field.errors }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    <button class="btn btn-success btn-lg" type="submit">Registrar</button>
+  </form>
+    </div>
+{% endblock %}
