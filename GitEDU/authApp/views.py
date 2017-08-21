@@ -43,6 +43,6 @@ class RegistrationView(View):
             user.first_name = form.cleaned_data['first_name']
             user.last_name = form.cleaned_data['last_name']
             user.save()
-            return redirect('login')
+            return redirect('auth:login')
         else:
             return render(request=request, template_name=self.template, context={'form': form})
