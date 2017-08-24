@@ -159,8 +159,9 @@ LTI_SETUP = {
 }
 
 LTI_OAUTH_CREDENTIALS = {
-    "GitEduLMS_Playground": "b2e0158c3cb4ddb0202d",
-    "GitEduLMS_Playground_2": "57b3a14734566c49bcaf",
+    "GitEduLMS_Playground": "b2e0158c3cb4ddb0202d",  # test credentials
+    "GitEduLMS_Playground_Assignments": "57b3a14734566c49bcaf",  # for assignments
+    "GitEduLMS_Playground_Classes": "f7a0b6accc2631779e84",  # for classes
 }
 
 ENABLE_REGISTRATION = True
