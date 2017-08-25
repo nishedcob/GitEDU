@@ -8,6 +8,8 @@ lxml==3.8.0
 -e git+https://github.com/nishedcob/python-oauth2.git@176fc35aa35d626afcb6a23459482a4c96782c88#egg=oauth2
 pkg-resources==0.0.0
 psycopg2==2.7.1
+pymodm==0.4.0
+pymongo==3.5.1
 python-gitlab==0.20
 requests==2.13.0
 six==1.10.0
