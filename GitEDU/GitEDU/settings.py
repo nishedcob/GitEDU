@@ -195,14 +195,20 @@ GITLAB_SERVERS = {
         'WITH_TOKEN': True,
         'WITH_CRED': False,
         'API_PROTOCOL': 'http://',
-        'API_PORT': '',  # por defect :22 para SSH, :443 para HTTPS, :80 para HTTP
+        'API_PORT': '',  # por defecto:
+                        # :22 para SSH,
+                        # :443 para HTTPS,
+                        # :80 para HTTP
         'HOST': '10.10.10.11',
         'SSH_PORT': 22,
         'HTTP_PORT': 80,
         'HTTPS_PORT': 443,
         'USER': "GitEDU",
         'PASSWORD': 'GitEDU2017',
-        'TOKEN': 'JqMzkgDNvhZ7ofdPa5z5', # expira el 31 de marzo 2018
-        # 'TOKEN': 'TrCfvrdsXzpLFETyc7Q5',  # nunca expira
+        # expira el 31 de marzo 2018:
+        'TOKEN': 'JqMzkgDNvhZ7ofdPa5z5',
+        # nunca expira, pero el nivel de
+        # acceso es menor:
+        # 'TOKEN': 'TrCfvrdsXzpLFETyc7Q5',
     }
 }
