@@ -173,6 +173,9 @@ LTI_OAUTH_CREDENTIALS = {
     "GitEduLMS_Playground_Classes": "f7a0b6accc2631779e84",  # for classes
 }
 
+LTI_ASSIGNMENTS_KEY = 'GitEduLMS_Playground_Assignments'
+LTI_CLASSES_KEY = 'GitEduLMS_Playground_Classes'
+
 ENABLE_REGISTRATION = True
 ENABLE_STUDENT_REGISTRATION = True
 ENABLE_TEACHER_REGISTRATION = True
