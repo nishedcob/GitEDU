@@ -7,6 +7,8 @@ from django_app_lti import models as lti_models
 
 from .forms import RegistrationForm
 
+from GitEDU import settings
+
 # Create your views here.
 
 class DecodeView(View):
@@ -67,3 +69,31 @@ class TeacherRegistrationView(RegistrationView):
 
     def user_post_registration(self, user):
         pass
+
+
+class LTICredentialsView(View):
+
+    def get(self, request):
+        if not request.user.is_authenticated:
+            raise PermissionError("No tiene acceso a esta vista hasta que se autentica...")
+
+        lti_expose = settings.LTI_CONFIG_EXPOSE
+
+        lti_cred_json = {}
+
+        if lti_expose['LTI_KEYS']:
+            if lti_expose['LTI_ASSIGNMENT_KEY']:
+                lti_cred_json['LTI_ASSIGNMENT_KEY'] = {
+                    settings.LTI_ASSIGNMENTS_KEY: settings.LTI_OAUTH_CREDENTIALS[settings.LTI_ASSIGNMENTS_KEY]
+                }
+            if lti_expose['LTI_CLASS_KEY']:
+                lti_cred_json['LTI_CLASS_KEY'] = {
+                    settings.LTI_CLASSES_KEY: settings.LTI_OAUTH_CREDENTIALS[settings.LTI_CLASSES_KEY]
+                }
+            if lti_expose['LTI_OTHER_KEYS']:
+                lti_cred_json['LTI_OTHER_KEYS'] = settings.LTI_OAUTH_CREDENTIALS
+
+        if lti_expose['LTI_SETUP']:
+            lti_cred_json['LTI_SETUP'] = settings.LTI_SETUP
+
+        return JsonResponse(lti_cred_json)

@@ -22,6 +22,7 @@ from GitEDU import settings
 appname = "authApp"
 urlpatterns = [
     url(r'^lti/decode/(?P<resource_id>[0-9]$)$', views.DecodeView.as_view(), name="lti_decode"),
+    url(r'^lti/credentials$', views.LTICredentialsView.as_view(), name="lti_credentials"),
     url("^logout", auth_views.logout, {'template_name': 'auth/logout.html', 'next_page': 'auth:login'}, name='logout'),
 ]
 
