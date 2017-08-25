@@ -89,6 +89,15 @@ DATABASES = {
     }
 }
 
+NOSQL_DATABASES = {
+    'nosql': {
+        'NAME': 'gitEduDB',
+        'USER': "gitEduUser",
+        'PASSWORD': 'G1TedU$3r',
+        'HOST': '127.0.0.1',
+        'PORT': '27017',
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
