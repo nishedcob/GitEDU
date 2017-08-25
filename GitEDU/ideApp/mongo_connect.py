@@ -1,7 +1,7 @@
 
 from pymodm import connect
 
-from GitEdu.settings import NOSQL_DATABASES
+from GitEDU.settings import NOSQL_DATABASES
 
 # Read Connection Details from Settings
 connection_str = "mongodb://"
