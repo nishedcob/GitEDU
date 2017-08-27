@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'authApp',
     'ideApp',
+    'socialApp',
+    'academicApp',
+    'gradesApp',
     'django_auth_lti',
     'django_app_lti',
 ]
