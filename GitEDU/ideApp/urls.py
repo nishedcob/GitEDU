@@ -21,4 +21,5 @@ appname = "ideApp"
 urlpatterns = [
     url(r'^(?P<class_id>[0-9]*)/$', views.EditorClassView.as_view(), name="class"),
     url(r'^(?P<class_id>[0-9]*)/(?P<assignment_id>[0-9]*)$', views.EditorAssignmentView.as_view(), name="assignment"),
+    url(r'^(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/(?P<file_path>[a-zA-Z0-9/]*\.[a-zA-Z0-9]*)$', views.EditorFileView.as_view(), name="file_editor"),
 ]

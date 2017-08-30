@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Codigo en Linea{% endblock %}
+
+{% block content %}
+    {% load static %}
+    <div id="panel-de-control">
+        <h2 id="title" class=" navbar-custom ">Codigo</h2>
+        <h3>Por <a href="/user/{{ owner }}/">{{ owner }}</a></h3>
+        <hr>
+        <h3>Permisos Globales</h3>
+        {% if new %}
+            <h4>Valores por Defecto:</h4>
+            <p>Editarlos no tendra efecto. Podrá editarlos despues de crear el codigo.</p>
+        {% endif %}
+        {% if orig %}
+            <pre>
+                 {% comment %} <form method="post" {% if not new %}action="{% url 'global-perms-code' id %}{% endif %}">
+            {% csrf_token %}
+                 <table class="permisos" style="padding: 0.8%">
+                     {{ globalPermForm.as_table  }}
+                 </table>
+
+                     {% if not new %}
+                         <button class="btn btn-successt" type="submit">Guardar</button>
+                     {% endif %}
+        </form> {% endcomment %}
+              </pre>
+            <hr/>
+        {% endif %}
+
+        <hr>
+        <form method="post">
+            <style type="text/css" media="screen">
+                #panel-de-control {
+                    width: 45%;
+                }
+
+                #editor {
+                    margin: 0;
+                    position: fixed;
+                    float: right;
+                    top: 0;
+                    bottom: 0;
+                    left: 50%;
+                    right: 0;
+                }
+            </style>
+            {% csrf_token %}
+            {% for field in form %}
+                <p>
+                    {{ field.errors }}
+                    {{ field.label_tag }}
+                    {% if field == form.language %}
+                        <select id="{{ field.id_for_label }}" name="{{ field.html_name }}">
+                            {% for id,name in form.fields.language.choices %}
+                                <option value="{{ id }}" {% if field.value == id %}
+                                        selected {% endif %}> {{ name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                </p>
+            {% endfor %}
+
+            <div id="editor" contenteditable="true" name="editor">{% if form.code.value is not None %}{{ form.code.value }}{% endif %}</div>
+            <button class="btn btn-success btn-lg" type="submit" id="save" name="save">Guardar</button>
+            <script type="text/javascript">
+                $(function () {
+                    $('#save').click(function () {
+                        var editor = ace.edit("editor");
+                        var mysave = editor.getValue();
+                        $('#{{form.code.auto_id}}').val(mysave);
+                    });
+                });
+            </script>
+
+
+            <script src="{% static 'js/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
+            <script>
+                //var editor = ace.edit("{{form.code.id_for_label}}");
+                var editor = ace.edit("editor");
+                editor.setTheme("ace/theme/twilight");
+
+                var langs ={{ editorLang|safe }};
+                //editor.session.setMode("ace/mode/python"); // consta.editor_laguage[valordebase usercode.language]['ace']
+
+                editor.session.setMode("ace/mode/" + {% if not new %}langs['{{ form.language.value }}']['ace']{% else %}"python"{% endif %}); // consta.editor_laguage[valordebase usercode.language]['ace']
+
+                editor.setVisible(true);
+            </script>
+            <script type="application/javascript">
+                $("#{{ form.language.id_for_label }}").change(function () {
+                    var valor = $("#{{ form.language.id_for_label }}").val();
+                    var editor = ace.edit("editor");
+                    var langs ={{ editorLang|safe }};
+                    editor.session.setMode("ace/mode/" + langs[valor]['ace']);
+                });
+            </script>
+        </form>
+        {% if not new %}
+            {% if orig %}
+                <h3 id="title" class=" navbar-custom ">Ediciones:</h3>
+                <ol>
+                    {% for e in edits %}
+                        <li><a class="formularios" href="/code/{{ e.code_id }}/">{{ e.file_name }}</a></li>
+                    {% endfor %}
+                </ol>
+                <hr>
+                <h3 id="title" class=" navbar-custom ">Colaboradores</h3>
+                {% comment %}
+                <a href="{% url 'collab-perms-code' id %}">Ver</a>
+                {% endcomment %}
+                <h4>Agregar Colaborador</h4>
+                {% comment %}
+                <form method="post" action="{% url 'new-collab-perms-code' id %}">
+                    {% csrf_token %}
+                    <table style="text-align: left">
+                    {{ collabForm.as_table }}
+                        </table>
+                    <button class="btn btn-success btn-lg" type="submit">Agregar Colaborador</button>
+                </form>
+                {% endcomment %}
+                <hr>
+                {% comment %}
+                <script src="https://togetherjs.com/togetherjs-min.js"></script>
+                <!--button onclick="TogetherJS(this); return false;">Empezar Sesion de TogetherJS</button-->
+                <script>
+                    $(document).ready(function () {
+                        TogetherJS(this);
+                        return false;
+                    });
+                </script>
+                {% endcomment %}
+            {% else %}
+                <h3 id="title" class=" navbar-custom ">Modificó:</h3>
+                <p><a href="/code/{{ original.code_id }}/">{{ original.file_name }}</a></p>
+                <p>{{ thisEdit.timestamp }}</p>
+                <p><a href="/user/{{ modifiedBy.username }}/">{{ modifiedBy.username }}</a></p>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock %}
