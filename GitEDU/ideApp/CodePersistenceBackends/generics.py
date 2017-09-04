@@ -135,7 +135,7 @@ class CodePersistenceBackend:
     def list_repositories(self, namespace):
         pass
 
-    def search_repositories(self, namespace):
+    def search_repositories(self, namespace, query):
         pass
 
     def repository_exists(self, namespace, repository):
@@ -156,7 +156,7 @@ class CodePersistenceBackend:
     def list_files(self, namespace, repository):
         pass
 
-    def search_files(self, namespace, repository):
+    def search_files(self, namespace, repository, query):
         pass
 
     def file_exists(self, namespace, respository, file_path):
