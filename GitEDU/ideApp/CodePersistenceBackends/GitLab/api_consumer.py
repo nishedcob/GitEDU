@@ -1,7 +1,7 @@
 
-from GitEDU.ideApp.CodePersistenceBackends.MongoDB.models import CodeModel
+#from GitEDU.ideApp.CodePersistenceBackends.MongoDB.mongodb_models import CodeModel
 from ideApp.CodePersistenceBackends.GitLab.connect import gitlab_srv
-from ideApp.models import GitlabUser, GitlabSnippet
+#from ideApp.models import GitlabUser, GitlabSnippet
 
 
 def get_gitlab_user(gitlab_conn=gitlab_srv, user=None):
@@ -9,9 +9,9 @@ def get_gitlab_user(gitlab_conn=gitlab_srv, user=None):
         return None
     if user is None or not user.is_authenticated:
         return None
-    gitlab_users = GitlabUser.objects.filter(user=user)
+    #gitlab_users = GitlabUser.objects.filter(user=user)
     gitlab_user = None
-    if len(gitlab_users) == 0:
+    '''if len(gitlab_users) == 0:
         username = user.username
         users_in_gitlab = gitlab_conn.users.list(username=username)  # , private_token='yP1RiyMZiDBzDAgTDzNz')
         if len(users_in_gitlab) == 0:
@@ -32,6 +32,7 @@ def get_gitlab_user(gitlab_conn=gitlab_srv, user=None):
         gitlab_user = local_gitlab_user
     elif len(gitlab_users) == 1:
         gitlab_user = gitlab_users[0]
+        '''
     return gitlab_user
 
 
@@ -50,9 +51,9 @@ def create_gitlab_snippet(gitlab_conn=gitlab_srv, user=None, user_code=None):
         print("sin usuario de gitlab")
         return None
     print("code_id: " + str(user_code.code_id))
-    codes = CodeModel.objects.raw({'cmid': str(user_code.code_id)})
+    #codes = CodeModel.objects.raw({'cmid': str(user_code.code_id)})
     # code = None
-    if codes is None:
+    '''if codes is None:
         print("nada en mongo")
         return None
     elif codes.count() == 0:
@@ -62,17 +63,18 @@ def create_gitlab_snippet(gitlab_conn=gitlab_srv, user=None, user_code=None):
         print("muchos resultados mongo")
         return None
     else:
-        code = codes[0]
-    snippet = gitlab_conn.snippets.create({'title': user_code.file_name,
+        code = codes[0]'''
+    '''snippet = gitlab_conn.snippets.create({'title': user_code.file_name,
                                            'file_name': user_code.file_name,
                                            'content': code.code}, sudo=gitlab_user.username, private_token='EwJbTqxDY-sQF_sPDScb')
-    snippet.save()
+    snippet.save()'''
     gitlab_snippet = None
-    if snippet is not None:
-        gitlab_snippet = GitlabSnippet(gitlabUser=gitlab_user, userCode=user_code, title=user_code.file_name,
+    '''if snippet is not None:
+        '' 'gitlab_snippet = GitlabSnippet(gitlabUser=gitlab_user, userCode=user_code, title=user_code.file_name,
                                        file_name=user_code.file_name, code_id=user_code.code_id, snippet_id=snippet.id)
-        gitlab_snippet.save()
-    return snippet, gitlab_snippet
+        gitlab_snippet.save()' ''
+        print("Create snippet")'''
+    #return snippet, gitlab_snippet
 
 
 def get_gitlab_snippet(gitlab_conn=gitlab_srv, user=None, snippet_id=None):

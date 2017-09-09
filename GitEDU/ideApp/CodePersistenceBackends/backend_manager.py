@@ -12,7 +12,7 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
         for backend_key, backend_config in CODE_PERSISTENCE_BACKENDS.items():
             if backend_config['use']:
                 connection_profile = backend_config['connection_profiles'][backend_config['connection_profile']]
-                self.code_persistence_backends[backend_key] = backend_config['backend'](connection_profile)
+                self.code_persistence_backends[backend_key] = backend_config['backend'].__init__(connection_profile)
         for backend_key in CODE_PERSISTENCE_BACKEND_READ_PREFERENCE:
             connection = self.code_persistence_backends.get(backend_key, None)
             if connection:
