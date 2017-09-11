@@ -40,7 +40,7 @@ def build_connection_string(user=None, password=None, database=None, host=None, 
             database = CONNECTION_DEFAULTS['DATABASE']
     if database is not None:
         connection_str += database
-    print(connection_str)
+    #print(connection_str)
     return connection_str
 
 
@@ -56,7 +56,7 @@ def build_connection(user=None, password=None, database=None, host=None, port=No
     print("Connected to MongoDB @ mongodb://%s:%s" % (host, port))
 
 
-def build_connection_from_settings(profile=None):
+def build_connection_from_settings(profile=None, alias=None):
     #if profiles is None:
     #    raise ValueError("Profiles can not be None")
     if profile is None:
@@ -66,4 +66,4 @@ def build_connection_from_settings(profile=None):
         raise ValueError("Invalid Configuration")
     build_connection(user=config.get('USER', None), password=config.get('PASSWORD', None),
                      database=config.get('NAME', None), host=config.get('HOST', None), port=config.get('PORT', None),
-                     protocol=config.get('PROTOCOL', None), alias=profile)
+                     protocol=config.get('PROTOCOL', None), alias=alias)
