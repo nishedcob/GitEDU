@@ -217,6 +217,9 @@ class CodePersistenceBackend:
     change_class = GenericChange
     change_file_class = GenericChangeFile
 
+    def __init__(self, profile=None):
+        pass
+
     def list_namespaces(self):
         pass
 
