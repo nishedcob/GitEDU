@@ -6,6 +6,13 @@ def validate_string(value, parameter_name=None):
         raise ValueError("%s should be a String" % (parameter_name if parameter_name else "Parameter"))
 
 
+def validate_repository(repository):
+    if repository is None:
+        raise ValueError("Repository can't be None")
+    if not isinstance(repository, GenericRepository):
+        raise ValueError("Repository should be a Repository Object")
+
+
 class GenericNamespace:
     namespace = None
 
@@ -73,21 +80,15 @@ class GenericRepositoryFile:
     repository = None
     file_path = None
 
-    def validate_repository(self, repository):
-        if repository is None:
-            raise ValueError("Repository can't be None")
-        if not isinstance(repository, GenericRepository):
-            raise ValueError("Repository should be a Repository Object")
-
     def __init__(self, repository, file_path):
-        self.validate_repository(repository)
+        validate_repository(repository)
         self.repository = repository
         validate_string(file_path, "File_Path")
         self.file_path = file_path
         self.save()
 
     def set_repository(self, repository):
-        self.validate_repository(repository)
+        validate_repository(repository)
         self.repository = repository
         self.save()
 
@@ -109,11 +110,112 @@ class GenericRepositoryFile:
         return "RepoFile: (%s) :: %s" % (self.repository, self.file_path)
 
 
+class GenericChange:
+    repository = None
+    comment = None
+    timestamp = None
+    author = None
+
+    def validate_timestamp(self, timestamp):
+        validate_string(timestamp, "Timestamp")
+
+    def validate_author(self, author):
+        validate_string(author, "Author")
+
+    def __init__(self, repository, comment, timestamp, author):
+        validate_repository(repository)
+        self.repository = repository
+        validate_string(comment, "Comment")
+        self.comment = comment
+        self.validate_timestamp(timestamp)
+        self.timestamp = timestamp
+        validate_string(author)
+        self.author = author
+        self.save()
+
+    def set_repository(self, repository):
+        validate_repository(repository)
+        self.repository = repository
+        self.save()
+
+    def get_repository(self):
+        return self.repository
+
+    def set_comment(self, comment):
+        validate_string(comment, "Comment")
+        self.comment = comment
+        self.save()
+
+    def get_comment(self):
+        return self.comment
+
+    def set_timestamp(self, timestamp):
+        self.validate_timestamp(timestamp)
+        self.timestamp = timestamp
+        self.save()
+
+    def get_timestamp(self):
+        return self.timestamp
+
+    def set_author(self, author):
+        self.validate_author(author)
+        self.author = author
+        self.save()
+
+    def save(self):
+        pass
+
+    def __str__(self):
+        return "Change: (%s) :: \"%s\" :: %s :: %s" % (self.repository, self.comment, self.author, self.timestamp)
+
+
+class GenericChangeFile:
+    change = None
+    file_path = None
+
+    def validate_change(self, change):
+        if change is None:
+            raise ValueError("Change can't be None")
+        if not isinstance(change, GenericChange):
+            raise ValueError("Change should be a Change Object")
+
+    def __init__(self, change, file_path):
+        self.validate_change(change)
+        self.change = change
+        validate_string(file_path, "File_Path")
+        self.file_path = file_path
+        self.save()
+
+    def set_change(self, change):
+        self.validate_change(change)
+        self.change = change
+        self.save()
+
+    def get_change(self):
+        return self.change
+
+    def set_file_path(self, file_path):
+        validate_string(file_path, "File_Path")
+        self.file_path = file_path
+        self.save()
+
+    def get_file_path(self):
+        return self.file_path
+
+    def save(self):
+        pass
+
+    def __str__(self):
+        return "ChangeFile: (%s) :: %s" % (self.change, self.file_path)
+
+
 class CodePersistenceBackend:
 
     namespace_class = GenericNamespace
     repository_class = GenericRepository
     repository_file_class = GenericRepositoryFile
+    change_class = GenericChange
+    change_file_class = GenericChangeFile
 
     def list_namespaces(self):
         pass
