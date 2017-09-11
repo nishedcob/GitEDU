@@ -111,6 +111,10 @@ class GenericRepositoryFile:
 
 class CodePersistenceBackend:
 
+    namespace_class = GenericNamespace
+    repository_class = GenericRepository
+    repository_file_class = GenericRepositoryFile
+
     def list_namespaces(self):
         pass
 
