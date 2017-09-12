@@ -1,12 +1,64 @@
 
 from ideApp.CodePersistenceBackends.generics import GenericNamespace, GenericRepository, GenericRepositoryFile,\
-    CodePersistenceBackend
+    GenericChange, GenericChangeFile,CodePersistenceBackend
 
 from ideApp.CodePersistenceBackends.MongoDB import mongodb_models, mongodb_connect
+
+
+class MongoNamespace(GenericNamespace):
+
+    def save(self):
+        pass
+
+    def __str__(self):
+        return "MongoNSPC: %s" % self.namespace
+
+
+class MongoRepository(GenericRepository):
+
+    def save(self):
+        pass
+
+    def __str__(self):
+        return "MongoREPO: (%s) :: %s" % (self.namespace, self.repository)
+
+
+class MongoRepositoryFile(GenericRepositoryFile):
+
+    def save(self):
+        pass
+
+    def __str__(self):
+        return "MongoRepoFile: (%s) :: %s" % (self.repository, self.file_path)
+
+
+class MongoChange(GenericChange):
+
+    def save(self):
+        pass
+
+    def __str__(self):
+        return "Change: (%s) :: \"%s\" :: %s :: %s" % (self.repository, self.comment, self.author, self.timestamp)
+
+
+class MongoChangeFile(GenericChangeFile):
+
+    def save(self):
+        pass
+
+    def __str__(self):
+        return "ChangeFile: (%s) :: %s" % (self.change, self.file_path)
+
 
 mongo_num_conn = 0
 
 class MongoDBCodePersistenceBackend(CodePersistenceBackend):
+
+    namespace_class = MongoNamespace
+    repository_class = MongoRepository
+    repository_file_class = MongoRepositoryFile
+    change_class = MongoChange
+    change_file_class = MongoChangeFile
 
     def __init__(self, profile=None):
         global mongo_num_conn
