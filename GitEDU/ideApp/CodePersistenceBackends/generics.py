@@ -1,4 +1,7 @@
 
+import time
+import datetime
+
 def validate_string(value, parameter_name=None):
     if value is None:
         raise ValueError("%s can't be None" % (parameter_name if parameter_name else "Parameter"))
@@ -281,4 +284,25 @@ class CodePersistenceBackend:
         pass
 
     def save_file(self, namespace, repository, file_path, file_contents):
+        pass
+
+    def list_changes(self, namespace, repository):
+        pass
+
+    def search_changes(self, namespace, repository, query):
+        pass
+
+    def change_exists(self, namespace, respository, change):
+        return False
+
+    def get_change(self, namespace, respository, change):
+        pass
+
+    def create_change(self, namespace, repository, author, comment=None, timestamp=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')):
+        pass
+
+    def delete_change(self, namespace, repository, change):
+        pass
+
+    def save_change(self, namespace, repository, change):
         pass
