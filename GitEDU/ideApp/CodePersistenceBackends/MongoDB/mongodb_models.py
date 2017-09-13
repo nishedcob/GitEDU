@@ -33,7 +33,8 @@ class RepositoryFileModel(MongoModel):
     '''
 
     def __str__(self):
-        return "RepositoryFileMongoModel: %s :: %s :: [%s] :: %s" % (self.file_path, self.language, self.repository, self.contents)
+        return "RepositoryFileMongoModel: %s :: %s :: [%s] :: %s" % (self.file_path, self.language, self.repository,
+                                                                     self.contents)
 
 
 class ChangeModel(MongoModel):
@@ -43,7 +44,8 @@ class ChangeModel(MongoModel):
     repository = ReferenceField(RepositoryModel)
 
     def __str__(self):
-        return "ChangeMongoModel: \"%s\" :: %s :: %s :: [%s]" % (self.comment, self.author, self.timestamp, self.repository)
+        return "ChangeMongoModel: \"%s\" :: %s :: %s :: [%s]" % (self.comment, self.author, self.timestamp,
+                                                                 self.repository)
 
 
 class ChangeFileModel(MongoModel):
@@ -53,7 +55,8 @@ class ChangeFileModel(MongoModel):
     file_path = CharField()
 
     def __str__(self):
-        return "ChangeFileMongoModel: [%s] :: %s :: %s :: %s" % (self.change, self.file_path, self.language, self.contents)
+        return "ChangeFileMongoModel: [%s] :: %s :: %s :: %s" % (self.change, self.file_path, self.language,
+                                                                 self.contents)
 
 class TemporaryChangeFileModel(MongoModel):
     contents = CharField()
@@ -62,4 +65,5 @@ class TemporaryChangeFileModel(MongoModel):
     file_path = CharField()
 
     def __str__(self):
-        return "TemporaryChangeFileMongoModel: [%s] :: %s :: %s :: %s" % (self.repository, self.file_path, self.language, self.contents)
+        return "TemporaryChangeFileMongoModel: [%s] :: %s :: %s :: %s" % (self.repository, self.file_path,
+                                                                          self.language, self.contents)
