@@ -83,15 +83,18 @@ class GenericRepositoryFile:
     repository = None
     file_path = None
 
-    def __init__(self, repository, file_path):
+    def validate_repository(self, repository):
         validate_repository(repository)
+
+    def __init__(self, repository, file_path):
+        self.validate_repository(repository)
         self.repository = repository
         validate_string(file_path, "File_Path")
         self.file_path = file_path
         self.save()
 
     def set_repository(self, repository):
-        validate_repository(repository)
+        self.validate_repository(repository)
         self.repository = repository
         self.save()
 
@@ -125,8 +128,11 @@ class GenericChange:
     def validate_author(self, author):
         validate_string(author, "Author")
 
-    def __init__(self, repository, comment, timestamp, author):
+    def validate_repository(self, repository):
         validate_repository(repository)
+
+    def __init__(self, repository, comment, timestamp, author):
+        self.validate_repository(repository)
         self.repository = repository
         validate_string(comment, "Comment")
         self.comment = comment
@@ -137,7 +143,7 @@ class GenericChange:
         self.save()
 
     def set_repository(self, repository):
-        validate_repository(repository)
+        self.validate_repository(repository)
         self.repository = repository
         self.save()
 
