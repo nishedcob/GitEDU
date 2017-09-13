@@ -58,6 +58,7 @@ class ChangeFileModel(MongoModel):
         return "ChangeFileMongoModel: [%s] :: %s :: %s :: %s" % (self.change, self.file_path, self.language,
                                                                  self.contents)
 
+
 class TemporaryChangeFileModel(MongoModel):
     contents = CharField()
     repository = ReferenceField(RepositoryModel)
