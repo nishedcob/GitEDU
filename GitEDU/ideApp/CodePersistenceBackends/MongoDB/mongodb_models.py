@@ -43,6 +43,6 @@ class ChangeFileModel(MongoModel):
 
 class TemporaryChangeFileModel(MongoModel):
     contents = CharField()
-    change = ReferenceField(ChangeModel)
+    repository = ReferenceField(RepositoryModel)
     language = CharField(choices=constants.LANGUAGE_NAMES)
     file_path = CharField()
