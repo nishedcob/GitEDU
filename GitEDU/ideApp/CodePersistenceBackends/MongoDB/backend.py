@@ -2,7 +2,7 @@
 from ideApp.CodePersistenceBackends.generics import GenericNamespace, GenericRepository, GenericRepositoryFile,\
     GenericChange, GenericChangeFile, CodePersistenceBackend, validate_string
 
-#from ideApp.CodePersistenceBackends.MongoDB import mongodb_models, connect
+#from ideApp.CodePersistenceBackends.MongoDB import mongodb_models, mongodb_connect
 
 from pymodm.queryset import QuerySet
 
@@ -66,10 +66,14 @@ class MongoRepository(GenericRepository):
                 if repository is None:
                     raise ValueError("ID, Namespace and Repository can't be None")
                 else:
+                    print("WARNING: Only searching for repositories based on Repository, may find more than 1," +
+                          " will only use the first found")
                     self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'repository':'%s'})"
                                                        % (database, repository)).first()
             else:
                 if repository is None:
+                    print("WARNING: Only searching for repositories based on Namespace, may find more than 1," +
+                          " will only use the first found")
                     self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'namespace':'%s'})"
                                                        % (database, namespace)).first()
                 else:
@@ -83,7 +87,8 @@ class MongoRepository(GenericRepository):
                                                        % (database, id)).first()
             else:
                 if repository is None:
-                    self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'_id':'%s', 'namespace':'%s'})"
+                    self.persistence_object = QuerySet(self.persistence_class,
+                                                       "db.%s.find({'_id':'%s', 'namespace':'%s'})"
                                                        % (database, id, namespace)).first()
                 else:
                     self.persistence_object = QuerySet(self.persistence_class,
@@ -130,7 +135,95 @@ class MongoRepositoryFile(GenericRepositoryFile):
 
     def retrieve(self, id=None, namespace=None, repository=None, file_path=None):
         database = 'gitEduDB'
-        # TODO
+        if id is None:
+            if namespace is None:
+                if repository is None:
+                    if file_path is None:
+                        raise ValueError("ID, Namespace, Repository and File_Path can't be None")
+                    else:
+                        print("WARNING: Only searching for files based on File_Path, may find more than 1," +
+                              " will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'file_path':'%s'})"
+                                                           % (database, file_path)).first()
+                else:
+                    if file_path is None:
+                        print("WARNING: Only searching for files based on Repository, may find more than 1," +
+                              " will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'repository':'%s'})"
+                                                           % (database, repository)).first()
+                    else:
+                        print("WARNING: Only searching for files based on Repository and File_Path," +
+                              " may find more than 1, will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           "db.%s.find({'repository':'%s', 'file_path':'%s'})"
+                                                           % (database, repository, file_path)).first()
+            else:
+                if repository is None:
+                    if file_path is None:
+                        print("WARNING: Only searching for files based on Namespace, may find more than 1," +
+                              " will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'namespace':'%s'})"
+                                                           % (database, namespace)).first()
+                    else:
+                        print("WARNING: Only searching for files based on Namespace and File_Path," +
+                              "may find more than 1, will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           "db.%s.find({'namespace':'%s', 'file_path':'%s'})"
+                                                           % (database, namespace, file_path)).first()
+                else:
+                    if file_path is None:
+                        print("WARNING: Only searching for files based on Namespace and Repository," +
+                              " may find more than 1, will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           "db.%s.find({'namespace':'%s', 'repository':'%s'})"
+                                                           % (database, namespace, repository)).first()
+                    else:
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           '''db.%s.find({'namespace':'%s', 'repository':'%s',
+                                                           'file_path':'%s'})'''
+                                                           % (database, namespace, repository, file_path)).first()
+        else:
+            if namespace is None:
+                if repository is None:
+                    if file_path is None:
+                        self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'_id':'%s'})"
+                                                           % (database, id)).first()
+                    else:
+                        self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({'_id':'%s',
+                                                            'file_path':'%s'})'''
+                                                           % (database, id, file_path)).first()
+                else:
+                    if file_path is None:
+                        self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({'_id':'%s',
+                                                            'repository':'%s'})'''
+                                                           % (database, id, repository)).first()
+                    else:
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           '''db.%s.find({'_id':'%s', 'repository':'%s',
+                                                           'file_path':'%s'})'''
+                                                           % (database, id, repository, file_path)).first()
+            else:
+                if repository is None:
+                    if file_path is None:
+                        self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({'_id':'%s',
+                                                            'namespace':'%s'})'''
+                                                           % (database, id, namespace)).first()
+                    else:
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           '''db.%s.find({'_id':'%s', 'namespace':'%s',
+                                                           'file_path':'%s'})'''
+                                                           % (database, id, namespace, file_path)).first()
+                else:
+                    if file_path is None:
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           '''db.%s.find({'_id':'%s', 'namespace':'%s',
+                                                           'repository':'%s'})'''
+                                                           % (database, id, namespace, repository)).first()
+                    else:
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           '''db.%s.find({'_id':'%s', 'namespace':'%s',
+                                                           'repository':'%s', 'file_path':'%s'})'''
+                                                           % (database, id, namespace, repository, file_path)).first()
 
     def save(self):
         if self.persistence_object is None:
@@ -156,7 +249,95 @@ class MongoChange(GenericChange):
 
     def retrieve(self, id=None, namespace=None, repository=None, change=None):
         database = 'gitEduDB'
-        # TODO
+        if id is None:
+            if namespace is None:
+                if repository is None:
+                    if change is None:
+                        raise ValueError("ID, Namespace, Repository and Change can't be None")
+                    else:
+                        print("WARNING: Only searching for files based on Change, may find more than 1," +
+                              " will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'change':'%s'})"
+                                                           % (database, change)).first()
+                else:
+                    if change is None:
+                        print("WARNING: Only searching for files based on Repository, may find more than 1," +
+                              " will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'repository':'%s'})"
+                                                           % (database, repository)).first()
+                    else:
+                        print("WARNING: Only searching for files based on Repository and Change," +
+                              " may find more than 1, will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           "db.%s.find({'repository':'%s', 'change':'%s'})"
+                                                           % (database, repository, change)).first()
+            else:
+                if repository is None:
+                    if change is None:
+                        print("WARNING: Only searching for files based on Namespace, may find more than 1," +
+                              " will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'namespace':'%s'})"
+                                                           % (database, namespace)).first()
+                    else:
+                        print("WARNING: Only searching for files based on Namespace and Change," +
+                              "may find more than 1, will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           "db.%s.find({'namespace':'%s', 'change':'%s'})"
+                                                           % (database, namespace, change)).first()
+                else:
+                    if change is None:
+                        print("WARNING: Only searching for files based on Namespace and Repository," +
+                              " may find more than 1, will only use the first found")
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           "db.%s.find({'namespace':'%s', 'repository':'%s'})"
+                                                           % (database, namespace, repository)).first()
+                    else:
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           '''db.%s.find({'namespace':'%s', 'repository':'%s',
+                                                           'change':'%s'})'''
+                                                           % (database, namespace, repository, change)).first()
+        else:
+            if namespace is None:
+                if repository is None:
+                    if change is None:
+                        self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'_id':'%s'})"
+                                                           % (database, id)).first()
+                    else:
+                        self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({'_id':'%s',
+                                                            'change':'%s'})'''
+                                                           % (database, id, change)).first()
+                else:
+                    if change is None:
+                        self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({'_id':'%s',
+                                                            'repository':'%s'})'''
+                                                           % (database, id, repository)).first()
+                    else:
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           '''db.%s.find({'_id':'%s', 'repository':'%s',
+                                                           'change':'%s'})'''
+                                                           % (database, id, repository, change)).first()
+            else:
+                if repository is None:
+                    if change is None:
+                        self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({'_id':'%s',
+                                                            'namespace':'%s'})'''
+                                                           % (database, id, namespace)).first()
+                    else:
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           '''db.%s.find({'_id':'%s', 'namespace':'%s',
+                                                           'change':'%s'})'''
+                                                           % (database, id, namespace, change)).first()
+                else:
+                    if change is None:
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           '''db.%s.find({'_id':'%s', 'namespace':'%s',
+                                                           'repository':'%s'})'''
+                                                           % (database, id, namespace, repository)).first()
+                    else:
+                        self.persistence_object = QuerySet(self.persistence_class,
+                                                           '''db.%s.find({'_id':'%s', 'namespace':'%s',
+                                                           'repository':'%s', 'change':'%s'})'''
+                                                           % (database, id, namespace, repository, change)).first()
 
     def save(self):
         if self.persistence_object is None:
@@ -197,9 +378,216 @@ class MongoChangeFile(GenericChangeFile):
     def get_language(self):
         return self.language
 
-    def retrieve(self, id=None, namespace=None, repository=None, change=None):
+    def retrieve(self, id=None, namespace=None, repository=None, change=None, file_path=None):
         database = 'gitEduDB'
-        # TODO
+        if id is None:
+            if namespace is None:
+                if repository is None:
+                    if change is None:
+                        if file_path is None:
+                            raise ValueError("ID, Namespace, Repository, Change and File_Path can't be None")
+                        else:
+                            print("WARNING: Only searching for files based on File_Path, may find more than 1," +
+                                  " will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'file_path':'%s'})"
+                                                               % (database, file_path)).first()
+                    else:
+                        if file_path is None:
+                            print("WARNING: Only searching for files based on Change, may find more than 1," +
+                                  " will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'change':'%s'})"
+                                                               % (database, change)).first()
+                        else:
+                            print("WARNING: Only searching for files based on Change and File_Path, " +
+                                  "may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({'change':'%s',
+                                                                                        'file_path': '%s'})'''
+                                                               % (database, change, file_path)).first()
+                else:
+                    if change is None:
+                        if file_path is None:
+                            print("WARNING: Only searching for files based on Repository," +
+                                  " may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               "db.%s.find({'repository':'%s'})"
+                                                               % (database, repository)).first()
+                        else:
+                            print("WARNING: Only searching for files based on Repository and File_Path," +
+                                  " may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               "db.%s.find({'repository':'%s', 'file_path':'%s'})"
+                                                               % (database, repository, file_path)).first()
+                    else:
+                        if file_path is None:
+                            print("WARNING: Only searching for files based on Repository and Change," +
+                                  " may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               "db.%s.find({'repository':'%s', 'change': '%s'})"
+                                                               % (database, repository, change)).first()
+                        else:
+                            print("WARNING: Only searching for files based on Repository, Change and File_Path," +
+                                  " may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'repository':'%s', 'change': '%s',
+                                                                    'file_path':'%s'})'''
+                                                               % (database, repository, change, file_path)).first()
+            else:
+                if repository is None:
+                    if change is None:
+                        if file_path is None:
+                            print("WARNING: Only searching for files based on Namespace, may find more than 1," +
+                                  " will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'namespace':'%s'})"
+                                                               % (database, namespace)).first()
+                        else:
+                            print("WARNING: Only searching for files based on Namespace and File_Path," +
+                                  " may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({
+                                                                                            'namespace': '%s',
+                                                                                            'file_path':'%s'})'''
+                                                               % (database, namespace, file_path)).first()
+                    else:
+                        if file_path is None:
+                            print("WARNING: Only searching for files based on Namespace and Change," +
+                                  " may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({
+                                                                                            'namespace': '%s',
+                                                                                            'change':'%s'})'''
+                                                               % (database, namespace, change)).first()
+                        else:
+                            print("WARNING: Only searching for files based on Namespace, Change and File_Path, " +
+                                  "may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({
+                                                                                        'namespace': '%s',
+                                                                                        'change':'%s',
+                                                                                        'file_path': '%s'})'''
+                                                               % (database, namespace, change, file_path)).first()
+                else:
+                    if change is None:
+                        if file_path is None:
+                            print("WARNING: Only searching for files based on Namespace and Repository," +
+                                  " may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               "db.%s.find({'namespace': '%s', 'repository':'%s'})"
+                                                               % (database, namespace, repository)).first()
+                        else:
+                            print("WARNING: Only searching for files based on Namespace, Repository and File_Path," +
+                                  " may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'namespace': '%s', 'repository':'%s',
+                                                                    'file_path':'%s'})'''
+                                                               % (database, namespace, repository, file_path)).first()
+                    else:
+                        if file_path is None:
+                            print("WARNING: Only searching for files based on Namespace, Repository and Change," +
+                                  " may find more than 1, will only use the first found")
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'namespace': '%s', 'repository':'%s',
+                                                                    'change': '%s'})'''
+                                                               % (database, namespace, repository, change)).first()
+                        else:
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'namespace': '%s', 'repository':'%s',
+                                                                    'change': '%s', 'file_path':'%s'})'''
+                                                               % (database, namespace, repository, change, file_path))\
+                                                                    .first()
+        else:
+            if namespace is None:
+                if repository is None:
+                    if change is None:
+                        if file_path is None:
+                            self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'_id':'%s'})"
+                                                               % (database, id)).first()
+                        else:
+                            self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({'_id': '%s',"
+                                                                                            'file_path':'%s'})'''
+                                                               % (database, id, file_path)).first()
+                    else:
+                        if file_path is None:
+                            self.persistence_object = QuerySet(self.persistence_class, "db.%s.find({'change':'%s'})"
+                                                               % (database, change)).first()
+                        else:
+                            self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({'_id': '%s',
+                                                                                        'change':'%s',
+                                                                                        'file_path': '%s'})'''
+                                                               % (database, id, change, file_path)).first()
+                else:
+                    if change is None:
+                        if file_path is None:
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               "db.%s.find({'_id': '%s', 'repository':'%s'})"
+                                                               % (database, id, repository)).first()
+                        else:
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'_id': '%s', 'repository':'%s',
+                                                                    'file_path':'%s'})'''
+                                                               % (database, id, repository, file_path)).first()
+                    else:
+                        if file_path is None:
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'_id': '%s', 'repository':'%s',
+                                                                    'change': '%s'})'''
+                                                               % (database, id, repository, change)).first()
+                        else:
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'_id': '%s', 'repository':'%s',
+                                                                    'change': '%s', 'file_path':'%s'})'''
+                                                               % (database, id, repository, change, file_path)).first()
+            else:
+                if repository is None:
+                    if change is None:
+                        if file_path is None:
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               "db.%s.find({'_id': '%s', 'namespace':'%s'})"
+                                                               % (database, id, namespace)).first()
+                        else:
+                            self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({
+                                                                                            'namespace': '%s',
+                                                                                            'file_path':'%s'})'''
+                                                               % (database, namespace, file_path)).first()
+                    else:
+                        if file_path is None:
+                            self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({
+                                                                                            '_id': '%s', 
+                                                                                            'namespace': '%s',
+                                                                                            'change':'%s'})'''
+                                                               % (database, id, namespace, change)).first()
+                        else:
+                            self.persistence_object = QuerySet(self.persistence_class, '''db.%s.find({
+                                                                                        '_id': '%s', 
+                                                                                        'namespace': '%s',
+                                                                                        'change':'%s',
+                                                                                        'file_path': '%s'})'''
+                                                               % (database, id, namespace, change, file_path)).first()
+                else:
+                    if change is None:
+                        if file_path is None:
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'_id': '%s', 'namespace': '%s',
+                                                                           'repository':'%s'})'''
+                                                               % (database, id, namespace, repository)).first()
+                        else:
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'_id': '%s', 'namespace': '%s',
+                                                                    'repository':'%s',
+                                                                    'file_path':'%s'})'''
+                                                               % (database, id, namespace, repository, file_path))\
+                                .first()
+                    else:
+                        if file_path is None:
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'_id': '%s', 'namespace': '%s',
+                                                                    'repository':'%s', 'change': '%s'})'''
+                                                               % (database, id, namespace, repository, change)).first()
+                        else:
+                            self.persistence_object = QuerySet(self.persistence_class,
+                                                               '''db.%s.find({'_id': '%s', 'namespace': '%s',
+                                                                    'repository':'%s', 'change': '%s',
+                                                                    'file_path':'%s'})'''
+                                                               % (database, id, namespace, repository, change,
+                                                                  file_path)) \
+                                .first()
+            # TODO
 
     def save(self):
         if self.persistence_object is None:
