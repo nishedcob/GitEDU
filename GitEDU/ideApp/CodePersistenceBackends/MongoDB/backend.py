@@ -2,7 +2,7 @@
 from ideApp.CodePersistenceBackends.generics import GenericNamespace, GenericRepository, GenericRepositoryFile,\
     GenericChange, GenericChangeFile, CodePersistenceBackend, validate_string
 
-#from ideApp.CodePersistenceBackends.MongoDB import mongodb_models, mongodb_connect
+from ideApp.CodePersistenceBackends.MongoDB import mongodb_models, mongodb_connect
 
 from pymodm.queryset import QuerySet
 
@@ -605,6 +605,7 @@ class MongoChangeFile(GenericChangeFile):
 
 mongo_num_conn = 0
 
+
 class MongoDBCodePersistenceBackend(CodePersistenceBackend):
 
     namespace_class = MongoNamespace
@@ -613,12 +614,16 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
     change_class = MongoChange
     change_file_class = MongoChangeFile
 
+    ALIAS_FORMAT = "mongo_%03d"
+
     def __init__(self, profile=None):
         global mongo_num_conn
         if profile is None:
             raise ValueError("Connection Parameters can not be None")
-        mongodb_connect.build_connection_from_settings(profile, 'mongo_%03d' % mongo_num_conn)
+        self.alias = self.ALIAS_FORMAT % mongo_num_conn
+        mongodb_connect.build_connection_from_settings(profile, self.alias)
         mongo_num_conn = mongo_num_conn + 1
+        self.load_backend_db_object()
 
     def list_namespaces(self):
         pass
