@@ -216,19 +216,19 @@ GITLAB_SERVERS = {
     }
 }
 
-import ideApp.CodePersistenceBackends.MongoDB.backend
-import ideApp.CodePersistenceBackends.GitLab.backend
+#import ideApp.CodePersistenceBackends.MongoDB.backend
+#import ideApp.CodePersistenceBackends.GitLab.backend
 
 CODE_PERSISTENCE_BACKENDS = {
     'mongodb': {
         'use': True,
-        'backend': ideApp.CodePersistenceBackends.MongoDB.backend.MongoDBCodePersistenceBackend,
+        'backend': 'ideApp.CodePersistenceBackends.MongoDB.backend.MongoDBCodePersistenceBackend',
         'connection_profiles': NOSQL_DATABASES,
         'connection_profile': 'nosql',
     },
     'gitlab': {
         'use': True,
-        'backend': ideApp.CodePersistenceBackends.GitLab.backend.GitLabCodePersistenceBackend,
+        'backend': 'ideApp.CodePersistenceBackends.GitLab.backend.GitLabCodePersistenceBackend',
         'connection_profiles': GITLAB_SERVERS,
         'connection_profile': GITLAB_DEFAULT_SERVER,
     }
@@ -240,5 +240,5 @@ CODE_PERSISTENCE_BACKEND_WRITE_OUT = ['mongodb', 'gitlab']
 MONGODB_CONNECT_TO = 'mongodb'
 GITLAB_CONNECT_TO = 'gitlab'
 
-from ideApp.CodePersistenceBackends.backend_manager import CodePersistenceBackendManager
-CODE_PERSISTENCE_BACKEND_MANAGER = CodePersistenceBackendManager()
+#from ideApp.CodePersistenceBackends.backend_manager import CodePersistenceBackendManager
+CODE_PERSISTENCE_BACKEND_MANAGER = 'ideApp.CodePersistenceBackends.backend_manager.CodePersistenceBackendManager'

@@ -28,3 +28,62 @@ class RepositoryPersonMembership(models.Model):
 class RepositoryGroupMembership(models.Model):
     group = models.ForeignKey(Group, null=False)
     repository = models.ForeignKey(Repository, null=False)
+
+
+class BackendType(models.Model):
+    name = models.CharField(max_length=255, null=False)
+
+
+class BackendAuthType(models.Model):
+    name = models.CharField(max_length=255, null=False)
+
+
+class BackendAuthData(models.Model):
+    auth_type = models.ForeignKey(BackendAuthType, null=False)
+
+
+class BackendUserAuth(models.Model):
+    auth_data = models.ForeignKey(BackendAuthData, null=False)
+    username = models.CharField(max_length=255, null=False)
+    password = models.CharField(max_length=255, null=False)
+
+
+class BackendTokenAuth(models.Model):
+    auth_data = models.ForeignKey(BackendAuthData, null=False)
+    username = models.CharField(max_length=255, null=False)
+    token = models.CharField(max_length=255, null=False)
+
+
+class Backend(models.Model):
+    type = models.ForeignKey(BackendType, null=False)
+    alias = models.CharField(max_length=255, null=False)
+
+
+class MongoBackend(models.Model):
+    backend = models.ForeignKey(Backend, null=True)
+    database = models.CharField(max_length=255, null=False)
+
+
+class GitBackend(models.Model):
+    backend = models.ForeignKey(Backend, null=False)
+    url = models.CharField(max_length=255, null=False)
+    authentication_type = models.ForeignKey(BackendAuthType, null=False)
+    auth_data = models.ForeignKey(BackendAuthData, null=True)
+
+
+class GitLabBackend(models.Model):
+    backend = models.ForeignKey(Backend, null=False)
+    url = models.CharField(max_length=255, null=False)
+    authentication_type = models.ForeignKey(BackendAuthType, null=False)
+    auth_data = models.ForeignKey(BackendAuthData, null=True)
+
+
+class GitRepoGitLabAssociations(models.Model):
+    gitlab = models.ForeignKey(GitLabBackend)
+    gitrepo = models.ForeignKey(GitBackend)
+
+
+class BackendNamespace(models.Model):
+    backend = models.ForeignKey(Backend, null=False)
+    namespace = models.CharField(max_length=255, null=False)
+

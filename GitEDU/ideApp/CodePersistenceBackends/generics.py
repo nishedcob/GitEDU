@@ -2,6 +2,8 @@
 import time
 import datetime
 
+from ideApp.models import Backend
+
 def validate_string(value, parameter_name=None):
     if value is None:
         raise ValueError("%s can't be None" % (parameter_name if parameter_name else "Parameter"))
@@ -217,6 +219,8 @@ class GenericChangeFile:
     def __str__(self):
         return "ChangeFile: (%s) :: %s" % (self.change, self.file_path)
 
+num_backend = 0
+
 
 class CodePersistenceBackend:
 
@@ -226,8 +230,30 @@ class CodePersistenceBackend:
     change_class = GenericChange
     change_file_class = GenericChangeFile
 
+    ALIAS_FORMAT = "CPB_%03d"
+    alias = None
+
+    backend_db_object = None
+
+    def get_alias_format(self):
+        return self.ALIAS_FORMAT
+
+    def get_alias(self):
+        return self.alias
+
+    def load_backend_db_object(self):
+        self.backend_db_object = Backend.objects.get_or_create(alias=self.alias)
+
+    def get_backend_db_object(self):
+        if self.backend_db_object is None:
+            self.load_backend_db_object()
+        return self.backend_db_object
+
     def __init__(self, profile=None):
-        pass
+        global num_backend
+        self.alias = self.ALIAS_FORMAT % num_backend
+        num_backend = num_backend + 1
+        self.load_backend_db_object()
 
     def list_namespaces(self):
         pass
