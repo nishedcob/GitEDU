@@ -1,6 +1,10 @@
 
+import importlib
 from ideApp.CodePersistenceBackends.generics import CodePersistenceBackend
 from GitEDU.settings import CODE_PERSISTENCE_BACKENDS, CODE_PERSISTENCE_BACKEND_READ_PREFERENCE, CODE_PERSISTENCE_BACKEND_WRITE_OUT
+
+num_cpbm = 0
+
 
 class CodePersistenceBackendManager(CodePersistenceBackend):
 
@@ -8,11 +12,19 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
     code_persistence_backends_read = []
     code_persistence_backends_write = []
 
+    ALIAS_FORMAT = "CPBM_%03d"
+
     def __init__(self):
+        global num_cpbm
+        self.alias = self.ALIAS_FORMAT % num_cpbm
+        num_cpbm = num_cpbm + 1
         for backend_key, backend_config in CODE_PERSISTENCE_BACKENDS.items():
             if backend_config['use']:
                 connection_profile = backend_config['connection_profiles'][backend_config['connection_profile']]
-                backend_class = backend_config['backend']
+                backend_class_name = backend_config['backend']
+                module_path, class_name = backend_class_name.rsplit('.', 1)
+                module = importlib.import_module(module_path)
+                backend_class = getattr(module, class_name)
                 #print(backend_class)
                 self.code_persistence_backends[backend_key] = backend_class(profile=connection_profile)
         for backend_key in CODE_PERSISTENCE_BACKEND_READ_PREFERENCE:
@@ -23,6 +35,7 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
             connection = self.code_persistence_backends.get(backend_key, None)
             if connection:
                 self.code_persistence_backends_write.append({"key": backend_key, "backend": connection})
+        self.load_backend_db_object()
 
     def list_namespaces(self, include_read=True, include_write=True):
         namespaces = {}
