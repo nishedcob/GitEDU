@@ -37,6 +37,62 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
                 self.code_persistence_backends_write.append({"key": backend_key, "backend": connection})
         self.load_backend_db_object()
 
+    def sync(self, type, include_read=True, include_write=True):
+        if include_read:
+            for backend in self.code_persistence_backends_read:
+                backend['backend'].sync(type=type)
+        if include_write:
+            for backend in self.code_persistence_backends_write:
+                backend['backend'].sync(type=type)
+
+    def sync_all(self, include_read=True, include_write=True):
+        if include_read:
+            for backend in self.code_persistence_backends_read:
+                backend['backend'].sync_all()
+        if include_write:
+            for backend in self.code_persistence_backends_write:
+                backend['backend'].sync_all()
+
+    def sync_namespaces(self, include_read=True, include_write=True):
+        if include_read:
+            for backend in self.code_persistence_backends_read:
+                backend['backend'].sync_namespaces()
+        if include_write:
+            for backend in self.code_persistence_backends_write:
+                backend['backend'].sync_namespaces()
+
+    def sync_repositories(self, include_read=True, include_write=True):
+        if include_read:
+            for backend in self.code_persistence_backends_read:
+                backend['backend'].sync_repositories()
+        if include_write:
+            for backend in self.code_persistence_backends_write:
+                backend['backend'].sync_repositories()
+
+    def sync_repository_files(self, include_read=True, include_write=True):
+        if include_read:
+            for backend in self.code_persistence_backends_read:
+                backend['backend'].sync_repository_files()
+        if include_write:
+            for backend in self.code_persistence_backends_write:
+                backend['backend'].sync_repository_files()
+
+    def sync_changes(self, include_read=True, include_write=True):
+        if include_read:
+            for backend in self.code_persistence_backends_read:
+                backend['backend'].sync_changes()
+        if include_write:
+            for backend in self.code_persistence_backends_write:
+                backend['backend'].sync_changes()
+
+    def sync_change_files(self, include_read=True, include_write=True):
+        if include_read:
+            for backend in self.code_persistence_backends_read:
+                backend['backend'].sync_change_files()
+        if include_write:
+            for backend in self.code_persistence_backends_write:
+                backend['backend'].sync_change_files()
+
     def list_namespaces(self, include_read=True, include_write=True):
         namespaces = {}
         if include_read:
@@ -57,24 +113,24 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
                     namespaces[backend['key']] = backend['backend'].list_namespaces()
         return namespaces
 
-    def search_namespaces(self, query, include_read=True, include_write=True):
+    def search_namespaces(self, query, regex=False, include_read=True, include_write=True):
         namespaces = {}
         if include_read:
             if include_write:
                 namespaces['read'] = {}
                 for backend in self.code_persistence_backends_read:
-                    namespaces['read'][backend['key']] = backend['backend'].search_namespaces(query)
+                    namespaces['read'][backend['key']] = backend['backend'].search_namespaces(query, regex=regex)
             else:
                 for backend in self.code_persistence_backends_read:
-                    namespaces[backend['key']] = backend['backend'].search_namespaces(query)
+                    namespaces[backend['key']] = backend['backend'].search_namespaces(query, regex=regex)
         if include_write:
             if include_read:
                 namespaces['write'] = {}
                 for backend in self.code_persistence_backends_write:
-                    namespaces['write'][backend['key']] = backend['backend'].search_namespaces(query)
+                    namespaces['write'][backend['key']] = backend['backend'].search_namespaces(query, regex=regex)
             else:
                 for backend in self.code_persistence_backends_write:
-                    namespaces[backend['key']] = backend['backend'].search_namespaces(query)
+                    namespaces[backend['key']] = backend['backend'].search_namespaces(query, regex=regex)
         return namespaces
 
     def namespace_exists(self, namespace, include_read=True, include_write=True):
@@ -155,28 +211,30 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
                     repositories[backend_key] = backend['backend'].list_repositories(namespace)
         return repositories
 
-    def search_repositories(self, namespace, query, include_read=True, include_write=True):
+    def search_repositories(self, namespace, query, regex=False, include_read=True, include_write=True):
         repositories = {}
         if include_read:
             if include_write:
                 repositories['read'] = {}
                 for backend in self.code_persistence_backends_read:
                     backend_key = backend['key']
-                    repositories['read'][backend_key] = backend['backend'].search_repositories(namespace, query)
+                    repositories['read'][backend_key] = backend['backend'].search_repositories(namespace, query,
+                                                                                               regex=regex)
             else:
                 for backend in self.code_persistence_backends_read:
                     backend_key = backend['key']
-                    repositories[backend_key] = backend['backend'].search_repositories(namespace, query)
+                    repositories[backend_key] = backend['backend'].search_repositories(namespace, query, regex=regex)
         if include_write:
             if include_read:
                 repositories['write'] = {}
                 for backend in self.code_persistence_backends_write:
                     backend_key = backend['key']
-                    repositories['write'][backend_key] = backend['backend'].search_repositories(namespace, query)
+                    repositories['write'][backend_key] = backend['backend'].search_repositories(namespace, query,
+                                                                                                regex=regex)
             else:
                 for backend in self.code_persistence_backends_write:
                     backend_key = backend['key']
-                    repositories[backend_key] = backend['backend'].search_repositories(namespace, query)
+                    repositories[backend_key] = backend['backend'].search_repositories(namespace, query, regex=regex)
         return repositories
 
     def repository_exists(self, namespace, repository, include_read=True, include_write=True):
@@ -261,28 +319,30 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
                     files[backend_key] = backend['backend'].list_files(namespace, repository)
         return files
 
-    def search_files(self, namespace, repository, query, include_read=True, include_write=True):
+    def search_files(self, namespace, repository, query, regex=False, include_read=True, include_write=True):
         files = {}
         if include_read:
             if include_write:
                 files['read'] = {}
                 for backend in self.code_persistence_backends_read:
                     backend_key = backend['key']
-                    files['read'][backend_key] = backend['backend'].search_files(namespace, repository, query)
+                    files['read'][backend_key] = backend['backend'].search_files(namespace, repository, query,
+                                                                                 regex=regex)
             else:
                 for backend in self.code_persistence_backends_read:
                     backend_key = backend['key']
-                    files[backend_key] = backend['backend'].search_files(namespace, repository, query)
+                    files[backend_key] = backend['backend'].search_files(namespace, repository, query, regex=regex)
         if include_write:
             if include_read:
                 files['write'] = {}
                 for backend in self.code_persistence_backends_write:
                     backend_key = backend['key']
-                    files['write'][backend_key] = backend['backend'].search_files(namespace, repository, query)
+                    files['write'][backend_key] = backend['backend'].search_files(namespace, repository, query,
+                                                                                  regex=regex)
             else:
                 for backend in self.code_persistence_backends_write:
                     backend_key = backend['key']
-                    files[backend_key] = backend['backend'].search_files(namespace, repository, query)
+                    files[backend_key] = backend['backend'].search_files(namespace, repository, query, regex=regex)
         return files
 
     def file_exists(self, namespace, respository, file_path, include_read=True, include_write=True):
@@ -367,28 +427,30 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
                     changes[backend_key] = backend['backend'].list_changes(namespace, repository)
         return changes
 
-    def search_changes(self, namespace, repository, query, include_read=True, include_write=True):
+    def search_changes(self, namespace, repository, query, regex=False, include_read=True, include_write=True):
         changes = {}
         if include_read:
             if include_write:
                 changes['read'] = {}
                 for backend in self.code_persistence_backends_read:
                     backend_key = backend['key']
-                    changes[backend_key] = backend['read']['backend'].search_changes(namespace, repository, query)
+                    changes[backend_key] = backend['read']['backend'].search_changes(namespace, repository, query,
+                                                                                     regex=regex)
             else:
                 for backend in self.code_persistence_backends_read:
                     backend_key = backend['key']
-                    changes[backend_key] = backend['backend'].search_changes(namespace, repository, query)
+                    changes[backend_key] = backend['backend'].search_changes(namespace, repository, query, regex=regex)
         if include_write:
             if include_read:
                 changes['write'] = {}
                 for backend in self.code_persistence_backends_write:
                     backend_key = backend['key']
-                    changes[backend_key] = backend['write']['backend'].search_changes(namespace, repository, query)
+                    changes[backend_key] = backend['write']['backend'].search_changes(namespace, repository, query,
+                                                                                      regex=regex)
             else:
                 for backend in self.code_persistence_backends_write:
                     backend_key = backend['key']
-                    changes[backend_key] = backend['backend'].search_changes(namespace, repository, query)
+                    changes[backend_key] = backend['backend'].search_changes(namespace, repository, query, regex=regex)
         return changes
 
     def change_exists(self, namespace, respository, change, include_read=True, include_write=True):
