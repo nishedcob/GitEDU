@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
+import importlib
+import six
+import sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -241,4 +244,23 @@ MONGODB_CONNECT_TO = 'mongodb'
 GITLAB_CONNECT_TO = 'gitlab'
 
 #from ideApp.CodePersistenceBackends.backend_manager import CodePersistenceBackendManager
-CODE_PERSISTENCE_BACKEND_MANAGER = 'ideApp.CodePersistenceBackends.backend_manager.CodePersistenceBackendManager'
+CODE_PERSISTENCE_BACKEND_MANAGER_CLASS = 'ideApp.CodePersistenceBackends.backend_manager.CodePersistenceBackendManager'
+CODE_PERSISTENCE_BACKEND_MANAGER = None
+
+
+def load_code_persistence_backend_manager(load_class=CODE_PERSISTENCE_BACKEND_MANAGER_CLASS):
+    try:
+        module_path, class_name = load_class.rsplit('.', 1)
+    except ValueError:
+        msg = "%s doesn't look like a module path" % load_class
+        six.reraise(ImportError, ImportError(msg), sys.exc_info()[2])
+    mod = importlib.import_module(module_path)
+    backend_manager_class = None
+    try:
+        backend_manager_class = getattr(mod, class_name)
+    except AttributeError:
+        msg = 'Module "%s" does not define a "%s" attribute/class' % (
+            module_path, class_name)
+        six.reraise(ImportError, ImportError(msg), sys.exc_info()[2])
+    if backend_manager_class is not None:
+        CODE_PERSISTENCE_BACKEND_MANAGER = backend_manager_class()
