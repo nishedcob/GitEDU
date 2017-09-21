@@ -85,15 +85,18 @@ class GenericRepository:
 class GenericRepositoryFile:
     repository = None
     file_path = None
+    contents = None
 
     def validate_repository(self, repository):
         validate_repository(repository)
 
-    def __init__(self, repository, file_path):
+    def __init__(self, repository, file_path, contents):
         self.validate_repository(repository)
         self.repository = repository
         validate_string(file_path, "File_Path")
         self.file_path = file_path
+        validate_string(contents, "Contents")
+        self.contents = contents
         self.save()
 
     def set_repository(self, repository):
@@ -111,6 +114,13 @@ class GenericRepositoryFile:
 
     def get_file_path(self):
         return self.file_path
+
+    def set_contents(self, contents):
+        validate_string(contents, "Contents")
+        self.contents = contents
+
+    def get_contents(self):
+        return self.contents
 
     def save(self):
         pass
@@ -403,7 +413,7 @@ class CodePersistenceBackend:
             return None
 
     def create_namespace(self, namespace):
-        if self.namespace_exists(namespace):
+        if not self.namespace_exists(namespace):
             self.namespaces.append(namespace)
 
     def delete_namespace(self, namespace):
@@ -411,7 +421,8 @@ class CodePersistenceBackend:
             self.namespaces.remove(namespace)
 
     def save_namespace(self, namespace):
-        pass
+        self.create_namespace(namespace)
+        namespace.save()
 
     def list_repositories(self, namespace):
         return self.repositories[namespace]
@@ -455,7 +466,9 @@ class CodePersistenceBackend:
             self.repositories[namespace].remove(repository)
 
     def save_repository(self, namespace, repository):
-        pass
+        self.save_namespace(namespace)
+        self.create_repository(namespace, repository)
+        repository.save()
 
     def list_files(self, namespace, repository):
         return self.repository_files[namespace][repository]
@@ -505,7 +518,14 @@ class CodePersistenceBackend:
             self.repository_files[namespace][repository].remove(file_path)
 
     def save_file(self, namespace, repository, file_path, file_contents):
-        pass
+        self.save_namespace(namespace)
+        self.save_repository(namespace, repository)
+        file = self.get_file(namespace, repository, file_path)
+        if file is not None:
+            file.set_contents(file_contents)
+        else:
+            file = self.create_file(namespace, repository, file_path, file_contents)
+        file.save()
 
     def list_changes(self, namespace, repository):
         return self.changes
@@ -556,4 +576,9 @@ class CodePersistenceBackend:
             self.changes[namespace][repository].remove(change)
 
     def save_change(self, namespace, repository, change):
-        pass
+        self.save_namespace(namespace)
+        self.save_repository(namespace, repository)
+        change = self.get_change(namespace, repository, change)
+        if change is None:
+            change = self.create_change(change.get_namespace(), change.get_repository(), change.get_id(), change.get_author(), change.get_comment(), change.get_timestamp())
+        change.save()
