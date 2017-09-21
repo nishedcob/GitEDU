@@ -109,8 +109,6 @@ class MongoRepository(GenericRepository):
 
 
 class MongoRepositoryFile(GenericRepositoryFile):
-
-    contents = None
     language = None
 
     persistence_class = mongodb_models.RepositoryFileModel
@@ -118,13 +116,6 @@ class MongoRepositoryFile(GenericRepositoryFile):
 
     def validate_repository(self, repository):
         validate_mongo_repository(repository)
-
-    def set_contents(self, contents):
-        validate_string(contents)
-        self.contents = contents
-
-    def get_contents(self):
-        return self.contents
 
     def set_language(self, language):
         validate_string(language)
@@ -587,7 +578,6 @@ class MongoChangeFile(GenericChangeFile):
                                                                % (database, id, namespace, repository, change,
                                                                   file_path)) \
                                 .first()
-            # TODO
 
     def save(self):
         if self.persistence_object is None:
@@ -625,86 +615,42 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
         mongo_num_conn = mongo_num_conn + 1
         self.load_backend_db_object()
 
-    def list_namespaces(self):
-        pass
+    def sync_namespaces(self):
+        database = "gitEduDB"
+        for namespace in self.namespaces:
+            namespace.save()
+        self.namespaces = QuerySet(mongodb_models.NamespaceModel, "db.%s.find({})" % database)
 
-    def search_namespaces(self, query):
-        pass
+    def sync_repositories(self):
+        database = "gitEduDB"
+        for namespace, repositories in self.repositories.items():
+            for repository in repositories:
+                repository.save()
+            self.repositories[namespace] = QuerySet(mongodb_models.RepositoryModel, "db.%s.find({})" % database)
 
-    def namespace_exists(self, namespace):
-        return False
+    def sync_repository_files(self):
+        database = "gitEduDB"
+        for namespace, repositories in self.repository_files.items():
+            for repository, repository_files in repositories.items():
+                for repository_file in repository_files:
+                    repository_file.save()
+                self.repository_files[namespace][repository] = QuerySet(mongodb_models.RepositoryFileModel,
+                                                                        "db.%s.find({})" % database)
 
-    def get_namespace(self, namespace):
-        pass
+    def sync_changes(self):
+        database = "gitEduDB"
+        for namespace, repositories in self.changes.items():
+            for repository, changes in repositories.items():
+                for change in changes:
+                    change.save()
+                self.changes[namespace][repository] = QuerySet(mongodb_models.ChangeModel, "db.%s.find({})" % database)
 
-    def create_namespace(self, namespace):
-        pass
-
-    def delete_namespace(self, namespace):
-        pass
-
-    def save_namespace(self, namespace):
-        pass
-
-    def list_repositories(self, namespace):
-        pass
-
-    def search_repositories(self, namespace, query):
-        pass
-
-    def repository_exists(self, namespace, repository):
-        return False
-
-    def get_repository(self, namespace, repository):
-        pass
-
-    def create_repository(self, namespace, repository):
-        pass
-
-    def delete_repository(self, namespace, repository):
-        pass
-
-    def save_repository(self, namespace, repository):
-        pass
-
-    def list_files(self, namespace, repository):
-        pass
-
-    def search_files(self, namespace, repository, query):
-        pass
-
-    def file_exists(self, namespace, respository, file_path):
-        return False
-
-    def get_file(self, namespace, respository, file_path):
-        pass
-
-    def create_file(self, namespace, repository, file_path, file_contents):
-        pass
-
-    def delete_file(self, namespace, repository, file_path):
-        pass
-
-    def save_file(self, namespace, repository, file_path, file_contents):
-        pass
-
-    def list_changes(self, namespace, repository):
-        pass
-
-    def search_changes(self, namespace, repository, query):
-        pass
-
-    def change_exists(self, namespace, respository, change):
-        return False
-
-    def get_change(self, namespace, respository, change):
-        pass
-
-    def create_change(self, namespace, repository, author, comment=None, timestamp=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')):
-        pass
-
-    def delete_change(self, namespace, repository, change):
-        pass
-
-    def save_change(self, namespace, repository, change):
-        pass
+    def sync_change_files(self):
+        database = "gitEduDB"
+        for namespace, repositories in self.change_files.items():
+            for repository, changes in repositories.items():
+                for change, change_files in changes.items():
+                    for change_file in change_files:
+                        change_file.save()
+                    self.change_files[namespace][repository][change] = QuerySet(mongodb_models.ChangeFileModel,
+                                                                                "db.%s.find({})" % database)
