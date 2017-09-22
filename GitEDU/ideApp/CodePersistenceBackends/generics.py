@@ -2,7 +2,7 @@ import time
 import datetime
 import re
 
-from ideApp.models import Backend
+from ideApp.models import Backend, BackendType
 
 
 def validate_string(value, parameter_name=None):
@@ -254,6 +254,8 @@ class CodePersistenceBackend:
     ALIAS_FORMAT = "CPB_%03d"
     alias = None
 
+    backend_type = BackendType.objects.get_or_create(name="GenericCodePersistenceBackend")
+
     backend_db_object = None
 
     namespaces = []
@@ -262,6 +264,9 @@ class CodePersistenceBackend:
     changes = {}
     change_files = {}
 
+    def __str__(self):
+        return "%s" % self.backend_db_object[0]
+
     def get_alias_format(self):
         return self.ALIAS_FORMAT
 
@@ -269,7 +274,8 @@ class CodePersistenceBackend:
         return self.alias
 
     def load_backend_db_object(self):
-        self.backend_db_object = Backend.objects.get_or_create(alias=self.alias)
+        #print(self.backend_type)
+        self.backend_db_object = Backend.objects.get_or_create(alias=self.alias, type=self.backend_type[0])
 
     def get_backend_db_object(self):
         if self.backend_db_object is None:

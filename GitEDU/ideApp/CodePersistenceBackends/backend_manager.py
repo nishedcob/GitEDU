@@ -1,5 +1,9 @@
 
+import time
+import datetime
 import importlib
+
+from ideApp.models import BackendType
 from ideApp.CodePersistenceBackends.generics import CodePersistenceBackend
 from GitEDU.settings import CODE_PERSISTENCE_BACKENDS, CODE_PERSISTENCE_BACKEND_READ_PREFERENCE, CODE_PERSISTENCE_BACKEND_WRITE_OUT
 
@@ -13,6 +17,7 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
     code_persistence_backends_write = []
 
     ALIAS_FORMAT = "CPBM_%03d"
+    backend_type = BackendType.objects.get_or_create(name="CodePersistenceBackendManager")
 
     def __init__(self):
         global num_cpbm
@@ -36,6 +41,20 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
             if connection:
                 self.code_persistence_backends_write.append({"key": backend_key, "backend": connection})
         self.load_backend_db_object()
+
+    def __str__(self):
+        backend_template = "< %s >"
+        write = ""
+        for backend in self.code_persistence_backends_write:
+            if write != "":
+                write += ", "
+            write += backend_template % backend['backend']
+        read = ""
+        for backend in self.code_persistence_backends_read:
+            if read != "":
+                read += ", "
+            read += backend_template % backend['backend']
+        return "%s :: {\n\tw: [ %s ]; \n\tr: [ %s ]\n}" % (super(CodePersistenceBackendManager, self).__str__(), write, read)
 
     def sync(self, type, include_read=True, include_write=True):
         if include_read:

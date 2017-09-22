@@ -33,6 +33,9 @@ class RepositoryGroupMembership(models.Model):
 class BackendType(models.Model):
     name = models.CharField(max_length=255, null=False)
 
+    def __str__(self):
+        return "%s" % self.name
+
 
 class BackendAuthType(models.Model):
     name = models.CharField(max_length=255, null=False)
@@ -57,6 +60,9 @@ class BackendTokenAuth(models.Model):
 class Backend(models.Model):
     type = models.ForeignKey(BackendType, null=False)
     alias = models.CharField(max_length=255, null=False)
+
+    def __str__(self):
+        return "%s :: '%s'" % (self.type, self.alias)
 
 
 class MongoBackend(models.Model):

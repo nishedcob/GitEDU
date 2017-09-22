@@ -1,4 +1,6 @@
 
+from ideApp.models import BackendType
+
 from ideApp.CodePersistenceBackends.generics import GenericNamespace, GenericRepository, GenericRepositoryFile,\
     GenericChange, GenericChangeFile, CodePersistenceBackend, validate_string
 
@@ -605,6 +607,7 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
     change_file_class = MongoChangeFile
 
     ALIAS_FORMAT = "mongo_%03d"
+    backend_type = BackendType.objects.get_or_create(name="MongoDBCodePersistenceBackend")
 
     def __init__(self, profile=None):
         global mongo_num_conn

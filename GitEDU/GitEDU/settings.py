@@ -245,7 +245,6 @@ GITLAB_CONNECT_TO = 'gitlab'
 
 #from ideApp.CodePersistenceBackends.backend_manager import CodePersistenceBackendManager
 CODE_PERSISTENCE_BACKEND_MANAGER_CLASS = 'ideApp.CodePersistenceBackends.backend_manager.CodePersistenceBackendManager'
-CODE_PERSISTENCE_BACKEND_MANAGER = None
 
 
 def load_code_persistence_backend_manager(load_class=CODE_PERSISTENCE_BACKEND_MANAGER_CLASS):
@@ -262,5 +261,4 @@ def load_code_persistence_backend_manager(load_class=CODE_PERSISTENCE_BACKEND_MA
         msg = 'Module "%s" does not define a "%s" attribute/class' % (
             module_path, class_name)
         six.reraise(ImportError, ImportError(msg), sys.exc_info()[2])
-    if backend_manager_class is not None:
-        CODE_PERSISTENCE_BACKEND_MANAGER = backend_manager_class()
+    return backend_manager_class()
