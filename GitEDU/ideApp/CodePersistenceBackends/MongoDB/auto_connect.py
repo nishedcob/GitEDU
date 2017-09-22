@@ -4,7 +4,8 @@ from ideApp.CodePersistenceBackends.MongoDB.mongodb_connect import build_connect
 from GitEDU.settings import CODE_PERSISTENCE_BACKENDS, MONGODB_CONNECT_TO
 
 profiles = CODE_PERSISTENCE_BACKENDS[MONGODB_CONNECT_TO]['connection_profiles']
-config = profiles[CODE_PERSISTENCE_BACKENDS[MONGODB_CONNECT_TO]['connection_profile']]
+alias = CODE_PERSISTENCE_BACKENDS[MONGODB_CONNECT_TO]['connection_profile']
+config = profiles[alias]
 
 #print(config)
 
@@ -12,4 +13,4 @@ config = profiles[CODE_PERSISTENCE_BACKENDS[MONGODB_CONNECT_TO]['connection_prof
                  database=config['NAME'])'''
 
 #build_connection_from_settings(profiles=profiles, profile=config)
-build_connection_from_settings(profile=config)
+build_connection_from_settings(profile=config, alias=alias)
