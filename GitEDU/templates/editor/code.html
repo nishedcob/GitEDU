@@ -30,7 +30,7 @@
         {% endif %}
 
         <hr>
-        <form method="post">
+        <form method="post" id="code-meta-data-form">
             <style type="text/css" media="screen">
                 #panel-de-control {
                     width: 45%;
@@ -44,13 +44,49 @@
                     bottom: 0;
                     left: 50%;
                     right: 0;
+                    z-index: 0;
+                }
+
+                #code-meta-data {
+                    margin: 0;
+                    margin-right: 5%;
+                    margin-bottom: 5%;
+                    position: fixed;
+                    float: right;
+                    bottom: 0;
+                    left: 60%;
+                    width: 40%;
+                    right: 0;
+                    z-index: 1;
+                    color: #fff;
+                }
+
+                .code-meta-data-field {
+                    display: inline-flex;
+                }
+
+                #code-meta-data-form input,select {
+                    background: transparent;
+                    border: none;
+                    color: #fff;
+                }
+
+                .code-meta-data-field-spacer {
+                    margin-left: 0.5%;
                 }
             </style>
+            <div id="code-meta-data">
             {% csrf_token %}
             {% for field in form %}
-                <p>
+                <div class="code-meta-data-field">
                     {{ field.errors }}
+                    {% if field.errors %}
+                        <div class="code-meta-data-field-spacer"></div>
+                    {% endif %}
                     {{ field.label_tag }}
+                    {% if field.label_tag %}
+                        <div class="code-meta-data-field-spacer"></div>
+                    {% endif %}
                     {% if field == form.language %}
                         <select id="{{ field.id_for_label }}" name="{{ field.html_name }}">
                             {% for id,name in form.fields.language.choices %}
@@ -62,8 +98,10 @@
                     {% else %}
                         {{ field }}
                     {% endif %}
-                </p>
+                    <div class="code-meta-data-field-spacer"></div>
+                </div>
             {% endfor %}
+            </div>
 
             <div id="editor" contenteditable="true" name="editor">{% if form.code.value is not None %}{{ form.code.value }}{% endif %}</div>
             <button class="btn btn-success btn-lg" type="submit" id="save" name="save">Guardar</button>

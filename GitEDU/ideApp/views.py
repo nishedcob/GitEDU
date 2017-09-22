@@ -45,7 +45,7 @@ class EditorFileView(View):
 
     def get(self, request, namespace, repository, file_path):
         user = request.user.username
-        form = self.form_class()
+        form = self.form_class(initial={'file_name': file_path})
         orig = True
         edits = []
         global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)

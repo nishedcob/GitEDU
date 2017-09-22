@@ -1,5 +1,6 @@
 
 LANGUAGE_NAMES = (
+    ("ot", "Otro"),
     ("py", "Python 2 (.py)"),
     ("py3", "Python 3 (.py)"),
     ("pl", "Perl (.pl)"),
