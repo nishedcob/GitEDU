@@ -407,7 +407,14 @@ class CodePersistenceBackend:
 
     def namespace_exists(self, namespace):
         try:
-            return namespace in self.namespaces
+            if isinstance(namespace, self.namespace_class):
+                return namespace in self.namespaces
+            else:
+                if isinstance(namespace, str):
+                    for nsp in self.namespaces:
+                        if nsp.get_namespace() == namespace:
+                            return nsp
+                return None
         except TypeError:
             self.namespaces = []
             return False
@@ -447,7 +454,16 @@ class CodePersistenceBackend:
 
     def repository_exists(self, namespace, repository):
         try:
-            return self.namespace_exists(namespace) and repository in self.repositories[namespace]
+            if isinstance(repository, self.repository_class):
+                return self.namespace_exists(namespace) and repository in self.repositories[namespace]
+            else:
+                if self.namespace_exists(namespace):
+                    if isinstance(repository, str):
+                        for nsp, repos in self.repositories.items():
+                            for repo in repos:
+                                if repo.get_repository() == repository:
+                                    return True
+                return False
         except TypeError:
             try:
                 self.repositories[namespace] = []
@@ -494,14 +510,25 @@ class CodePersistenceBackend:
     def file_exists(self, namespace, respository, file_path):
         if self.repository_exists(namespace, respository):
             try:
-                respository not in self.repository_files[namespace]
+                if respository not in self.repository_files[namespace]:
+                    return False
             except TypeError:
                 self.repository_files = {}
-            try:
-                file_path not in self.repository_files[namespace][respository]
-            except TypeError:
-                self.repository_files[namespace][respository] = []
-            return file_path in self.repository_files[namespace][respository]
+            if isinstance(file_path, self.repository_file_class):
+                try:
+                    if file_path not in self.repository_files[namespace][respository]:
+                        return False
+                except TypeError:
+                    self.repository_files[namespace][respository] = []
+                return file_path in self.repository_files[namespace][respository]
+            else:
+                if isinstance(file_path, str):
+                    for nsp, repos in self.repository_files.items():
+                        for repo, files in repos.items():
+                            for file in files:
+                                if file.get_file_path() == file_path:
+                                    return True
+                return False
         else:
             return False
 
@@ -551,14 +578,25 @@ class CodePersistenceBackend:
     def change_exists(self, namespace, respository, change):
         if self.repository_exists(namespace, respository):
             try:
-                respository not in self.changes[namespace]
+                if respository not in self.changes[namespace]:
+                    return False
             except TypeError:
                 self.changes = {}
-            try:
-                change not in self.changes[namespace][respository]
-            except TypeError:
-                self.changes[namespace][respository] = []
-            return change in self.changes[namespace][respository]
+            if isinstance(change, self.change_class):
+                try:
+                    if change not in self.changes[namespace][respository]:
+                        return False
+                except TypeError:
+                    self.changes[namespace][respository] = []
+                return change in self.changes[namespace][respository]
+            else:
+                if isinstance(change, str):
+                    for nsp, repos in self.changes.items():
+                        for repo, changes in repos.items():
+                            for chg in changes:
+                                if chg.get_id() == change:
+                                    return True
+                return False
         else:
             return False
 
