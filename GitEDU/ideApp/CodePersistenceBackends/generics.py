@@ -264,6 +264,21 @@ class CodePersistenceBackend:
     changes = {}
     change_files = {}
 
+    def get_namespace_class(self):
+        return self.namespace_class
+
+    def get_repository_class(self):
+        return self.repository_class
+
+    def get_repository_file_class(self):
+        return self.repository_file_class
+
+    def get_change_class(self):
+        return self.change_class
+
+    def get_change_file_class(self):
+        return self.change_file_class
+
     def __str__(self):
         return "%s" % self.backend_db_object[0]
 

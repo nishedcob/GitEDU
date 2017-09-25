@@ -19,6 +19,106 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
     ALIAS_FORMAT = "CPBM_%03d"
     backend_type = BackendType.objects.get_or_create(name="CodePersistenceBackendManager")
 
+    def get_namespace_class(self, include_read=True, include_write=True):
+        classes = {}
+        if include_read:
+            if include_write:
+                classes['read'] = {}
+                for backend in self.code_persistence_backends_read:
+                    classes['read'][backend['key']] = backend['backend'].get_namespace_class()
+            else:
+                for backend in self.code_persistence_backends_read:
+                    classes[backend['key']] = backend['backend'].get_namespace_class()
+        if include_write:
+            if include_read:
+                classes['write'] = {}
+                for backend in self.code_persistence_backends_write:
+                    classes['write'][backend['key']] = backend['backend'].get_namespace_class()
+            else:
+                for backend in self.code_persistence_backends_write:
+                    classes[backend['key']] = backend['backend'].get_namespace_class()
+        return classes
+
+    def get_repository_class(self, include_read=True, include_write=True):
+        classes = {}
+        if include_read:
+            if include_write:
+                classes['read'] = {}
+                for backend in self.code_persistence_backends_read:
+                    classes['read'][backend['key']] = backend['backend'].get_repository_class()
+            else:
+                for backend in self.code_persistence_backends_read:
+                    classes[backend['key']] = backend['backend'].get_repository_class()
+        if include_write:
+            if include_read:
+                classes['write'] = {}
+                for backend in self.code_persistence_backends_write:
+                    classes['write'][backend['key']] = backend['backend'].get_repository_class()
+            else:
+                for backend in self.code_persistence_backends_write:
+                    classes[backend['key']] = backend['backend'].get_repository_class()
+        return classes
+
+    def get_repository_file_class(self, include_read=True, include_write=True):
+        classes = {}
+        if include_read:
+            if include_write:
+                classes['read'] = {}
+                for backend in self.code_persistence_backends_read:
+                    classes['read'][backend['key']] = backend['backend'].get_repository_file_class()
+            else:
+                for backend in self.code_persistence_backends_read:
+                    classes[backend['key']] = backend['backend'].get_repository_file_class()
+        if include_write:
+            if include_read:
+                classes['write'] = {}
+                for backend in self.code_persistence_backends_write:
+                    classes['write'][backend['key']] = backend['backend'].get_repository_file_class()
+            else:
+                for backend in self.code_persistence_backends_write:
+                    classes[backend['key']] = backend['backend'].get_repository_file_class()
+        return classes
+
+    def get_change_class(self, include_read=True, include_write=True):
+        classes = {}
+        if include_read:
+            if include_write:
+                classes['read'] = {}
+                for backend in self.code_persistence_backends_read:
+                    classes['read'][backend['key']] = backend['backend'].get_change_class()
+            else:
+                for backend in self.code_persistence_backends_read:
+                    classes[backend['key']] = backend['backend'].get_change_class()
+        if include_write:
+            if include_read:
+                classes['write'] = {}
+                for backend in self.code_persistence_backends_write:
+                    classes['write'][backend['key']] = backend['backend'].get_change_class()
+            else:
+                for backend in self.code_persistence_backends_write:
+                    classes[backend['key']] = backend['backend'].get_change_class()
+        return classes
+
+    def get_change_file_class(self, include_read=True, include_write=True):
+        classes = {}
+        if include_read:
+            if include_write:
+                classes['read'] = {}
+                for backend in self.code_persistence_backends_read:
+                    classes['read'][backend['key']] = backend['backend'].get_change_file_class()
+            else:
+                for backend in self.code_persistence_backends_read:
+                    classes[backend['key']] = backend['backend'].get_change_file_class()
+        if include_write:
+            if include_read:
+                classes['write'] = {}
+                for backend in self.code_persistence_backends_write:
+                    classes['write'][backend['key']] = backend['backend'].get_change_file_class()
+            else:
+                for backend in self.code_persistence_backends_write:
+                    classes[backend['key']] = backend['backend'].get_change_file_class()
+        return classes
+
     def __init__(self):
         global num_cpbm
         self.alias = self.ALIAS_FORMAT % num_cpbm
