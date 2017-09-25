@@ -80,8 +80,35 @@ class EditorFileView(View):
         if self.validate_request(request, namespace, repository, file_path):
             recieved_form = self.form_class(request.POST)
             if recieved_form.is_valid():
+                repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
+                repository_file = manager.select_preferred_backend_object(result_set=repository_files)
+                if repository_file is None:
+                    manager.create_file(namespace=namespace, repository=repository, file_path=file_path,
+                                        file_contents="")
+                    repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
+                    repository_file = manager.select_preferred_backend_object(result_set=repository_files)
+                repository_objects = manager.get_repository(namespace=namespace, repository=repository)
+                repository_object = manager.select_preferred_backend_object(result_set=repository_objects)
+                if repository_object is None:
+                    manager.create_repository(namespace=namespace, repository=repository)
+                    repository_objects = manager.get_repository(namespace=namespace, repository=repository)
+                    repository_object = manager.select_preferred_backend_object(result_set=repository_objects)
                 new_file_path = recieved_form.cleaned_data.get('file_name', file_path)
-                # TODO
+                language = recieved_form.cleaned_data.get('language', "ot")
+                code = recieved_form.cleaned_data.get('code', "")
+                repository_file.set_file_path(new_file_path)
+                repository_file.set_file_contents(code)
+                repository_file.set_repository(repository_object)
+                repository_file.save()
                 return redirect('ide:file_editor', namespace, repository, new_file_path)
+            else:
+                user = request.user.username
+                orig = True
+                edits = []
+                global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
+                return render(request, self.template, context={'form': recieved_form, 'globalPermForm': global_perm_form,
+                                                                       'owner': user, 'orig': orig, 'edits': edits,
+                                                                       'new': self.newCode,
+                                                                       'editorLang': self.editorLangsAndCode})
         else:
             raise PermissionDenied("Illegal Request")
