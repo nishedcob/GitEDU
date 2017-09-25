@@ -156,6 +156,39 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
             read += backend_template % backend['backend']
         return "%s :: {\n\tw: [ %s ]; \n\tr: [ %s ]\n}" % (super(CodePersistenceBackendManager, self).__str__(), write, read)
 
+    def get_preferred_read_backend(self):
+        return self.get_preferred_backend(backend_type="read")
+
+    def get_preferred_write_backend(self):
+        return self.get_preferred_backend(backend_type="write")
+
+    def get_preferred_backend(self, backend_type="read", not_backend=None):
+        if not_backend is None and backend_type is None:
+            for key, value in self.code_persistence_backends:
+                return key
+        if backend_type == "read":
+            backend_priority_list = self.code_persistence_backends_read
+        elif backend_type == "write":
+            backend_priority_list = self.code_persistence_backends_write
+        else:
+            raise ValueError("Invalid value '%s' for Backend_Type" % backend_type)
+        if not_backend is None:
+            not_backend = []
+        for backend_canidate in backend_priority_list:
+            if backend_canidate['key'] not in not_backend:
+                return backend_canidate['key']
+        return None
+
+    def select_preferred_backend_object(self, result_set=None, backend_type="read", not_backend=None):
+        preferred_backend = self.get_preferred_backend(backend_type=backend_type, not_backend=not_backend)
+        if result_set is None:
+            return None
+        if backend_type is not None:
+            result_set = result_set.get(backend_type, None)
+        if result_set is None:
+            return None
+        return result_set.get(preferred_backend, None)
+
     def sync(self, type, include_read=True, include_write=True):
         if include_read:
             for backend in self.code_persistence_backends_read:
