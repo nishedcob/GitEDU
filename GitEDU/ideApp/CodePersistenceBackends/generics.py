@@ -423,13 +423,24 @@ class CodePersistenceBackend:
     def namespace_exists(self, namespace):
         try:
             if isinstance(namespace, self.namespace_class):
-                return namespace in self.namespaces
+                for nsp in self.list_namespaces():
+                    if isinstance(nsp, self.namespace_class):
+                        if nsp.get_namespace() == namespace.get_namespace():
+                            return True
+                    elif isinstance(nsp, str):
+                        if nsp == namespace.get_namespace():
+                            return True
+                return False
             else:
                 if isinstance(namespace, str):
-                    for nsp in self.namespaces:
-                        if nsp.get_namespace() == namespace:
-                            return nsp
-                return None
+                    for nsp in self.list_namespaces():
+                        if isinstance(nsp, self.namespace_class):
+                            if nsp.get_namespace() == namespace:
+                                return True
+                        elif isinstance(nsp, str):
+                            if nsp == namespace:
+                                return True
+                return False
         except TypeError:
             self.namespaces = []
             return False
@@ -470,14 +481,27 @@ class CodePersistenceBackend:
     def repository_exists(self, namespace, repository):
         try:
             if isinstance(repository, self.repository_class):
-                return self.namespace_exists(namespace) and repository in self.repositories[namespace]
+                if not self.namespace_exists(namespace):
+                    return False
+                for repo in self.list_repositories(namespace):
+                    if isinstance(repo, self.repository_class):
+                        if repo.get_repository() == repository:
+                            return True
+                    elif isinstance(repo, str):
+                        if repo == repository:
+                            return True
+                return False
             else:
                 if self.namespace_exists(namespace):
                     if isinstance(repository, str):
                         for nsp, repos in self.repositories.items():
-                            for repo in repos:
-                                if repo.get_repository() == repository:
-                                    return True
+                            for repo in self.list_repositories(namespace):
+                                if isinstance(repo, self.repository_class):
+                                    if repo.get_repository() == repository:
+                                        return True
+                                elif isinstance(repo, str):
+                                    if repo == repository:
+                                        return True
                 return False
         except TypeError:
             try:
@@ -496,6 +520,8 @@ class CodePersistenceBackend:
         if not self.namespace_exists(namespace):
             self.create_namespace(namespace)
         if not self.repository_exists(namespace, repository):
+            if self.repositories.get(namespace, None) is None:
+                self.repositories[namespace] = []
             self.repositories[namespace].append(repository)
 
     def delete_repository(self, namespace, repository):
@@ -516,8 +542,12 @@ class CodePersistenceBackend:
             pattern = re.compile(regex_string)
             found = []
             for file in self.list_files(namespace, repository):
-                if pattern.match(file.get_file_path()):
-                    found.append(file)
+                if isinstance(file, self.repository_file_class):
+                    if pattern.match(file.get_file_path()):
+                        found.append(file)
+                if isinstance(file, str):
+                    if pattern.match(file):
+                        found.append(file)
             return found
         else:
             return None
@@ -525,32 +555,56 @@ class CodePersistenceBackend:
     def file_exists(self, namespace, respository, file_path):
         if self.repository_exists(namespace, respository):
             try:
+                if self.repository_files.get(namespace, None) is None:
+                    self.repository_files[namespace] = {}
                 if respository not in self.repository_files[namespace]:
                     return False
             except TypeError:
                 self.repository_files = {}
             if isinstance(file_path, self.repository_file_class):
                 try:
-                    if file_path not in self.repository_files[namespace][respository]:
+                    found = False
+                    for repo_file in self.repository_files[namespace][respository]:
+                        if isinstance(repo_file, self.repository_file_class):
+                            if file_path.get_file_path() == repo_file.get_file_path():
+                                found = True
+                        elif isinstance(repo_file, str):
+                            if file_path.get_file_path() == repo_file:
+                                found = True
+                    if not found:
                         return False
                 except TypeError:
                     self.repository_files[namespace][respository] = []
-                return file_path in self.repository_files[namespace][respository]
+                    for repo_file in self.repository_files[namespace][respository]:
+                        if isinstance(repo_file, self.repository_file_class):
+                            if file_path.get_file_path() == repo_file.get_file_path():
+                                return True
+                        elif isinstance(repo_file, str):
+                            if file_path.get_file_path() == repo_file:
+                                return True
+                    return False
             else:
                 if isinstance(file_path, str):
                     for nsp, repos in self.repository_files.items():
                         for repo, files in repos.items():
                             for file in files:
-                                if file.get_file_path() == file_path:
-                                    return True
+                                if isinstance(file, self.repository_file_class):
+                                    if file.get_file_path() == file_path:
+                                        return True
+                                elif isinstance(file, str):
+                                    if file == file_path:
+                                        return True
                 return False
         else:
             return False
 
     def get_file(self, namespace, respository, file_path):
+        result = self.search_files(namespace, respository, file_path)
         try:
-            return self.search_files(namespace, respository, file_path)[0]
+            return result[0]
         except IndexError:
+            return None
+        except TypeError:
             return None
 
     def create_file(self, namespace, repository, file_path, file_contents):
@@ -559,6 +613,10 @@ class CodePersistenceBackend:
         if not self.repository_exists(namespace, repository):
             self.create_repository(namespace, repository)
         if not self.file_exists(namespace, repository, file_path):
+            if self.repository_files.get(namespace, None) is None:
+                self.repository_files[namespace] = {}
+            if self.repository_files[namespace].get(repository, None) is None:
+                self.repository_files[namespace][repository] = []
             self.repository_files[namespace][repository].append(file_path)
 
     def delete_file(self, namespace, repository, file_path):
