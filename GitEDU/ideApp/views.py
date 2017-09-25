@@ -56,7 +56,16 @@ class EditorFileView(View):
     def get(self, request, namespace, repository, file_path):
         if self.validate_request(request, namespace, repository, file_path):
             user = request.user.username
-            form = self.form_class(initial={'file_name': file_path})
+            repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
+            repository_file = manager.select_preferred_backend_object(result_set=repository_files)
+            if repository_file is None:
+                manager.create_file(namespace=namespace, repository=repository, file_path=file_path, file_contents="")
+                repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
+                repository_file = manager.select_preferred_backend_object(result_set=repository_files)
+            file_contents = ''
+            if isinstance(repository_file, manager.select_preferred_backend_object(manager.get_repository_file_class())):
+                file_contents = repository_file.get_file_contents()
+            form = self.form_class(initial={'file_name': file_path, 'code': file_contents})
             orig = True
             edits = []
             global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
@@ -69,8 +78,10 @@ class EditorFileView(View):
 
     def post(self, request, namespace, repository, file_path):
         if self.validate_request(request, namespace, repository, file_path):
-            new_file_path = file_path
-
-            return redirect('file-editor', namespace=namespace, repository=repository, file_path=new_file_path)
+            recieved_form = self.form_class(request.POST)
+            if recieved_form.is_valid():
+                new_file_path = recieved_form.cleaned_data.get('file_name', file_path)
+                # TODO
+                return redirect('ide:file_editor', namespace, repository, new_file_path)
         else:
             raise PermissionDenied("Illegal Request")
