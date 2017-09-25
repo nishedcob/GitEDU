@@ -374,28 +374,28 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
                 exists = exists or backend['backend'].file_exists(namespace, respository, file_path)
         return exists
 
-    def get_file(self, namespace, respository, file_path, include_read=True, include_write=True):
+    def get_file(self, namespace, repository, file_path, include_read=True, include_write=True):
         files = {}
         if include_read:
             if include_write:
                 files['read'] = {}
                 for backend in self.code_persistence_backends_read:
                     backend_key = backend['key']
-                    files['read'][backend_key] = backend['backend'].get_file(namespace, respository, file_path)
+                    files['read'][backend_key] = backend['backend'].get_file(namespace, repository, file_path)
             else:
                 for backend in self.code_persistence_backends_read:
                     backend_key = backend['key']
-                    files[backend_key] = backend['backend'].get_file(namespace, respository, file_path)
+                    files[backend_key] = backend['backend'].get_file(namespace, repository, file_path)
         if include_write:
             if include_read:
                 files['write'] = {}
                 for backend in self.code_persistence_backends_write:
                     backend_key = backend['key']
-                    files['write'][backend_key] = backend['backend'].get_file(namespace, respository, file_path)
+                    files['write'][backend_key] = backend['backend'].get_file(namespace, repository, file_path)
             else:
                 for backend in self.code_persistence_backends_write:
                     backend_key = backend['key']
-                    files[backend_key] = backend['backend'].get_file(namespace, respository, file_path)
+                    files[backend_key] = backend['backend'].get_file(namespace, repository, file_path)
         return files
 
     def create_file(self, namespace, repository, file_path, file_contents, include_read=False, include_write=True):
