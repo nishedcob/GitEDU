@@ -96,6 +96,11 @@ class EditorFileView(View):
                 new_file_path = recieved_form.cleaned_data.get('file_name', file_path)
                 language = recieved_form.cleaned_data.get('language', "ot")
                 code = recieved_form.cleaned_data.get('code', "")
+                if not isinstance(repository_file,
+                                  manager.select_preferred_backend_object(manager.get_repository_file_class())):
+                    repo_file_class = manager.select_preferred_backend_object(manager.get_repository_file_class())
+                    repository_file = repo_file_class(file_path=new_file_path, contents=code, repository=repository_object)
+                    manager.save_existent_file(namespace=namespace, repository=repository, file=repository_file)
                 repository_file.set_file_path(new_file_path)
                 repository_file.set_file_contents(code)
                 repository_file.set_repository(repository_object)
