@@ -637,6 +637,48 @@ class CodePersistenceBackend:
             file = self.create_file(namespace, repository, file_path, file_contents)
         file.save()
 
+    def save_existent_file(self, namespace, repository, file):
+        self.save_namespace(namespace=namespace)
+        self.save_repository(namespace=namespace, repository=repository)
+        if file is not None:
+            repo_file_class = self.get_repository_file_class()
+            if isinstance(file, repo_file_class):
+                index = 0
+                broken = False
+                for repo_file in self.repository_files[namespace][repository]:
+                    if isinstance(repo_file, repo_file_class):
+                        if repo_file.get_file_path() == file.get_file_path():
+                            self.repository_files[namespace][repository][index] = file
+                            broken = True
+                            break
+                    elif isinstance(repo_file, str):
+                        if repo_file == file.get_file_path():
+                            self.repository_files[namespace][repository][index] = file
+                            broken = True
+                            break
+                    index = index + 1
+                if not broken:
+                    self.repository_files[namespace][repository].append(file)
+            elif isinstance(file, str):
+                index = 0
+                broken = False
+                for repo_file in self.repository_files[namespace][repository]:
+                    if isinstance(repo_file, repo_file_class):
+                        if repo_file.get_file_path() == file:
+                            self.repository_files[namespace][repository][index] = file
+                            broken = True
+                            break
+                    elif isinstance(repo_file, str):
+                        if repo_file == file:
+                            self.repository_files[namespace][repository][index] = file
+                            broken = True
+                            break
+                    index = index + 1
+                if not broken:
+                    self.repository_files[namespace][repository].append(file)
+            else:
+                raise ValueError("File must be some sort of Repository File Object or a String")
+
     def list_changes(self, namespace, repository):
         return self.changes
 

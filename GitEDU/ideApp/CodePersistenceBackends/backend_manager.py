@@ -555,6 +555,14 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
             for backend in self.code_persistence_backends_write:
                 backend['backend'].save_file(namespace, repository, file_path, file_contents)
 
+    def save_existent_file(self, namespace, repository, file, include_read=False, include_write=True):
+        if include_read:
+            for backend in self.code_persistence_backends_read:
+                backend['backend'].save_existent_file(namespace, repository, file)
+        if include_write:
+            for backend in self.code_persistence_backends_write:
+                backend['backend'].save_existent_file(namespace, repository, file)
+
     def list_changes(self, namespace, repository, include_read=True, include_write=True):
         changes = {}
         if include_read:
