@@ -472,8 +472,12 @@ class CodePersistenceBackend:
             pattern = re.compile(regex_string)
             found = []
             for repository in self.list_repositories(namespace):
-                if pattern.match(repository.get_repository()):
-                    found.append(repository)
+                if isinstance(repository, self.get_repository_class()):
+                    if pattern.match(repository.get_repository()):
+                        found.append(repository)
+                elif isinstance(repository, str):
+                    if pattern.match(repository):
+                        found.append(repository)
             return found
         else:
             return None
