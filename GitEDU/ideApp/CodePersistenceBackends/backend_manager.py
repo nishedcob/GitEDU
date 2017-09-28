@@ -497,14 +497,14 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
                     files[backend_key] = backend['backend'].search_files(namespace, repository, query, regex=regex)
         return files
 
-    def file_exists(self, namespace, respository, file_path, include_read=True, include_write=True):
+    def file_exists(self, namespace, repository, file_path, include_read=True, include_write=True):
         exists = False
         if include_read:
             for backend in self.code_persistence_backends_read:
-                exists = exists or backend['backend'].file_exists(namespace, respository, file_path)
+                exists = exists or backend['backend'].file_exists(namespace, repository, file_path)
         if include_write:
             for backend in self.code_persistence_backends_write:
-                exists = exists or backend['backend'].file_exists(namespace, respository, file_path)
+                exists = exists or backend['backend'].file_exists(namespace, repository, file_path)
         return exists
 
     def get_file(self, namespace, repository, file_path, include_read=True, include_write=True):

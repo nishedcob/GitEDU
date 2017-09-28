@@ -451,20 +451,55 @@ class CodePersistenceBackend:
         except IndexError:
             return None
 
+    def build_namespace(self, namespace):
+        if isinstance(namespace, str):
+            return self.get_namespace_class()(namespace=namespace)
+        elif isinstance(namespace, self.get_namespace_class()):
+            return namespace
+        else:
+            raise ValueError("Namespace is an Invalid Type")
+
     def create_namespace(self, namespace):
         if not self.namespace_exists(namespace):
-            self.namespaces.append(namespace)
+            if isinstance(namespace, str):
+                namespace_obj = self.build_namespace(namespace=namespace)
+            elif isinstance(namespace, self.get_namespace_class()):
+                namespace_obj = namespace
+            else:
+                raise ValueError("Namespace is an Invalid Type")
+            self.namespaces.append(namespace_obj)
+            return namespace_obj
+        else:
+            return None
 
     def delete_namespace(self, namespace):
         if self.namespace_exists(namespace):
-            self.namespaces.remove(namespace)
+            if isinstance(namespace, str):
+                namespace_delete = self.build_namespace(namespace=namespace)
+            elif isinstance(namespace, self.get_namespace_class()):
+                namespace_delete = namespace
+            else:
+                raise ValueError("Namespace is an Invalid Type")
+            self.namespaces.remove(namespace_delete)
 
     def save_namespace(self, namespace):
         self.create_namespace(namespace)
-        namespace.save()
+        if isinstance(namespace, str):
+            namespace_save = self.build_namespace(namespace=namespace)
+        elif isinstance(namespace, self.get_namespace_class()):
+            namespace_save = namespace
+        else:
+            raise ValueError("Namespace is an Invalid Type")
+        namespace_save.save()
 
     def list_repositories(self, namespace):
-        return self.repositories[namespace]
+        if isinstance(namespace, self.get_namespace_class()):
+            namespace_str = namespace.get_namespace()
+        elif isinstance(namespace, str):
+            namespace_str = namespace
+        else:
+            raise ValueError("Namespace is an Invalid Type")
+        return self.repositories[namespace_str]
 
     def search_repositories(self, namespace, query, regex=False):
         if self.namespace_exists(namespace):
@@ -499,7 +534,7 @@ class CodePersistenceBackend:
                 if self.namespace_exists(namespace):
                     if isinstance(repository, str):
                         for nsp, repos in self.repositories.items():
-                            for repo in self.list_repositories(namespace):
+                            for repo in repos:
                                 if isinstance(repo, self.repository_class):
                                     if repo.get_repository() == repository:
                                         return True
@@ -509,9 +544,21 @@ class CodePersistenceBackend:
                 return False
         except TypeError:
             try:
-                self.repositories[namespace] = []
+                if isinstance(namespace, self.get_namespace_class()):
+                    namespace_str = namespace.get_namespace()
+                elif isinstance(namespace, str):
+                    namespace_str = namespace
+                else:
+                    raise ValueError("Namespace is an Invalid Type")
+                self.repositories[namespace_str] = []
             except TypeError:
-                self.repositories = {namespace: []}
+                if isinstance(namespace, self.get_namespace_class()):
+                    namespace_str = namespace.get_namespace()
+                elif isinstance(namespace, str):
+                    namespace_str = namespace
+                else:
+                    raise ValueError("Namespace is an Invalid Type")
+                self.repositories = {namespace_str: []}
             return False
 
     def get_repository(self, namespace, repository):
@@ -520,25 +567,61 @@ class CodePersistenceBackend:
         except IndexError:
             return None
 
+    def build_repository(self, namespace, repository):
+        if isinstance(repository, self.get_repository_class()):
+            return repository
+        namespace_obj = self.build_namespace(namespace=namespace)
+        if isinstance(repository, str):
+            return self.get_repository_class()(namespace=namespace_obj, repository=repository)
+        else:
+            raise ValueError("Repository is an Invalid Type")
+
     def create_repository(self, namespace, repository):
         if not self.namespace_exists(namespace):
             self.create_namespace(namespace)
+        if isinstance(namespace, self.get_namespace_class()):
+            namespace_str = namespace.get_namespace()
+        elif isinstance(namespace, str):
+            namespace_str = namespace
+        else:
+            raise ValueError("Namespace is an Invalid Type")
         if not self.repository_exists(namespace, repository):
             if self.repositories.get(namespace, None) is None:
-                self.repositories[namespace] = []
-            self.repositories[namespace].append(repository)
+                self.repositories[namespace_str] = []
+            repository_obj = self.build_repository(namespace, repository)
+            self.repositories[namespace_str].append(repository_obj)
 
     def delete_repository(self, namespace, repository):
         if self.repository_exists(namespace, repository):
-            self.repositories[namespace].remove(repository)
+            if isinstance(namespace, self.get_namespace_class()):
+                namespace_str = namespace.get_namespace()
+            elif isinstance(namespace, str):
+                namespace_str = namespace
+            else:
+                raise ValueError("Namespace is an Invalid Type")
+            repository_obj = self.build_repository(namespace=namespace, repository=repository)
+            self.repositories[namespace_str].remove(repository_obj)
 
     def save_repository(self, namespace, repository):
         self.save_namespace(namespace)
         self.create_repository(namespace, repository)
-        repository.save()
+        repository_obj = self.build_repository(namespace=namespace, repository=repository)
+        repository_obj.save()
 
     def list_files(self, namespace, repository):
-        return self.repository_files[namespace][repository]
+        if isinstance(namespace, self.get_namespace_class()):
+            namespace_str = namespace.get_namespace()
+        elif isinstance(namespace, str):
+            namespace_str = namespace
+        else:
+            raise ValueError("Namespace is an Invalid Type")
+        if isinstance(repository, self.get_repository_class()):
+            repository_str = repository.get_repository()
+        elif isinstance(repository, str):
+            repository_str = repository
+        else:
+            raise ValueError("Repository is an Invalid Type")
+        return self.repository_files[namespace_str][repository_str]
 
     def search_files(self, namespace, repository, query, regex=False):
         if self.repository_exists(namespace, repository):
@@ -556,19 +639,31 @@ class CodePersistenceBackend:
         else:
             return None
 
-    def file_exists(self, namespace, respository, file_path):
-        if self.repository_exists(namespace, respository):
+    def file_exists(self, namespace, repository, file_path):
+        if self.repository_exists(namespace, repository):
             try:
                 if self.repository_files.get(namespace, None) is None:
                     self.repository_files[namespace] = {}
-                if respository not in self.repository_files[namespace]:
+                if repository not in self.repository_files[namespace]:
                     return False
             except TypeError:
                 self.repository_files = {}
             if isinstance(file_path, self.repository_file_class):
                 try:
                     found = False
-                    for repo_file in self.repository_files[namespace][respository]:
+                    if isinstance(namespace, self.get_namespace_class()):
+                        namespace_str = namespace.get_namespace()
+                    elif isinstance(namespace, str):
+                        namespace_str = namespace
+                    else:
+                        raise ValueError("Namespace is an Invalid Type")
+                    if isinstance(repository, self.get_repository_class()):
+                        repository_str = repository.get_repository()
+                    elif isinstance(repository, str):
+                        repository_str = repository
+                    else:
+                        raise ValueError("Repository is an Invalid Type")
+                    for repo_file in self.repository_files[namespace_str][repository_str]:
                         if isinstance(repo_file, self.repository_file_class):
                             if file_path.get_file_path() == repo_file.get_file_path():
                                 found = True
@@ -578,8 +673,20 @@ class CodePersistenceBackend:
                     if not found:
                         return False
                 except TypeError:
-                    self.repository_files[namespace][respository] = []
-                    for repo_file in self.repository_files[namespace][respository]:
+                    if isinstance(namespace, self.get_namespace_class()):
+                        namespace_str = namespace.get_namespace()
+                    elif isinstance(namespace, str):
+                        namespace_str = namespace
+                    else:
+                        raise ValueError("Namespace is an Invalid Type")
+                    if isinstance(repository, self.get_repository_class()):
+                        repository_str = repository.get_repository()
+                    elif isinstance(repository, str):
+                        repository_str = repository
+                    else:
+                        raise ValueError("Repository is an Invalid Type")
+                    self.repository_files[namespace_str][repository_str] = []
+                    for repo_file in self.repository_files[namespace_str][repository_str]:
                         if isinstance(repo_file, self.repository_file_class):
                             if file_path.get_file_path() == repo_file.get_file_path():
                                 return True
@@ -602,8 +709,8 @@ class CodePersistenceBackend:
         else:
             return False
 
-    def get_file(self, namespace, respository, file_path):
-        result = self.search_files(namespace, respository, file_path)
+    def get_file(self, namespace, repository, file_path):
+        result = self.search_files(namespace, repository, file_path)
         try:
             return result[0]
         except IndexError:
@@ -611,19 +718,43 @@ class CodePersistenceBackend:
         except TypeError:
             return None
 
+    def build_file(self, namespace, repository, file_path, file_contents):
+        repository_obj = self.build_repository(namespace=namespace, repository=repository)
+        if not isinstance(file_path, str):
+            raise ValueError("File_Path must be a String")
+        if not isinstance(file_contents, str):
+            raise ValueError("File_Contents must be a String")
+        return self.get_repository_file_class()(repository=repository_obj, file_path=file_path,
+                                                file_contents=file_contents)
+
     def create_file(self, namespace, repository, file_path, file_contents):
         if not self.namespace_exists(namespace):
             self.create_namespace(namespace)
         if not self.repository_exists(namespace, repository):
             self.create_repository(namespace, repository)
         if not self.file_exists(namespace, repository, file_path):
-            if self.repository_files.get(namespace, None) is None:
-                self.repository_files[namespace] = {}
-            if self.repository_files[namespace].get(repository, None) is None:
-                self.repository_files[namespace][repository] = []
-            self.repository_files[namespace][repository].append(file_path)
+            if isinstance(namespace, self.get_namespace_class()):
+                namespace_str = namespace.get_namespace()
+            elif isinstance(namespace, str):
+                namespace_str = namespace
+            else:
+                raise ValueError("Namespace is an Invalid Type")
+            if isinstance(repository, self.get_repository_class()):
+                repository_str = repository.get_repository()
+            elif isinstance(repository, str):
+                repository_str = repository
+            else:
+                raise ValueError("Repository is an Invalid Type")
+            if self.repository_files.get(namespace_str, None) is None:
+                self.repository_files[namespace_str] = {}
+            if self.repository_files[namespace_str].get(repository_str, None) is None:
+                self.repository_files[namespace_str][repository_str] = []
+            file_obj = self.build_file(namespace=namespace, repository=repository, file_path=file_path,
+                                       file_contents=file_contents)
+            self.repository_files[namespace_str][repository_str].append(file_obj)
 
     def delete_file(self, namespace, repository, file_path):
+        # TODO: Validar campos
         if self.file_exists(namespace, repository, file_path):
             self.repository_files[namespace][repository].remove(file_path)
 
