@@ -613,38 +613,38 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
                     changes[backend_key] = backend['backend'].search_changes(namespace, repository, query, regex=regex)
         return changes
 
-    def change_exists(self, namespace, respository, change, include_read=True, include_write=True):
+    def change_exists(self, namespace, repository, change, include_read=True, include_write=True):
         exists = False
         if include_read:
             for backend in self.code_persistence_backends_read:
-                exists = exists or backend['backend'].change_exists(namespace, respository, change)
+                exists = exists or backend['backend'].change_exists(namespace, repository, change)
         if include_write:
             for backend in self.code_persistence_backends_write:
-                exists = exists or backend['backend'].change_exists(namespace, respository, change)
+                exists = exists or backend['backend'].change_exists(namespace, repository, change)
         return exists
 
-    def get_change(self, namespace, respository, change, include_read=True, include_write=True):
+    def get_change(self, namespace, repository, change, include_read=True, include_write=True):
         changes = {}
         if include_read:
             if include_write:
                 changes['read'] = {}
                 for backend in self.code_persistence_backends_read:
                     backend_key = backend['key']
-                    changes['read'][backend_key] = backend['backend'].get_change(namespace, respository, change)
+                    changes['read'][backend_key] = backend['backend'].get_change(namespace, repository, change)
             else:
                 for backend in self.code_persistence_backends_read:
                     backend_key = backend['key']
-                    changes[backend_key] = backend['backend'].get_change(namespace, respository, change)
+                    changes[backend_key] = backend['backend'].get_change(namespace, repository, change)
         if include_write:
             if include_read:
                 changes['write'] = {}
                 for backend in self.code_persistence_backends_write:
                     backend_key = backend['key']
-                    changes['write'][backend_key] = backend['backend'].get_change(namespace, respository, change)
+                    changes['write'][backend_key] = backend['backend'].get_change(namespace, repository, change)
             else:
                 for backend in self.code_persistence_backends_write:
                     backend_key = backend['key']
-                    changes[backend_key] = backend['backend'].get_change(namespace, respository, change)
+                    changes[backend_key] = backend['backend'].get_change(namespace, repository, change)
         return changes
 
     def create_change(self, namespace, repository, author, comment=None,

@@ -754,20 +754,45 @@ class CodePersistenceBackend:
             self.repository_files[namespace_str][repository_str].append(file_obj)
 
     def delete_file(self, namespace, repository, file_path):
-        # TODO: Validar campos
         if self.file_exists(namespace, repository, file_path):
-            self.repository_files[namespace][repository].remove(file_path)
+            if isinstance(namespace, self.get_namespace_class()):
+                namespace_str = namespace.get_namespace()
+            elif isinstance(namespace, str):
+                namespace_str = namespace
+            else:
+                raise ValueError("Namespace is an Invalid Type")
+            if isinstance(repository, self.get_repository_class()):
+                repository_str = repository.get_repository()
+            elif isinstance(repository, str):
+                repository_str = repository
+            else:
+                raise ValueError("Repository is an Invalid Type")
+            if isinstance(file_path, self.get_repository_file_class()):
+                delete_file_path = file_path.get_file_path()
+            elif isinstance(file_path, str):
+                delete_file_path = file_path
+            else:
+                raise ValueError("File_Path is an Invalid Type")
+            marked_for_deletion = []
+            for file in self.list_files(namespace=namespace, repository=repository):
+                if isinstance(file, self.get_repository_file_class()):
+                    if file.get_file_path() == delete_file_path:
+                        marked_for_deletion.append(file)
+                elif isinstance(file, str):
+                    if file == delete_file_path:
+                        marked_for_deletion.append(file)
+            for delete_file in marked_for_deletion:
+                self.repository_files[namespace_str][repository_str].remove(delete_file)
 
     def save_file(self, namespace, repository, file_path, file_contents):
         self.save_namespace(namespace)
         self.save_repository(namespace, repository)
-        file = self.get_file(namespace, repository, file_path)
-        if file is not None:
-            file.set_contents(file_contents)
-        else:
-            file = self.create_file(namespace, repository, file_path, file_contents)
-        file.save()
+        self.create_file(namespace, repository, file_path, file_contents)
+        file_obj = self.build_file(namespace=namespace, repository=repository, file_path=file_path,
+                                   file_contents=file_contents)
+        file_obj.save()
 
+    # TODO: Validate Data
     def save_existent_file(self, namespace, repository, file):
         self.save_namespace(namespace=namespace)
         self.save_repository(namespace=namespace, repository=repository)
@@ -811,7 +836,19 @@ class CodePersistenceBackend:
                 raise ValueError("File must be some sort of Repository File Object or a String")
 
     def list_changes(self, namespace, repository):
-        return self.changes
+        if isinstance(namespace, self.get_namespace_class()):
+            namespace_str = namespace.get_namespace()
+        elif isinstance(namespace, str):
+            namespace_str = namespace
+        else:
+            raise ValueError("Namespace is an Invalid Type")
+        if isinstance(repository, self.get_repository_class()):
+            repository_str = repository.get_repository()
+        elif isinstance(repository, str):
+            repository_str = repository
+        else:
+            raise ValueError("Repository is an Invalid Type")
+        return self.changes[namespace_str][repository_str]
 
     def search_changes(self, namespace, repository, query, regex=False):
         if self.repository_exists(namespace, repository):
@@ -825,35 +862,38 @@ class CodePersistenceBackend:
         else:
             return None
 
-    def change_exists(self, namespace, respository, change):
-        if self.repository_exists(namespace, respository):
-            try:
-                if respository not in self.changes[namespace]:
-                    return False
-            except TypeError:
-                self.changes = {}
-            if isinstance(change, self.change_class):
-                try:
-                    if change not in self.changes[namespace][respository]:
-                        return False
-                except TypeError:
-                    self.changes[namespace][respository] = []
-                return change in self.changes[namespace][respository]
+    def build_change(self, namespace, repository, id, author, comment=None,
+                     timestamp=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')):
+        repository_obj = self.build_repository(namespace=namespace, repository=repository)
+        return self.get_change_class()(repository=repository_obj, id=id, author=author, comment=comment,
+                                       timestamp=timestamp)
+
+    def change_exists(self, namespace, repository, change):
+        if self.repository_exists(namespace, repository):
+            if isinstance(change, self.get_change_class()):
+                change_str = change.get_id()
+            elif isinstance(change, str):
+                change_str = change
             else:
-                if isinstance(change, str):
-                    for nsp, repos in self.changes.items():
-                        for repo, changes in repos.items():
-                            for chg in changes:
-                                if chg.get_id() == change:
-                                    return True
-                return False
+                raise ValueError("Change in an Invalid Type")
+            for chg in self.list_changes(namespace=namespace, repository=repository):
+                if isinstance(chg, self.get_change_class()):
+                    if chg.get_id() == change_str:
+                        return True
+                elif isinstance(chg, str):
+                    if chg == change_str:
+                        return True
+            return False
         else:
             return False
 
-    def get_change(self, namespace, respository, change):
+    def get_change(self, namespace, repository, change):
+        result = self.search_changes(namespace=namespace, repository=repository, query=change)
         try:
-            return self.search_changes(namespace, respository, change)[0]
+            return result[0]
         except IndexError:
+            return None
+        except TypeError:
             return None
 
     def create_change(self, namespace, repository, id, author, comment=None,
@@ -863,16 +903,66 @@ class CodePersistenceBackend:
         if not self.repository_exists(namespace, repository):
             self.create_repository(namespace, repository)
         if not self.change_exists(namespace, repository, id):
-            self.changes[namespace][repository].append(id)
+            if isinstance(namespace, self.get_namespace_class()):
+                namespace_str = namespace.get_namespace()
+            elif isinstance(namespace, str):
+                namespace_str = namespace
+            else:
+                raise ValueError("Namespace is an Invalid Type")
+            if isinstance(repository, self.get_repository_class()):
+                repository_str = repository.get_repository()
+            elif isinstance(repository, str):
+                repository_str = repository
+            else:
+                raise ValueError("Repository is an Invalid Type")
+            change = self.build_change(namespace=namespace, repository=repository, id=id, author=author,
+                                       comment=comment, timestamp=timestamp)
+            self.changes[namespace_str][repository_str].append(change)
 
     def delete_change(self, namespace, repository, change):
         if self.change_exists(namespace, repository, change):
-            self.changes[namespace][repository].remove(change)
+            if isinstance(namespace, self.get_namespace_class()):
+                namespace_str = namespace.get_namespace()
+            elif isinstance(namespace, str):
+                namespace_str = namespace
+            else:
+                raise ValueError("Namespace is an Invalid Type")
+            if isinstance(repository, self.get_repository_class()):
+                repository_str = repository.get_repository()
+            elif isinstance(repository, str):
+                repository_str = repository
+            else:
+                raise ValueError("Repository is an Invalid Type")
+            if isinstance(change, self.get_change_class()):
+                change_str = change.get_id()
+            elif isinstance(change, str):
+                change_str = change
+            else:
+                raise ValueError("Change is an Invalid Type")
+            marked_for_deletion = []
+            for chg in self.list_changes(namespace=namespace, repository=repository):
+                if isinstance(chg, self.get_change_class()):
+                    if chg.get_id() == change_str:
+                        marked_for_deletion.append(chg)
+                elif isinstance(chg, str):
+                    if chg == change_str:
+                        marked_for_deletion.append(chg)
+            for chg in marked_for_deletion:
+                self.changes[namespace_str][repository_str].remove(chg)
 
     def save_change(self, namespace, repository, change):
         self.save_namespace(namespace)
         self.save_repository(namespace, repository)
-        change = self.get_change(namespace, repository, change)
-        if change is None:
-            change = self.create_change(change.get_namespace(), change.get_repository(), change.get_id(), change.get_author(), change.get_comment(), change.get_timestamp())
-        change.save()
+        if isinstance(change, self.get_change_class()):
+            change_obj = change
+        elif isinstance(change, dict):
+            repository_obj = self.build_repository(namespace=namespace, repository=repository)
+            id = change.get('id', None)
+            author = change.get('author', None)
+            comment = change.get('comment', None)
+            timestamp = change.get('timestamp', None)
+            change_obj = self.get_change_class()(repository=repository_obj, id=id, author=author, comment=comment,
+                                                 timestamp=timestamp)
+        self.create_change(namespace, repository, change_obj.get_id(), change_obj.get_author(),
+                           change_obj.get_comment(), change_obj.get_timestamp())
+        change_obj.save()
