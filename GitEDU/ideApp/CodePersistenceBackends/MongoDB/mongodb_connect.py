@@ -53,7 +53,7 @@ def build_connection(user=None, password=None, database=None, host=None, port=No
         mongodb_conn_num = mongodb_conn_num + 1
     connect(connection_str, alias=alias)
     #connect("mongodb://gitEduUser:G1TedU$3r@127.0.0.1:27017/gitEduDB", alias=alias)
-    print("Connected to MongoDB @ mongodb://%s:%s" % (host, port))
+    print("Connected to MongoDB [alias: %s] @ mongodb://%s:%s" % (alias, host, port))
 
 
 def build_connection_from_settings(profile=None, alias=None):
