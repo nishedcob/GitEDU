@@ -55,6 +55,7 @@ class EditorFileView(View):
 
     def get(self, request, namespace, repository, file_path):
         if self.validate_request(request, namespace, repository, file_path):
+            manager.sync_all()
             user = request.user.username
             repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
             repository_file = manager.select_preferred_backend_object(result_set=repository_files)
@@ -80,6 +81,7 @@ class EditorFileView(View):
         if self.validate_request(request, namespace, repository, file_path):
             recieved_form = self.form_class(request.POST)
             if recieved_form.is_valid():
+                manager.sync_all()
                 repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
                 repository_file = manager.select_preferred_backend_object(result_set=repository_files)
                 if repository_file is None:

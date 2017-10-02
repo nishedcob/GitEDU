@@ -90,13 +90,13 @@ class GenericRepositoryFile:
     def validate_repository(self, repository):
         validate_repository(repository)
 
-    def __init__(self, repository, file_path, contents):
+    def __init__(self, repository, file_path, file_contents):
         self.validate_repository(repository)
         self.repository = repository
         validate_string(file_path, "File_Path")
         self.file_path = file_path
-        validate_string(contents, "Contents")
-        self.contents = contents
+        validate_string(file_contents, "Contents")
+        self.contents = file_contents
         self.save()
 
     def set_repository(self, repository):
