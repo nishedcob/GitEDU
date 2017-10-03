@@ -106,20 +106,12 @@ class MongoRepository(GenericRepository):
 
 
 class MongoRepositoryFile(GenericRepositoryFile):
-    language = None
 
     persistence_class = mongodb_models.RepositoryFileModel
     persistence_object = None
 
     def validate_repository(self, repository):
         validate_mongo_repository(repository)
-
-    def set_language(self, language):
-        validate_string(language)
-        self.language = language
-
-    def get_language(self):
-        return self.language
 
     def retrieve(self, id=None, namespace=None, repository=None, file_path=None):
         if id is None:

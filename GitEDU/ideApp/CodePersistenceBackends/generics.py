@@ -86,17 +86,20 @@ class GenericRepositoryFile:
     repository = None
     file_path = None
     contents = None
+    language = None
 
     def validate_repository(self, repository):
         validate_repository(repository)
 
-    def __init__(self, repository, file_path, file_contents):
+    def __init__(self, repository, file_path, file_content, language):
         self.validate_repository(repository)
         self.repository = repository
         validate_string(file_path, "File_Path")
         self.file_path = file_path
-        validate_string(file_contents, "Contents")
-        self.contents = file_contents
+        validate_string(file_content, "Contents")
+        self.contents = file_content
+        validate_string(language, "Language")
+        self.language = language
         self.save()
 
     def set_repository(self, repository):
@@ -121,6 +124,13 @@ class GenericRepositoryFile:
 
     def get_contents(self):
         return self.contents
+
+    def set_language(self, language):
+        validate_string(language)
+        self.language = language
+
+    def get_language(self):
+        return self.language
 
     def save(self):
         pass
