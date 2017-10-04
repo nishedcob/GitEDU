@@ -60,7 +60,8 @@ class EditorFileView(View):
             repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
             repository_file = manager.select_preferred_backend_object(result_set=repository_files)
             if repository_file is None:
-                manager.create_file(namespace=namespace, repository=repository, file_path=file_path, file_contents="")
+                manager.create_file(namespace=namespace, repository=repository, file_path=file_path, file_contents="",
+                                    language="ot")
                 repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
                 repository_file = manager.select_preferred_backend_object(result_set=repository_files)
             file_contents = ''

@@ -91,13 +91,13 @@ class GenericRepositoryFile:
     def validate_repository(self, repository):
         validate_repository(repository)
 
-    def __init__(self, repository, file_path, file_content, language):
+    def __init__(self, repository, file_path, file_contents, language):
         self.validate_repository(repository)
         self.repository = repository
         validate_string(file_path, "File_Path")
         self.file_path = file_path
-        validate_string(file_content, "Contents")
-        self.contents = file_content
+        validate_string(file_contents, "Contents")
+        self.contents = file_contents
         validate_string(language, "Language")
         self.language = language
         self.save()
@@ -529,6 +529,7 @@ class CodePersistenceBackend:
             namespace_str = namespace
         else:
             raise ValueError("Namespace is an Invalid Type")
+        #print("Backend Repositories: %s" % self.repositories)
         return self.repositories[namespace_str]
 
     def search_repositories(self, namespace, query, regex=False):
@@ -748,16 +749,16 @@ class CodePersistenceBackend:
         except TypeError:
             return None
 
-    def build_file(self, namespace, repository, file_path, file_contents):
+    def build_file(self, namespace, repository, file_path, file_contents, language):
         repository_obj = self.build_repository(namespace=namespace, repository=repository)
         if not isinstance(file_path, str):
             raise ValueError("File_Path must be a String")
         if not isinstance(file_contents, str):
             raise ValueError("File_Contents must be a String")
         return self.get_repository_file_class()(repository=repository_obj, file_path=file_path,
-                                                file_contents=file_contents)
+                                                file_contents=file_contents, language=language)
 
-    def create_file(self, namespace, repository, file_path, file_contents):
+    def create_file(self, namespace, repository, file_path, file_contents, language):
         if not self.namespace_exists(namespace):
             self.create_namespace(namespace)
         if not self.repository_exists(namespace, repository):
@@ -780,7 +781,7 @@ class CodePersistenceBackend:
             if self.repository_files[namespace_str].get(repository_str, None) is None:
                 self.repository_files[namespace_str][repository_str] = []
             file_obj = self.build_file(namespace=namespace, repository=repository, file_path=file_path,
-                                       file_contents=file_contents)
+                                       file_contents=file_contents, language=language)
             self.repository_files[namespace_str][repository_str].append(file_obj)
 
     def delete_file(self, namespace, repository, file_path):

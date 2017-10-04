@@ -531,13 +531,14 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
                     files[backend_key] = backend['backend'].get_file(namespace, repository, file_path)
         return files
 
-    def create_file(self, namespace, repository, file_path, file_contents, include_read=False, include_write=True):
+    def create_file(self, namespace, repository, file_path, file_contents, language, include_read=False,
+                    include_write=True):
         if include_read:
             for backend in self.code_persistence_backends_read:
-                backend['backend'].create_file(namespace, repository, file_path, file_contents)
+                backend['backend'].create_file(namespace, repository, file_path, file_contents, language)
         if include_write:
             for backend in self.code_persistence_backends_write:
-                backend['backend'].create_file(namespace, repository, file_path, file_contents)
+                backend['backend'].create_file(namespace, repository, file_path, file_contents, language)
 
     def delete_file(self, namespace, repository, file_path, include_read=False, include_write=True):
         if include_read:
