@@ -625,6 +625,8 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
             raise ValueError("Type can't be None")
         if persistence_list is None:
             raise ValueError("Persistence_List can't be None")
+        if len(persistence_list):
+            return []
         if isinstance(type, str):
             created_list = []
             # persistence_class = self.persistence_classes.get(type, None)
@@ -689,12 +691,21 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
         print("Repositories: %s" % self.repositories)
         for namespace in self.namespaces:
             if self.repositories.get(namespace, None) is None:
-                self.repositories[namespace] = []
+                self.repositories[namespace.namespace] = []
         for namespace, repositories in self.repositories.items():
             for repository in repositories:
                 repository.save()
-            persisted_nspc_repos = list(mongodb_models.RepositoryModel.objects.raw({'namespace': namespace}))
-            self.repositories[namespace] = self.create_list_from_persistence_list(type="R",
+            #print("Namespace = %s", namespace)
+            if isinstance(namespace, str):
+                namespace_str = namespace
+            elif isinstance(namespace, self.namespace_class):
+                namespace_str = namespace.namespace
+            else:
+                print("WARNING: Namespace is an Invalid Type (%s)" % namespace)
+                continue
+            print("Namespace_Str = %s" % namespace_str)
+            persisted_nspc_repos = list(mongodb_models.RepositoryModel.objects.raw({'namespace.name': namespace_str}))
+            self.repositories[namespace.namespace] = self.create_list_from_persistence_list(type="R",
                                                                                   persistence_list=persisted_nspc_repos)
         print("Repositories: %s" % self.repositories)
 
@@ -703,15 +714,16 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
         for namespace in self.list_namespaces():
             if self.repository_files.get(namespace, None) is None:
                 self.repository_files[namespace] = {}
-            for repository in self.list_repositories(namespace):
-                if self.repository_files[namespace].get(repository, None) is None:
-                    self.repository_files[namespace][repository] = []
+            print("namespace = %s" % namespace)
+            for repository in self.list_repositories(namespace.namespace):
+                if self.repository_files[namespace.namespace].get(repository.repository, None) is None:
+                    self.repository_files[namespace.namespace][repository.repository] = []
         for namespace, repositories in self.repository_files.items():
             for repository, repository_files in repositories.items():
                 for repository_file in repository_files:
                     repository_file.save()
                 persisted_nspc_repo_files = list(mongodb_models.RepositoryFileModel.object.raw({
-                    'repository': repository
+                    'repository.name': repository.repository
                 }))
                 self.repository_files[namespace][repository] = self.create_list_from_persistence_list(type="F",
                                                                                                       persistence_list=
@@ -756,7 +768,7 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
                     persisted_nspc_repo_chg_files = list(mongodb_models.ChangeFileModel.objects.raw(
                         {'change': change}
                     ))
-                    self.change_files[namespace][repository][change] = list(mongodb_models.ChangeFileModel.objects.raw(
-                        {'change': change}
-                    ))
+                    self.change_files[namespace][repository][change] = self.create_list_from_persistence_list(type="f",
+                                                                                                    persistence_list=
+                                                                                        persisted_nspc_repo_chg_files)
         print("Change Files: %s" % self.change_files)
