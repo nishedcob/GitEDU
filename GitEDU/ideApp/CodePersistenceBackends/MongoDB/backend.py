@@ -604,11 +604,85 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
         mongo_num_conn = mongo_num_conn + 1
         self.load_backend_db_object()
 
+    persistence_classes = {
+        'N': mongodb_models.NamespaceModel,
+        'R': mongodb_models.RepositoryModel,
+        'F': mongodb_models.RepositoryFileModel,
+        'C': mongodb_models.ChangeModel,
+        'f': mongodb_models.ChangeFileModel
+    }
+
+    backend_data_classes = {
+        'N': namespace_class,
+        'R': repository_class,
+        'F': repository_file_class,
+        'C': change_class,
+        'f': change_file_class
+    }
+
+    def create_list_from_persistence_list(self, type=None, persistence_list=None):
+        if type is None:
+            raise ValueError("Type can't be None")
+        if persistence_list is None:
+            raise ValueError("Persistence_List can't be None")
+        if isinstance(type, str):
+            created_list = []
+            # persistence_class = self.persistence_classes.get(type, None)
+            backend_data_class = self.backend_data_classes.get(type, None)
+            if backend_data_class is None:
+                raise ValueError("Unrecognized Type '%s'" % type)
+            for persistence_object in persistence_list:
+                attributes = {}
+                if type == "N":
+                    # Namespace
+                    attributes['namespace'] = persistence_object.name
+                elif type == "R":
+                    # Repository
+                    attributes['namespace'] = self.create_list_from_persistence_list(type="N",
+                                                                                     persistence_list=[
+                                                                                         persistence_object.namespace
+                                                                                     ])[0]
+                    attributes['repository'] = persistence_object.name
+                elif type == "F":
+                    # Repository File
+                    attributes['repository'] = self.create_list_from_persistence_list(type="R",
+                                                                                      persistence_list=[
+                                                                                          persistence_object.repository
+                                                                                      ])[0]
+                    attributes['file_path'] = persistence_object.file_path
+                    attributes['contents'] = persistence_object.contents
+                    attributes['language'] = persistence_object.language
+                elif type == "C":
+                    # Change
+                    attributes['id'] = persistence_object.id
+                    attributes['comment'] = persistence_object.comment
+                    attributes['author'] = persistence_object.author
+                    attributes['timestamp'] = persistence_object.timestamp
+                    attributes['repository'] = self.create_list_from_persistence_list(type="R",
+                                                                                      persistence_list=[
+                                                                                          persistence_object.repository
+                                                                                      ])[0]
+                elif type == "f":
+                    # Change File
+                    attributes['file_path'] = persistence_object.file_path
+                    attributes['contents'] = persistence_object.contents
+                    attributes['language'] = persistence_object.language
+                    attributes['change'] = self.create_list_from_persistence_list(type="C", persistence_list=[
+                                                                                      persistence_object.change
+                                                                                  ])[0]
+                new_object = backend_data_class(**attributes)
+                new_object.persistence_object = persistence_object
+                created_list.append(new_object)
+            return created_list
+        else:
+            raise ValueError("Type must be a string")
+
     def sync_namespaces(self):
         print("Namespaces: %s" % self.namespaces)
         for namespace in self.namespaces:
             namespace.save()
-        self.namespaces = list(mongodb_models.NamespaceModel.objects.raw({}))
+        persisted_namespaces = list(mongodb_models.NamespaceModel.objects.raw({}))
+        self.namespaces = self.create_list_from_persistence_list(type="N", persistence_list=persisted_namespaces)
         print("Namespaces: %s" % self.namespaces)
 
     def sync_repositories(self):
@@ -619,7 +693,9 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
         for namespace, repositories in self.repositories.items():
             for repository in repositories:
                 repository.save()
-            self.repositories[namespace] = list(mongodb_models.RepositoryModel.objects.raw({'namespace': namespace}))
+            persisted_nspc_repos = list(mongodb_models.RepositoryModel.objects.raw({'namespace': namespace}))
+            self.repositories[namespace] = self.create_list_from_persistence_list(type="R",
+                                                                                  persistence_list=persisted_nspc_repos)
         print("Repositories: %s" % self.repositories)
 
     def sync_repository_files(self):
@@ -634,8 +710,12 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
             for repository, repository_files in repositories.items():
                 for repository_file in repository_files:
                     repository_file.save()
-                self.repository_files[namespace][repository] = list(mongodb_models.RepositoryFileModel.object
-                                                                    .raw({'repository': repository}))
+                persisted_nspc_repo_files = list(mongodb_models.RepositoryFileModel.object.raw({
+                    'repository': repository
+                }))
+                self.repository_files[namespace][repository] = self.create_list_from_persistence_list(type="F",
+                                                                                                      persistence_list=
+                                                                                            persisted_nspc_repo_files)
         print("Repository Files: %s" % self.repository_files)
 
     def sync_changes(self):
@@ -650,9 +730,11 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
             for repository, changes in repositories.items():
                 for change in changes:
                     change.save()
-                self.changes[namespace][repository] = list(mongodb_models.ChangeModel.objects.raw({
+                persisted_nspc_repo_changes = list(mongodb_models.ChangeModel.objects.raw({
                     'repository': repository
                 }))
+                self.changes[namespace][repository] = self.create_list_from_persistence_list(type="C", persistence_list=
+                                                                                            persisted_nspc_repo_changes)
         print("Changes: %s" % self.changes)
 
     def sync_change_files(self):
@@ -671,6 +753,9 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
                 for change, change_files in changes.items():
                     for change_file in change_files:
                         change_file.save()
+                    persisted_nspc_repo_chg_files = list(mongodb_models.ChangeFileModel.objects.raw(
+                        {'change': change}
+                    ))
                     self.change_files[namespace][repository][change] = list(mongodb_models.ChangeFileModel.objects.raw(
                         {'change': change}
                     ))
