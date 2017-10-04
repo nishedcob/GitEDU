@@ -214,6 +214,8 @@ class GenericChange:
 class GenericChangeFile:
     change = None
     file_path = None
+    contents = None
+    language = None
 
     def validate_change(self, change):
         if change is None:
@@ -221,11 +223,15 @@ class GenericChangeFile:
         if not isinstance(change, GenericChange):
             raise ValueError("Change should be a Change Object")
 
-    def __init__(self, change, file_path):
+    def __init__(self, change, file_path, contents, language):
         self.validate_change(change)
         self.change = change
         validate_string(file_path, "File_Path")
         self.file_path = file_path
+        validate_string(contents, "Contents")
+        self.contents = contents
+        validate_string(language, "Language")
+        self.language = language
         self.save()
 
     def set_change(self, change):
@@ -243,6 +249,20 @@ class GenericChangeFile:
 
     def get_file_path(self):
         return self.file_path
+
+    def set_contents(self, contents):
+        validate_string(contents)
+        self.contents = contents
+
+    def get_contents(self):
+        return self.contents
+
+    def set_language(self, language):
+        validate_string(language)
+        self.language = language
+
+    def get_language(self):
+        return self.language
 
     def save(self):
         pass

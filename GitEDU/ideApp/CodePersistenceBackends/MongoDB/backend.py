@@ -319,31 +319,13 @@ class MongoChange(GenericChange):
 
 class MongoChangeFile(GenericChangeFile):
 
-    contents = None
-    language = None
-
     persistence_class = mongodb_models.ChangeFileModel
     persistence_object = None
 
     def validate_repository(self, repository):
         validate_mongo_repository(repository)
 
-    def set_contents(self, contents):
-        validate_string(contents)
-        self.contents = contents
-
-    def get_contents(self):
-        return self.contents
-
-    def set_language(self, language):
-        validate_string(language)
-        self.language = language
-
-    def get_language(self):
-        return self.language
-
     def retrieve(self, id=None, namespace=None, repository=None, change=None, file_path=None):
-        database = 'gitEduDB'
         if id is None:
             if namespace is None:
                 if repository is None:
