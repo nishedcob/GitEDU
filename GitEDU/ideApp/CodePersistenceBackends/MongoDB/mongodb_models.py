@@ -1,8 +1,11 @@
 
+from pymongo.operations import IndexModel
+from pymongo import TEXT
 from pymodm import MongoModel
 from pymodm.fields import CharField, ReferenceField, TimestampField
 
 from ideApp import constants
+from ideApp.CodePersistenceBackends.MongoDB import auto_connect
 # from GitEDU.settings import CODE_PERSISTENCE_BACKENDS, MONGODB_CONNECT_TO
 
 
@@ -10,7 +13,8 @@ class NamespaceModel(MongoModel):
     name = CharField()
 
     class Meta:
-        connection_alias = 'mongo_000'
+        indexes = [IndexModel('name', unique=True)]
+        #connection_alias = 'mongo_000'
 
     def __str__(self):
         return "NamespaceMongoModel: %s" % self.name
@@ -21,7 +25,8 @@ class RepositoryModel(MongoModel):
     namespace = ReferenceField(NamespaceModel)
 
     class Meta:
-        connection_alias = 'mongo_000'
+        indexes = [IndexModel([('name', TEXT), ('namespace', TEXT)], unique=True)]
+        #connection_alias = 'mongo_000'
 
     def __str__(self):
         return "RepositoryMongoModel: %s [%s]" % (self.name, self.namespace)
@@ -34,7 +39,8 @@ class RepositoryFileModel(MongoModel):
     file_path = CharField()
 
     class Meta:
-        connection_alias = 'mongo_000'
+        indexes = [IndexModel([('file_path', TEXT), ('repository', TEXT)], unique=True)]
+        #connection_alias = 'mongo_000'
 
     '''
     class Meta:
@@ -53,7 +59,8 @@ class ChangeModel(MongoModel):
     repository = ReferenceField(RepositoryModel)
 
     class Meta:
-        connection_alias = 'mongo_000'
+        pass
+        #connection_alias = 'mongo_000'
 
     def __str__(self):
         return "ChangeMongoModel: \"%s\" :: %s :: %s :: [%s]" % (self.comment, self.author, self.timestamp,
@@ -67,7 +74,8 @@ class ChangeFileModel(MongoModel):
     file_path = CharField()
 
     class Meta:
-        connection_alias = 'mongo_000'
+        pass
+        #connection_alias = 'mongo_000'
 
     def __str__(self):
         return "ChangeFileMongoModel: [%s] :: %s :: %s :: %s" % (self.change, self.file_path, self.language,
@@ -81,7 +89,8 @@ class TemporaryChangeFileModel(MongoModel):
     file_path = CharField()
 
     class Meta:
-        connection_alias = 'mongo_000'
+        pass
+        #connection_alias = 'mongo_000'
 
     def __str__(self):
         return "TemporaryChangeFileMongoModel: [%s] :: %s :: %s :: %s" % (self.repository, self.file_path,
