@@ -66,7 +66,7 @@ class EditorFileView(View):
                 repository_file = manager.select_preferred_backend_object(result_set=repository_files)
             file_contents = ''
             if isinstance(repository_file, manager.select_preferred_backend_object(manager.get_repository_file_class())):
-                file_contents = repository_file.get_file_contents()
+                file_contents = repository_file.get_contents()
             form = self.form_class(initial={'file_name': file_path, 'code': file_contents})
             orig = True
             edits = []

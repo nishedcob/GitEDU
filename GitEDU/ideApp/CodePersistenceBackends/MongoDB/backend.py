@@ -705,7 +705,7 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
                 continue
             print("Namespace_Str = %s" % namespace_str)
             persisted_nspc_repos = list(mongodb_models.RepositoryModel.objects.raw({'namespace.name': namespace_str}))
-            self.repositories[namespace.namespace] = self.create_list_from_persistence_list(type="R",
+            self.repositories[namespace_str] = self.create_list_from_persistence_list(type="R",
                                                                                   persistence_list=persisted_nspc_repos)
         print("Repositories: %s" % self.repositories)
 

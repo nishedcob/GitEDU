@@ -28,7 +28,7 @@ class RepositoryModel(MongoModel):
 
 
 class RepositoryFileModel(MongoModel):
-    contents = CharField()
+    contents = CharField(required=False, blank=True)
     repository = ReferenceField(RepositoryModel)
     language = CharField(choices=constants.LANGUAGE_NAMES)
     file_path = CharField()
