@@ -87,7 +87,7 @@ class EditorFileView(View):
                 repository_file = manager.select_preferred_backend_object(result_set=repository_files)
                 if repository_file is None:
                     manager.create_file(namespace=namespace, repository=repository, file_path=file_path,
-                                        file_contents="")
+                                        file_contents="", language="ot")
                     repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
                     repository_file = manager.select_preferred_backend_object(result_set=repository_files)
                 repository_objects = manager.get_repository(namespace=namespace, repository=repository)
@@ -105,8 +105,9 @@ class EditorFileView(View):
                     repository_file = repo_file_class(file_path=new_file_path, contents=code, repository=repository_object)
                     manager.save_existent_file(namespace=namespace, repository=repository, file=repository_file)
                 repository_file.set_file_path(new_file_path)
-                repository_file.set_file_contents(code)
+                repository_file.set_contents(code)
                 repository_file.set_repository(repository_object)
+                repository_file.set_language(language)
                 repository_file.save()
                 return redirect('ide:file_editor', namespace, repository, new_file_path)
             else:

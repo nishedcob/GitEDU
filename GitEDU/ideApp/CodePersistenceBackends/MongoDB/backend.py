@@ -722,12 +722,13 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
             for repository, repository_files in repositories.items():
                 for repository_file in repository_files:
                     repository_file.save()
-                persisted_nspc_repo_files = list(mongodb_models.RepositoryFileModel.object.raw({
+                if isinstance(repository, str):
+                    repository = self.build_repository(namespace=namespace, repository=repository)
+                persisted_nspc_repo_files = list(mongodb_models.RepositoryFileModel.objects.raw({
                     'repository.name': repository.repository
                 }))
-                self.repository_files[namespace][repository] = self.create_list_from_persistence_list(type="F",
-                                                                                                      persistence_list=
-                                                                                            persisted_nspc_repo_files)
+                self.repository_files[namespace][repository.repository] = self.create_list_from_persistence_list(
+                    type="F", persistence_list=persisted_nspc_repo_files)
         print("Repository Files: %s" % self.repository_files)
 
     def sync_changes(self):
