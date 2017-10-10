@@ -7,6 +7,7 @@ from ideApp.CodePersistenceBackends.generics import GenericNamespace, GenericRep
 from ideApp.CodePersistenceBackends.MongoDB import mongodb_models, mongodb_connect
 
 from pymodm.queryset import QuerySet
+from pymodm.errors import DoesNotExist
 
 from GitEDU.settings import CODE_PERSISTENCE_BACKENDS
 
@@ -16,6 +17,13 @@ def validate_mongo_repository(repository):
         raise ValueError("Repository can't be None")
     if not isinstance(repository, MongoRepository):
         raise ValueError("Repository should be a Repository Object")
+
+
+def validate_mongo_change(change):
+    if change is None:
+        raise ValueError("Change can't be None")
+    if not isinstance(change, MongoChange):
+        raise ValueError("Change should be a Change Object")
 
 
 class MongoNamespace(GenericNamespace):
@@ -28,12 +36,31 @@ class MongoNamespace(GenericNamespace):
             if namespace is None:
                 raise ValueError("ID and Namespace can't be None")
             else:
-                self.persistence_object = self.persistence_class.objects.raw({'name': namespace}).first()
+                try:
+                    namespace_db_obj = self.persistence_class.objects.raw({
+                        'name': namespace
+                    }).first()
+                except DoesNotExist:
+                    namespace_db_obj = self.persistence_class(name=namespace).save()
+                self.persistence_object = namespace_db_obj
         else:
             if namespace is None:
-                self.persistence_object = self.persistence_class.objects.raw({'_id': id}).first()
+                try:
+                    namespace_db_obj = self.persistence_class.objects.raw({
+                        '_id': id
+                    }).first()
+                except DoesNotExist:
+                    namespace_db_obj = self.persistence_class(name=namespace).save()
+                self.persistence_object = namespace_db_obj
             else:
-                self.persistence_object = self.persistence_class.objects.raw({'_id': id, 'name': namespace}).first()
+                try:
+                    namespace_db_obj = self.persistence_class.objects.raw({
+                        '_id': id,
+                        'name': namespace
+                    }).first()
+                except DoesNotExist:
+                    namespace_db_obj = self.persistence_class(name=namespace).save()
+                self.persistence_object = namespace_db_obj
         self.load_persisted_values()
 
     def save(self):
@@ -63,6 +90,7 @@ class MongoRepository(GenericRepository):
 
     def retrieve(self, id=None, namespace=None, repository=None):
         namespace_str = ""
+        namespace_db_id = None
         if namespace is not None:
             if isinstance(namespace, str):
                 namespace_str = namespace
@@ -70,6 +98,13 @@ class MongoRepository(GenericRepository):
                 namespace_str = namespace.get_namespace()
             elif isinstance(namespace, MongoNamespace.persistence_class):
                 namespace_str = namespace.name
+            try:
+                namespace_db_obj = mongodb_models.NamespaceModel.objects.raw({
+                    'name': namespace_str
+                }).first()
+            except DoesNotExist:
+                namespace_db_obj = MongoNamespace.persistence_class(name=namespace_str).save()
+            namespace_db_id = namespace_db_obj._id
         if id is None:
             if namespace is None:
                 if repository is None:
@@ -77,43 +112,87 @@ class MongoRepository(GenericRepository):
                 else:
                     print("WARNING: Only searching for repositories based on Repository, may find more than 1," +
                           " will only use the first found")
-                    self.persistence_object = self.persistence_class.objects.raw({
-                        'name': repository
-                    }).first()
+                    try:
+                        repository_db_obj = self.persistence_class.objects.raw({
+                            'name': repository
+                        }).first()
+                    except DoesNotExist:
+                        if repository is None:
+                            raise ValueError("Can't create new repository without a Name")
+                        if namespace_db_id is None:
+                            raise ValueError("Can't create new repository without a Namespace")
+                        repository_db_obj = self.persistence_class(name=repository, namespace=namespace_db_id).save()
+                    self.persistence_object = repository_db_obj
             else:
                 if repository is None:
                     print("WARNING: Only searching for repositories based on Namespace, may find more than 1," +
                           " will only use the first found")
-                    namespace_db_obj = MongoNamespace.persistence_class.objects.raw({"name": namespace_str}).first()
-                    self.persistence_object = self.persistence_class.objects.raw({
-                        'namespace': namespace_db_obj._id
-                    }).first()
+                    try:
+                        repository_db_obj = self.persistence_class.objects.raw({
+                            'namespace': namespace_db_id
+                        }).first()
+                    except DoesNotExist:
+                        if namespace_db_id is None:
+                            raise ValueError("Can't create new repository without a Namespace")
+                        if repository is None:
+                            raise ValueError("Can't create new repository without a Name")
+                        repository_db_obj = self.persistence_class(name=repository, namespace=namespace_db_id).save()
+                    self.persistence_object = repository_db_obj
                 else:
-                    namespace_db_obj = MongoNamespace.persistence_class.objects.raw({"name": namespace_str}).first()
-                    self.persistence_object = self.persistence_class.objects.raw({
-                        'namespace': namespace_db_obj._id,
-                        'name': repository
-                    }).first()
+                    try:
+                        repository_db_obj = self.persistence_class.objects.raw({
+                            'namespace': namespace_db_id,
+                            'name': repository
+                        }).first()
+                    except DoesNotExist:
+                        if namespace_db_id is None:
+                            raise ValueError("Can't create new repository without a Namespace")
+                        if repository is None:
+                            raise ValueError("Can't create new repository without a Name")
+                        repository_db_obj = self.persistence_class(name=repository, namespace=namespace_db_id).save()
+                    self.persistence_object = repository_db_obj
         else:
             if namespace is None:
                 if repository is None:
-                    self.persistence_object = self.persistence_class.objects.raw({
-                        '_id': id
-                    }).first()
+                    try:
+                        repository_db_obj = self.persistence_class.objects.raw({
+                            '_id': id
+                        }).first()
+                    except DoesNotExist:
+                        if namespace_db_id is None:
+                            raise ValueError("Can't create new repository without a Namespace")
+                        if repository is None:
+                            raise ValueError("Can't create new repository without a Name")
+                        repository_db_obj = self.persistence_class(name=repository, namespace=namespace_db_id).save()
+                    self.persistence_object = repository_db_obj
             else:
                 if repository is None:
-                    namespace_db_obj = MongoNamespace.persistence_class.objects.raw({"name": namespace_str}).first()
-                    self.persistence_object = self.persistence_class.objects.raw({
-                        '_id': id,
-                        'namespace': namespace_db_obj._id
-                    }).first()
+                    try:
+                        repository_db_obj = self.persistence_class.objects.raw({
+                            '_id': id,
+                            'namespace': namespace_db_id
+                        }).first()
+                    except DoesNotExist:
+                        if namespace_db_id is None:
+                            raise ValueError("Can't create new repository without a Namespace")
+                        if repository is None:
+                            raise ValueError("Can't create new repository without a Name")
+                        repository_db_obj = self.persistence_class(name=repository, namespace=namespace_db_id).save()
+                    self.persistence_object = repository_db_obj
                 else:
-                    namespace_db_obj = MongoNamespace.persistence_class.objects.raw({"name": namespace_str}).first()
-                    self.persistence_object = self.persistence_class.objects.raw({
-                        '_id': id,
-                        'namespace': namespace_db_obj._id,
-                        'name': repository
-                    }).first()
+                    try:
+                        repository_db_obj = self.persistence_class.objects.raw({
+                            '_id': id,
+                            'namespace': namespace_db_id,
+                            'name': repository
+                        }).first()
+                    except DoesNotExist:
+                        if namespace_db_id is None:
+                            raise ValueError("Can't create new repository without a Namespace")
+                        if repository is None:
+                            raise ValueError("Can't create new repository without a Name")
+                        repository_db_obj = self.persistence_class(name=repository, namespace=namespace_db_id).save()
+                    self.persistence_object = repository_db_obj
         self.load_persisted_values()
 
     def save(self):
@@ -124,6 +203,18 @@ class MongoRepository(GenericRepository):
         self.persistence_object.namespace = self.namespace.persistence_object
         self.persistence_object.name = self.repository
         self.persistence_object.save()
+
+    def set_namespace(self, namespace):
+        if isinstance(namespace, mongodb_models.NamespaceModel):
+            new_namespace = create_dto_object_from_persistence_object(type="N", persistence_object=namespace,
+                                                                      local_persistence_classes=
+                                                                      global_persistence_classes,
+                                                                      local_backend_data_classes=
+                                                                      global_backend_data_classes)
+            self.validate_namespace(namespace=new_namespace)
+            self.namespace = new_namespace
+        else:
+            super(MongoRepository, self).set_namespace(namespace)
 
     def __str__(self):
         return "MongoREPO: (%s) :: %s [%s]" % (self.namespace, self.repository, self.persistence_object)
@@ -144,11 +235,73 @@ class MongoRepositoryFile(GenericRepositoryFile):
         validate_mongo_repository(repository)
 
     def retrieve(self, id=None, namespace=None, repository=None, file_path=None):
-        # TODO:
-        # Additional queries to extract object ID for:
-        #   Namespace
-        #   Repository
-        # Prior to searching for repository file
+        namespace_db_id = None
+        namespace_str = None
+        if namespace is not None:
+            if isinstance(namespace, MongoNamespace) or isinstance(namespace, GenericNamespace):
+                namespace_str = namespace.get_namespace()
+            elif isinstance(namespace, mongodb_models.NamespaceModel):
+                namespace_str = namespace.name
+            elif isinstance(namespace, str):
+                namespace_str = namespace
+            else:
+                raise ValueError("%s is an unrecognized type" % namespace)
+            try:
+                namespace_db_obj = mongodb_models.NamespaceModel.objects.raw({
+                    'name': namespace_str
+                }).first()
+            except DoesNotExist:
+                namespace_db_obj = MongoNamespace.persistence_class(name=namespace_str).save()
+            namespace_db_id = namespace_db_obj._id
+        repo_db_id = None
+        if repository is not None:
+            if isinstance(repository, MongoRepository) or isinstance(repository, GenericRepository):
+                repository_str = repository.get_repository()
+                repo_namespace = repository.get_namespace()
+            elif isinstance(repository, mongodb_models.RepositoryModel):
+                repository_str = repository.name
+                repo_namespace = repository.namespace
+            elif isinstance(repository, str):
+                repository_str = repository
+            else:
+                raise ValueError("%s is an unrecognized type" % repository)
+            if repo_namespace is not None:
+                if namespace is not None:
+                    if isinstance(repo_namespace, MongoNamespace) or isinstance(repo_namespace, GenericNamespace):
+                        repo_namespace_str = repo_namespace.get_namespace()
+                    elif isinstance(repo_namespace, mongodb_models.NamespaceModel):
+                        repo_namespace_str = repo_namespace.name
+                    elif isinstance(repo_namespace, str):
+                        repo_namespace_str = repo_namespace
+                    else:
+                        raise ValueError("%s is an invalid type as the namespace for %s" % (repo_namespace, repository))
+                    if namespace_str is not None and namespace_str != "" and namespace_str != repo_namespace_str:
+                        raise ValueError("""%s and %s do not match in referenced namespace and therefore the current
+                                            query is invalid""" % (namespace_str, repo_namespace_str))
+            repo_db_obj = None
+            if namespace_db_id is not None:
+                try:
+                    repo_db_obj = mongodb_models.RepositoryModel.objects.raw({
+                        'name': repository_str,
+                        'namespace': namespace_db_id
+                    }).first()
+                except DoesNotExist:
+                    if namespace_db_id is None:
+                        raise ValueError("Can't create new repository without a Namespace")
+                    if repository is None:
+                        raise ValueError("Can't create new repository without a Name")
+                    repo_db_obj = self.persistence_class(name=repository, namespace=namespace_db_id).save()
+            else:
+                try:
+                    repo_db_obj = self.persistence_class.objects.raw({
+                        'name': repository_str
+                    }).first()
+                except DoesNotExist:
+                    if namespace_db_id is None:
+                        raise ValueError("Can't create new repository without a Namespace")
+                    if repository is None:
+                        raise ValueError("Can't create new repository without a Name")
+            repo_db_id = repo_db_obj._id
         if id is None:
             if namespace is None:
                 if repository is None:
@@ -157,75 +310,239 @@ class MongoRepositoryFile(GenericRepositoryFile):
                     else:
                         print("WARNING: Only searching for files based on File_Path, may find more than 1," +
                               " will only use the first found")
-                        self.persistence_object = self.persistence_class.objects.raw({'file_path': file_path}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                'file_path': file_path
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                 else:
                     if file_path is None:
                         print("WARNING: Only searching for files based on Repository, may find more than 1," +
                               " will only use the first found")
-                        self.persistence_object = self.persistence_class.objects.raw({'repository': repository}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                'repository': repo_db_id
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                     else:
                         print("WARNING: Only searching for files based on Repository and File_Path," +
                               " may find more than 1, will only use the first found")
-                        self.persistence_object = self.persistence_class.objects.raw({'repository': repository,
-                                                                                      'file_path': file_path}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                'repository': repo_db_id,
+                                'file_path': file_path
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
             else:
                 if repository is None:
                     if file_path is None:
                         print("WARNING: Only searching for files based on Namespace, may find more than 1," +
                               " will only use the first found")
-                        self.persistence_object = self.persistence_class.objects.raw({'namespace': namespace}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                'repository': repo_db_id
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                     else:
                         print("WARNING: Only searching for files based on Namespace and File_Path," +
                               "may find more than 1, will only use the first found")
-                        self.persistence_object = self.persistence_class.objects.raw({'namespace': namespace,
-                                                                                      'file_path': file_path}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                'repository': repo_db_id,
+                                'file_path': file_path
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                 else:
                     if file_path is None:
                         print("WARNING: Only searching for files based on Namespace and Repository," +
                               " may find more than 1, will only use the first found")
-                        self.persistence_object = self.persistence_class.objects.raw({'namespace': namespace,
-                                                                                      'repository': repository}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                'repository': repo_db_id
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                     else:
-                        self.persistence_object = self.persistence_class.objects.raw({'namespace': namespace,
-                                                                                      'repository': repository,
-                                                                                      'file_path': file_path}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                'repository': repo_db_id,
+                                'file_path': file_path
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
         else:
             if namespace is None:
                 if repository is None:
                     if file_path is None:
-                        self.persistence_object = self.persistence_class.objects.raw({'_id': id}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                '_id': id
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                     else:
-                        self.persistence_object = self.persistence_class.objects.raw({'_id': id, 'file_path': file_path
-                                                                                      }).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                '_id': id,
+                                'file_path': file_path
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                 else:
                     if file_path is None:
-                        self.persistence_object = self.persistence_class.objects.raw({'_id': id,
-                                                                                      'repository': repository}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                '_id': id,
+                                'repository': repo_db_id
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                     else:
-                        self.persistence_object = self.persistence_class.objects.raw({'_id': id,
-                                                                                      'repository': repository,
-                                                                                      'file_path': file_path}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                '_id': id,
+                                'repository': repo_db_id,
+                                'file_path': file_path
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
             else:
                 if repository is None:
                     if file_path is None:
-                        self.persistence_object = self.persistence_class.objects.raw({'_id': id, 'namespace': namespace
-                                                                                      }).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                '_id': id,
+                                'repository': repo_db_id
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                     else:
-                        self.persistence_object = self.persistence_class.objects.raw({'_id': id, 'namespace': namespace,
-                                                                                      'file_path': file_path}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                '_id': id,
+                                'repository': repo_db_id,
+                                'file_path': file_path
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                 else:
                     if file_path is None:
-                        self.persistence_object = self.persistence_class.objects.raw({'_id': id, 'namespace': namespace,
-                                                                                      'repository': repository}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                '_id': id,
+                                'repository': repo_db_id
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
                     else:
-                        self.persistence_object = self.persistence_class.objects.raw({'_id': id, 'namespace': namespace,
-                                                                                      'repository': repository,
-                                                                                      'file_path': file_path}).first()
+                        try:
+                            repofile_db_obj = self.persistence_class.objects.raw({
+                                '_id': id,
+                                'repository': repo_db_id,
+                                'file_path': file_path
+                            }).first()
+                        except DoesNotExist:
+                            if repo_db_id is None:
+                                raise ValueError("Can't create new RepositoryFile without a Repository")
+                            if file_path is None:
+                                raise ValueError("Can't create new RepositoryFile without a File_Path")
+                            repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
+                                                                     contents='', prog_language='ot').save()
+                        self.persistence_object = repofile_db_obj
             self.load_persisted_values()
 
     def save(self):
         if self.persistence_object is not None:
-            persist_id = self.persistence_object.implicit_id
+            persist_id = self.persistence_object._id
         else:
             persist_id = None
         self.retrieve(id=persist_id, namespace=self.get_repository().get_namespace(), repository=self.get_repository(),
@@ -238,6 +555,18 @@ class MongoRepositoryFile(GenericRepositoryFile):
         self.persistence_object.language = self.language
         self.persistence_object.save()
 
+    def set_repository(self, repository):
+        if isinstance(repository, mongodb_models.RepositoryModel):
+            new_repository = create_dto_object_from_persistence_object(type="R", persistence_object=repository,
+                                                                       local_persistence_classes=
+                                                                       global_persistence_classes,
+                                                                       local_backend_data_classes=
+                                                                       global_backend_data_classes)
+            self.validate_repository(repository=new_repository)
+            self.repository = new_repository
+        else:
+            super(MongoRepositoryFile, self).set_repository(repository)
+
     def __str__(self):
         return "MongoRepoFile: (%s) :: %s :: %s :: %s [%s]" % (self.repository, self.file_path, self.language,
                                                                self.contents, self.persistence_object)
@@ -246,7 +575,7 @@ class MongoRepositoryFile(GenericRepositoryFile):
         self.set_repository(self.persistence_object.repository)
         self.set_contents(self.persistence_object.contents)
         self.set_file_path(self.persistence_object.file_path)
-        self.set_language(self.persistence_object.language)
+        self.set_language(self.persistence_object.prog_language)
 
 
 class MongoChange(GenericChange):
@@ -347,6 +676,18 @@ class MongoChange(GenericChange):
         self.persistence_object.comment = self.comment
         self.persistence_object.save()
 
+    def set_repository(self, repository):
+        if isinstance(repository, mongodb_models.RepositoryModel):
+            new_repository = create_dto_object_from_persistence_object(type="R", persistence_object=repository,
+                                                                       local_persistence_classes=
+                                                                       global_persistence_classes,
+                                                                       local_backend_data_classes=
+                                                                       global_backend_data_classes)
+            self.validate_repository(repository=new_repository)
+            self.repository = new_repository
+        else:
+            super(MongoChange, self).set_repository(repository)
+
     def __str__(self):
         return "MongoChange: (%s) :: \"%s\" :: %s :: %s :: [%s]" % (self.repository, self.comment, self.author,
                                                                     self.timestamp, self.persistence_object)
@@ -363,8 +704,8 @@ class MongoChangeFile(GenericChangeFile):
     persistence_class = mongodb_models.ChangeFileModel
     persistence_object = None
 
-    def validate_repository(self, repository):
-        validate_mongo_repository(repository)
+    def validate_change(self, change):
+        validate_mongo_change(change)
 
     def retrieve(self, id=None, namespace=None, repository=None, change=None, file_path=None):
         if id is None:
@@ -610,6 +951,18 @@ class MongoChangeFile(GenericChangeFile):
         self.persistence_object.language = self.language
         self.persistence_object.contents = self.contents
         self.persistence_object.save()
+
+    def set_change(self, change):
+        if isinstance(change, mongodb_models.ChangeModel):
+            new_change = create_dto_object_from_persistence_object(type="C", persistence_object=change,
+                                                                   local_persistence_classes=
+                                                                   global_persistence_classes,
+                                                                   local_backend_data_classes=
+                                                                   global_backend_data_classes)
+            self.validate_change(new_change)
+            self.change = new_change
+        else:
+            super(MongoChangeFile, self).set_change(change)
 
     def __str__(self):
         return "MongoChangeFile: (%s) :: %s :: %s :: %s [%s]" % (self.change, self.file_path, self.language,
