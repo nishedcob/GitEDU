@@ -30,7 +30,7 @@ class GenericNamespace:
     def set_namespace(self, namespace):
         validate_string(namespace, "Namespace")
         self.namespace = namespace
-        self.save()
+        #self.save()
 
     def get_namespace(self):
         return self.namespace
@@ -62,7 +62,7 @@ class GenericRepository:
     def set_namespace(self, namespace):
         self.validate_namespace(namespace)
         self.namespace = namespace
-        self.save()
+        #self.save()
 
     def get_namespace(self):
         return self.namespace
@@ -70,7 +70,7 @@ class GenericRepository:
     def set_repository(self, repository):
         validate_string(repository, "Repository")
         self.repository = repository
-        self.save()
+        #self.save()
 
     def get_repository(self):
         return self.repository
@@ -105,7 +105,7 @@ class GenericRepositoryFile:
     def set_repository(self, repository):
         self.validate_repository(repository)
         self.repository = repository
-        self.save()
+        #self.save()
 
     def get_repository(self):
         return self.repository
@@ -113,7 +113,7 @@ class GenericRepositoryFile:
     def set_file_path(self, file_path):
         validate_string(file_path, "File_Path")
         self.file_path = file_path
-        self.save()
+        #self.save()
 
     def get_file_path(self):
         return self.file_path
@@ -171,7 +171,7 @@ class GenericChange:
     def set_repository(self, repository):
         self.validate_repository(repository)
         self.repository = repository
-        self.save()
+        #self.save()
 
     def get_repository(self):
         return self.repository
@@ -186,7 +186,7 @@ class GenericChange:
     def set_comment(self, comment):
         validate_string(comment, "Comment")
         self.comment = comment
-        self.save()
+        #self.save()
 
     def get_comment(self):
         return self.comment
@@ -194,7 +194,7 @@ class GenericChange:
     def set_timestamp(self, timestamp):
         self.validate_timestamp(timestamp)
         self.timestamp = timestamp
-        self.save()
+        #self.save()
 
     def get_timestamp(self):
         return self.timestamp
@@ -202,7 +202,7 @@ class GenericChange:
     def set_author(self, author):
         self.validate_author(author)
         self.author = author
-        self.save()
+        #self.save()
 
     def save(self):
         pass
@@ -237,7 +237,7 @@ class GenericChangeFile:
     def set_change(self, change):
         self.validate_change(change)
         self.change = change
-        self.save()
+        #self.save()
 
     def get_change(self):
         return self.change
@@ -245,7 +245,7 @@ class GenericChangeFile:
     def set_file_path(self, file_path):
         validate_string(file_path, "File_Path")
         self.file_path = file_path
-        self.save()
+        #self.save()
 
     def get_file_path(self):
         return self.file_path

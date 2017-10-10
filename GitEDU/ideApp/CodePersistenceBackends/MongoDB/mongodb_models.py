@@ -35,7 +35,7 @@ class RepositoryModel(MongoModel):
 class RepositoryFileModel(MongoModel):
     contents = CharField(required=False, blank=True)
     repository = ReferenceField(RepositoryModel)
-    language = CharField(choices=constants.LANGUAGE_NAMES)
+    prog_language = CharField(choices=constants.LANGUAGE_NAMES)
     file_path = CharField()
 
     class Meta:
@@ -48,8 +48,8 @@ class RepositoryFileModel(MongoModel):
     '''
 
     def __str__(self):
-        return "RepositoryFileMongoModel: %s :: %s :: [%s] :: %s" % (self.file_path, self.language, self.repository,
-                                                                     self.contents)
+        return "RepositoryFileMongoModel: %s :: %s :: [%s] :: %s" % (self.file_path, self.prog_language,
+                                                                     self.repository, self.contents)
 
 
 class ChangeModel(MongoModel):
@@ -70,7 +70,7 @@ class ChangeModel(MongoModel):
 class ChangeFileModel(MongoModel):
     contents = CharField()
     change = ReferenceField(ChangeModel)
-    language = CharField(choices=constants.LANGUAGE_NAMES)
+    prog_language = CharField(choices=constants.LANGUAGE_NAMES)
     file_path = CharField()
 
     class Meta:
@@ -78,7 +78,7 @@ class ChangeFileModel(MongoModel):
         #connection_alias = 'mongo_000'
 
     def __str__(self):
-        return "ChangeFileMongoModel: [%s] :: %s :: %s :: %s" % (self.change, self.file_path, self.language,
+        return "ChangeFileMongoModel: [%s] :: %s :: %s :: %s" % (self.change, self.file_path, self.prog_language,
                                                                  self.contents)
 
 

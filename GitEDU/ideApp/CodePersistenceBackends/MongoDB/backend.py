@@ -28,15 +28,16 @@ class MongoNamespace(GenericNamespace):
             if namespace is None:
                 raise ValueError("ID and Namespace can't be None")
             else:
-                self.persistence_object = self.persistence_class.objects.raw({'namespace': namespace}).first()
+                self.persistence_object = self.persistence_class.objects.raw({'name': namespace}).first()
         else:
             if namespace is None:
                 self.persistence_object = self.persistence_class.objects.raw({'_id': id}).first()
             else:
-                self.persistence_object = self.persistence_class.objects.raw({'_id': id, 'namespace': namespace}).first()
+                self.persistence_object = self.persistence_class.objects.raw({'_id': id, 'name': namespace}).first()
         self.load_persisted_values()
 
     def save(self):
+        self.retrieve(namespace=self.get_namespace())
         if self.persistence_object is None:
             self.persistence_object = self.persistence_class()
         self.persistence_object.name = self.namespace
@@ -61,6 +62,14 @@ class MongoRepository(GenericRepository):
             raise ValueError("Namespace should be a Namespace Object")
 
     def retrieve(self, id=None, namespace=None, repository=None):
+        namespace_str = ""
+        if namespace is not None:
+            if isinstance(namespace, str):
+                namespace_str = namespace
+            elif isinstance(namespace, MongoNamespace) or isinstance(namespace, GenericNamespace):
+                namespace_str = namespace.get_namespace()
+            elif isinstance(namespace, MongoNamespace.persistence_class):
+                namespace_str = namespace.name
         if id is None:
             if namespace is None:
                 if repository is None:
@@ -68,29 +77,48 @@ class MongoRepository(GenericRepository):
                 else:
                     print("WARNING: Only searching for repositories based on Repository, may find more than 1," +
                           " will only use the first found")
-                    self.persistence_object = self.persistence_class.objects.raw({'repository': repository}).first()
+                    self.persistence_object = self.persistence_class.objects.raw({
+                        'name': repository
+                    }).first()
             else:
                 if repository is None:
                     print("WARNING: Only searching for repositories based on Namespace, may find more than 1," +
                           " will only use the first found")
-                    self.persistence_object = self.persistence_class.objects.raw({'namespace': namespace}).first()
+                    namespace_db_obj = MongoNamespace.persistence_class.objects.raw({"name": namespace_str}).first()
+                    self.persistence_object = self.persistence_class.objects.raw({
+                        'namespace': namespace_db_obj._id
+                    }).first()
                 else:
-                    self.persistence_object = self.persistence_class.objects.raw({'namespace': namespace,
-                                                                                  'repository': repository}).first()
+                    namespace_db_obj = MongoNamespace.persistence_class.objects.raw({"name": namespace_str}).first()
+                    self.persistence_object = self.persistence_class.objects.raw({
+                        'namespace': namespace_db_obj._id,
+                        'name': repository
+                    }).first()
         else:
             if namespace is None:
                 if repository is None:
-                    self.persistence_object = self.persistence_class.objects.raw({'_id': id}).first()
+                    self.persistence_object = self.persistence_class.objects.raw({
+                        '_id': id
+                    }).first()
             else:
                 if repository is None:
-                    self.persistence_object = self.persistence_class.objects.raw({'_id': id, 'namespace': namespace})\
-                        .first()
+                    namespace_db_obj = MongoNamespace.persistence_class.objects.raw({"name": namespace_str}).first()
+                    self.persistence_object = self.persistence_class.objects.raw({
+                        '_id': id,
+                        'namespace': namespace_db_obj._id
+                    }).first()
                 else:
-                    self.persistence_object = self.persistence_class.objects.raw({'_id': id, 'namespace': namespace,
-                                                                                  'repository': repository}).first()
+                    namespace_db_obj = MongoNamespace.persistence_class.objects.raw({"name": namespace_str}).first()
+                    self.persistence_object = self.persistence_class.objects.raw({
+                        '_id': id,
+                        'namespace': namespace_db_obj._id,
+                        'name': repository
+                    }).first()
         self.load_persisted_values()
 
     def save(self):
+        #print("namespace: %s" % self.get_namespace())
+        self.retrieve(namespace=self.get_namespace(), repository=self.get_repository())
         if self.persistence_object is None:
             self.persistence_object = self.persistence_class()
         self.persistence_object.namespace = self.namespace.persistence_object
@@ -101,7 +129,9 @@ class MongoRepository(GenericRepository):
         return "MongoREPO: (%s) :: %s [%s]" % (self.namespace, self.repository, self.persistence_object)
 
     def load_persisted_values(self):
-        self.set_namespace(self.persistence_object.namespace)
+        namespace = create_dto_object_from_persistence_object(type="N",
+                                                              persistence_object=self.persistence_object.namespace)
+        self.set_namespace(namespace)
         self.set_repository(self.persistence_object.name)
 
 
@@ -114,6 +144,11 @@ class MongoRepositoryFile(GenericRepositoryFile):
         validate_mongo_repository(repository)
 
     def retrieve(self, id=None, namespace=None, repository=None, file_path=None):
+        # TODO:
+        # Additional queries to extract object ID for:
+        #   Namespace
+        #   Repository
+        # Prior to searching for repository file
         if id is None:
             if namespace is None:
                 if repository is None:
@@ -189,6 +224,12 @@ class MongoRepositoryFile(GenericRepositoryFile):
             self.load_persisted_values()
 
     def save(self):
+        if self.persistence_object is not None:
+            persist_id = self.persistence_object.implicit_id
+        else:
+            persist_id = None
+        self.retrieve(id=persist_id, namespace=self.get_repository().get_namespace(), repository=self.get_repository(),
+                      file_path=self.get_file_path())
         if self.persistence_object is None:
             self.persistence_object = self.persistence_class()
         self.persistence_object.file_path = self.file_path
@@ -580,6 +621,117 @@ class MongoChangeFile(GenericChangeFile):
         self.set_contents(self.persistence_object.contents)
         self.set_change(self.persistence_object.change)
 
+global_persistence_classes = {
+    'N': mongodb_models.NamespaceModel,
+    'R': mongodb_models.RepositoryModel,
+    'F': mongodb_models.RepositoryFileModel,
+    'C': mongodb_models.ChangeModel,
+    'f': mongodb_models.ChangeFileModel
+}
+
+global_backend_data_classes = {
+    'N': MongoNamespace,
+    'R': MongoRepository,
+    'F': MongoRepositoryFile,
+    'C': MongoChange,
+    'f': MongoChangeFile
+}
+
+def create_list_from_persistence_list(type=None, persistence_list=None,
+                                      local_persistence_classes=global_persistence_classes,
+                                      local_backend_data_classes=global_backend_data_classes):
+    if type is None:
+        raise ValueError("Type can't be None")
+    if persistence_list is None:
+        raise ValueError("Persistence_List can't be None")
+    if len(persistence_list):
+        return []
+    if isinstance(type, str):
+        created_list = []
+        # persistence_class = local_persistence_classes.get(type, None)
+        backend_data_class = local_backend_data_classes.get(type, None)
+        if backend_data_class is None:
+            raise ValueError("Unrecognized Type '%s'" % type)
+        for persistence_object in persistence_list:
+            new_object = create_dto_object_from_persistence_object(type=type, persistence_object=persistence_object,
+                                                                   local_persistence_classes=local_persistence_classes,
+                                                                   local_backend_data_classes=local_backend_data_classes
+                                                                   )
+            created_list.append(new_object)
+        return created_list
+    else:
+        raise ValueError("Type must be a string")
+
+
+def create_dto_object_from_persistence_object(type=None, persistence_object=None,
+                                              local_persistence_classes=global_persistence_classes,
+                                              local_backend_data_classes=global_backend_data_classes):
+    if type is None:
+        raise ValueError("Type can't be None")
+    if persistence_object is None:
+        raise ValueError("Persistence_Object can't be None")
+    if isinstance(type, str):
+        # persistence_class = local_persistence_classes.get(type, None)
+        backend_data_class = local_backend_data_classes.get(type, None)
+        if backend_data_class is None:
+            raise ValueError("Unrecognized Type '%s'" % type)
+        attributes = {}
+        if type == "N":
+            # Namespace
+            attributes['namespace'] = persistence_object.name
+        elif type == "R":
+            # Repository
+            attributes['namespace'] = create_dto_object_from_persistence_object(type="N",
+                                                                                persistence_object=persistence_object
+                                                                                .namespace,
+                                                                                local_persistence_classes=
+                                                                                local_persistence_classes,
+                                                                                local_backend_data_classes=
+                                                                                local_backend_data_classes)
+            attributes['repository'] = persistence_object.name
+        elif type == "F":
+            # Repository File
+            attributes['repository'] = create_dto_object_from_persistence_object(type="R",
+                                                                                 persistence_object=persistence_object
+                                                                                 .repository,
+                                                                                 local_persistence_classes=
+                                                                                 local_persistence_classes,
+                                                                                 local_backend_data_classes=
+                                                                                 local_backend_data_classes)
+            attributes['file_path'] = persistence_object.file_path
+            attributes['contents'] = persistence_object.contents
+            attributes['language'] = persistence_object.language
+        elif type == "C":
+            # Change
+            attributes['id'] = persistence_object.id
+            attributes['comment'] = persistence_object.comment
+            attributes['author'] = persistence_object.author
+            attributes['timestamp'] = persistence_object.timestamp
+            attributes['repository'] = create_dto_object_from_persistence_object(type="R",
+                                                                                 persistence_object=persistence_object
+                                                                                 .repository,
+                                                                                 local_persistence_classes=
+                                                                                 local_persistence_classes,
+                                                                                 local_backend_data_classes=
+                                                                                 local_backend_data_classes)
+        elif type == "f":
+            # Change File
+            attributes['file_path'] = persistence_object.file_path
+            attributes['contents'] = persistence_object.contents
+            attributes['language'] = persistence_object.language
+            attributes['change'] = create_dto_object_from_persistence_object(type="C",
+                                                                             persistence_object=persistence_object
+                                                                             .change,
+                                                                             local_persistence_classes=
+                                                                             local_persistence_classes,
+                                                                             local_backend_data_classes=
+                                                                             local_backend_data_classes)
+        new_object = backend_data_class(**attributes)
+        new_object.persistence_object = persistence_object
+        return new_object
+    else:
+        raise ValueError("Type must be a string")
+
 
 mongo_num_conn = 0
 
@@ -620,64 +772,25 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
         'f': change_file_class
     }
 
-    def create_list_from_persistence_list(self, type=None, persistence_list=None):
-        if type is None:
-            raise ValueError("Type can't be None")
-        if persistence_list is None:
-            raise ValueError("Persistence_List can't be None")
-        if len(persistence_list):
-            return []
-        if isinstance(type, str):
-            created_list = []
-            # persistence_class = self.persistence_classes.get(type, None)
-            backend_data_class = self.backend_data_classes.get(type, None)
-            if backend_data_class is None:
-                raise ValueError("Unrecognized Type '%s'" % type)
-            for persistence_object in persistence_list:
-                attributes = {}
-                if type == "N":
-                    # Namespace
-                    attributes['namespace'] = persistence_object.name
-                elif type == "R":
-                    # Repository
-                    attributes['namespace'] = self.create_list_from_persistence_list(type="N",
-                                                                                     persistence_list=[
-                                                                                         persistence_object.namespace
-                                                                                     ])[0]
-                    attributes['repository'] = persistence_object.name
-                elif type == "F":
-                    # Repository File
-                    attributes['repository'] = self.create_list_from_persistence_list(type="R",
-                                                                                      persistence_list=[
-                                                                                          persistence_object.repository
-                                                                                      ])[0]
-                    attributes['file_path'] = persistence_object.file_path
-                    attributes['contents'] = persistence_object.contents
-                    attributes['language'] = persistence_object.language
-                elif type == "C":
-                    # Change
-                    attributes['id'] = persistence_object.id
-                    attributes['comment'] = persistence_object.comment
-                    attributes['author'] = persistence_object.author
-                    attributes['timestamp'] = persistence_object.timestamp
-                    attributes['repository'] = self.create_list_from_persistence_list(type="R",
-                                                                                      persistence_list=[
-                                                                                          persistence_object.repository
-                                                                                      ])[0]
-                elif type == "f":
-                    # Change File
-                    attributes['file_path'] = persistence_object.file_path
-                    attributes['contents'] = persistence_object.contents
-                    attributes['language'] = persistence_object.language
-                    attributes['change'] = self.create_list_from_persistence_list(type="C", persistence_list=[
-                                                                                      persistence_object.change
-                                                                                  ])[0]
-                new_object = backend_data_class(**attributes)
-                new_object.persistence_object = persistence_object
-                created_list.append(new_object)
-            return created_list
-        else:
-            raise ValueError("Type must be a string")
+    def create_dto_object_from_persistence_object(self, type=None, persistence_object=None,
+                                                  local_persistence_classes=None, local_backend_data_classes=None):
+        if local_persistence_classes is None:
+            local_persistence_classes = self.persistence_classes
+        if local_backend_data_classes is None:
+            local_backend_data_classes = self.backend_data_classes
+        return create_dto_object_from_persistence_object(type=type, persistence_object=persistence_object,
+                                                         local_persistence_classes=local_persistence_classes,
+                                                         local_backend_data_classes=local_backend_data_classes)
+
+    def create_list_from_persistence_list(self, type=None, persistence_list=None, local_persistence_classes=None,
+                                          local_backend_data_classes=None):
+        if local_persistence_classes is None:
+            local_persistence_classes = self.persistence_classes
+        if local_backend_data_classes is None:
+            local_backend_data_classes = self.backend_data_classes
+        return create_list_from_persistence_list(type=type, persistence_list=persistence_list,
+                                                 local_persistence_classes=local_persistence_classes,
+                                                 local_backend_data_classes=local_backend_data_classes)
 
     def sync_namespaces(self):
         print("Namespaces: %s" % self.namespaces)
