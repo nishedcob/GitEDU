@@ -1052,7 +1052,7 @@ def create_dto_object_from_persistence_object(type=None, persistence_object=None
                                                                                  local_backend_data_classes=
                                                                                  local_backend_data_classes)
             attributes['file_path'] = persistence_object.file_path
-            attributes['contents'] = persistence_object.contents
+            attributes['file_contents'] = persistence_object.contents
             attributes['language'] = persistence_object.prog_language
         elif type == "C":
             # Change
@@ -1209,24 +1209,31 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
                 persisted_nspc_repo_files = list(mongodb_models.RepositoryFileModel.objects.raw({
                     'repository': persisted_repository.pk
                 }))
-                self.repository_files[namespace.get_namespace()][repository.get_repository()] =\
+                self.repository_files[namespace][repository.get_repository()] =\
                     self.create_list_from_persistence_list(type="F", persistence_list=persisted_nspc_repo_files)
         print("Repository Files: %s" % self.repository_files)
 
     def sync_changes(self):
         print("Changes: %s" % self.changes)
         for namespace in self.list_namespaces():
-            if self.changes.get(namespace, None) is None:
-                self.changes[namespace] = {}
-            for repository in self.list_repositories(namespace):
-                if self.changes[namespace].get(repository, None) is None:
-                    self.changes[namespace][repository] = []
+            if self.changes.get(namespace.get_namespace(), None) is None:
+                self.changes[namespace.get_namespace()] = {}
+            for repository in self.list_repositories(namespace.get_namespace()):
+                if self.changes[namespace.get_namespace()].get(repository.get_repository(), None) is None:
+                    self.changes[namespace.get_namespace()][repository.get_repository()] = []
         for namespace, repositories in self.changes.items():
             for repository, changes in repositories.items():
                 for change in changes:
                     change.save()
+                persisted_namespace = mongodb_models.NamespaceModel.objects.raw({
+                    'name': namespace
+                }).first()
+                persisted_repository = mongodb_models.RepositoryModel.objects.raw({
+                    'namespace': persisted_namespace.pk,
+                    'name': repository
+                }).first()
                 persisted_nspc_repo_changes = list(mongodb_models.ChangeModel.objects.raw({
-                    'repository': repository
+                    'repository': persisted_repository.pk
                 }))
                 self.changes[namespace][repository] = self.create_list_from_persistence_list(type="C", persistence_list=
                                                                                             persisted_nspc_repo_changes)
