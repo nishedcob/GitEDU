@@ -997,7 +997,7 @@ def create_list_from_persistence_list(type=None, persistence_list=None,
         raise ValueError("Type can't be None")
     if persistence_list is None:
         raise ValueError("Persistence_List can't be None")
-    if len(persistence_list):
+    if len(persistence_list) == 0:
         return []
     if isinstance(type, str):
         created_list = []
@@ -1053,7 +1053,7 @@ def create_dto_object_from_persistence_object(type=None, persistence_object=None
                                                                                  local_backend_data_classes)
             attributes['file_path'] = persistence_object.file_path
             attributes['contents'] = persistence_object.contents
-            attributes['language'] = persistence_object.language
+            attributes['language'] = persistence_object.prog_language
         elif type == "C":
             # Change
             attributes['id'] = persistence_object.id
@@ -1170,7 +1170,10 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
                 print("WARNING: Namespace is an Invalid Type (%s)" % namespace)
                 continue
             print("Namespace_Str = %s" % namespace_str)
-            persisted_nspc_repos = list(mongodb_models.RepositoryModel.objects.raw({'namespace.name': namespace_str}))
+            persisted_namespace = mongodb_models.NamespaceModel.objects.raw({'name': namespace_str}).first()
+            persisted_nspc_repos = list(mongodb_models.RepositoryModel.objects.raw({
+                'namespace': persisted_namespace.pk
+            }))
             self.repositories[namespace_str] = self.create_list_from_persistence_list(type="R",
                                                                                   persistence_list=persisted_nspc_repos)
         print("Repositories: %s" % self.repositories)
@@ -1178,23 +1181,36 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
     def sync_repository_files(self):
         print("Repository Files: %s" % self.repository_files)
         for namespace in self.list_namespaces():
-            if self.repository_files.get(namespace, None) is None:
-                self.repository_files[namespace] = {}
+            if self.repository_files.get(namespace.get_namespace(), None) is None:
+                self.repository_files[namespace.get_namespace()] = {}
             print("namespace = %s" % namespace)
-            for repository in self.list_repositories(namespace.namespace):
-                if self.repository_files[namespace.namespace].get(repository.repository, None) is None:
-                    self.repository_files[namespace.namespace][repository.repository] = []
+            for repository in self.list_repositories(namespace.get_namespace()):
+                if self.repository_files[namespace.get_namespace()].get(repository.repository, None) is None:
+                    self.repository_files[namespace.get_namespace()][repository.repository] = []
         for namespace, repositories in self.repository_files.items():
             for repository, repository_files in repositories.items():
+                repository_files_str = ""
+                for repository_file in repository_files:
+                    if repository_files_str != "":
+                        repository_files_str += ", "
+                    repository_files_str += str(repository_file)
+                print("Repository: %s = Files: [ %s ]" % (repository, repository_files_str))
                 for repository_file in repository_files:
                     repository_file.save()
                 if isinstance(repository, str):
                     repository = self.build_repository(namespace=namespace, repository=repository)
+                persisted_namespace = mongodb_models.NamespaceModel.objects.raw({
+                    'name': namespace
+                }).first()
+                persisted_repository = mongodb_models.RepositoryModel.objects.raw({
+                    'namespace': persisted_namespace.pk,
+                    'name': repository.get_repository()
+                }).first()
                 persisted_nspc_repo_files = list(mongodb_models.RepositoryFileModel.objects.raw({
-                    'repository.name': repository.repository
+                    'repository': persisted_repository.pk
                 }))
-                self.repository_files[namespace][repository.repository] = self.create_list_from_persistence_list(
-                    type="F", persistence_list=persisted_nspc_repo_files)
+                self.repository_files[namespace.get_namespace()][repository.get_repository()] =\
+                    self.create_list_from_persistence_list(type="F", persistence_list=persisted_nspc_repo_files)
         print("Repository Files: %s" % self.repository_files)
 
     def sync_changes(self):
