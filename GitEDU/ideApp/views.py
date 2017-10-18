@@ -39,13 +39,14 @@ class EditorFileView(View):
     form_class = CodeForm
     global_permission_form_class = CodeGlobalPermissionsForm
     collaborator_form_class = AddCollaboratorForm
-    global_permission_initial = {'onlyAuthUsers': True,
-               'onlyCollaborators': True,
-               'globalCanWrite': False,
-               'globalCanRead': False,
-               'globalCanExecute': False,
-               'globalCanDownload': False
-               }
+    global_permission_initial = {
+        'onlyAuthUsers': True,
+        'onlyCollaborators': True,
+        'globalCanWrite': False,
+        'globalCanRead': False,
+        'globalCanExecute': False,
+        'globalCanDownload': False
+    }
     template = 'editor/code.html'
     editorLangsAndCode = json.dumps(constants.EDITOR_LANGUAGES)
     newCode = None

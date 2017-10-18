@@ -594,7 +594,12 @@ class CodePersistenceBackend:
 
     def get_repository(self, namespace, repository):
         try:
-            return self.search_repositories(namespace, repository)[0]
+            repositories = self.search_repositories(namespace, repository)
+            if repositories is None:
+                return None
+                # raise ValueError("No repository found")
+            else:
+                return repositories[0]
         except IndexError:
             return None
 
