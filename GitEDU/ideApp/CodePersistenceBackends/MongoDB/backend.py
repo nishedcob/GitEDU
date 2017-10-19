@@ -234,7 +234,7 @@ class MongoRepositoryFile(GenericRepositoryFile):
     def validate_repository(self, repository):
         validate_mongo_repository(repository)
 
-    def retrieve(self, id=None, namespace=None, repository=None, file_path=None):
+    def retrieve(self, id=None, namespace=None, repository=None, file_path=None, load_persisted_values=True):
         namespace_db_id = None
         namespace_str = None
         if namespace is not None:
@@ -538,15 +538,16 @@ class MongoRepositoryFile(GenericRepositoryFile):
                             repofile_db_obj = self.persistence_class(repository=repo_db_id, file_path=file_path,
                                                                      contents='', prog_language='ot').save()
                         self.persistence_object = repofile_db_obj
-            self.load_persisted_values()
+            if load_persisted_values:
+                self.load_persisted_values()
 
     def save(self):
         if self.persistence_object is not None:
-            persist_id = self.persistence_object._id
+            persist_id = self.persistence_object.pk
         else:
             persist_id = None
         self.retrieve(id=persist_id, namespace=self.get_repository().get_namespace(), repository=self.get_repository(),
-                      file_path=self.get_file_path())
+                      file_path=self.get_file_path(), load_persisted_values=False)
         if self.persistence_object is None:
             self.persistence_object = self.persistence_class()
         self.persistence_object.file_path = self.file_path
