@@ -69,7 +69,11 @@ class EditorFileView(View):
             if isinstance(repository_file,
                           manager.select_preferred_backend_object(manager.get_repository_file_class())):
                 file_contents = repository_file.get_contents()
-            form = self.form_class(initial={'file_name': file_path, 'code': file_contents})
+            prog_language = 'ot'
+            if isinstance(repository_file,
+                          manager.select_preferred_backend_object(manager.get_repository_file_class())):
+                prog_language = repository_file.get_language()
+            form = self.form_class(initial={'file_name': file_path, 'code': file_contents, 'language': prog_language})
             orig = True
             edits = []
             global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)

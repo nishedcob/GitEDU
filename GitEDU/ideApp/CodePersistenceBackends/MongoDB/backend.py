@@ -553,7 +553,7 @@ class MongoRepositoryFile(GenericRepositoryFile):
         self.persistence_object.file_path = self.file_path
         self.persistence_object.repository = self.repository.persistence_object
         self.persistence_object.contents = self.contents
-        self.persistence_object.language = self.language
+        self.persistence_object.prog_language = self.language
         self.persistence_object.save()
 
     def set_repository(self, repository):
