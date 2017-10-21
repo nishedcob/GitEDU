@@ -17,6 +17,7 @@ print("code persistence backend manager: <%s>" % manager)
 
 # Create your views here.
 
+
 class EditorClassView(View):
 
     def get(self, class_id):
@@ -34,8 +35,8 @@ class EditorAssignmentView(View):
     def post(self, class_id, assignment_id):
         pass
 
-class EditorFileView(View):
 
+class GenericEditorFileView(View):
     form_class = CodeForm
     global_permission_form_class = CodeGlobalPermissionsForm
     collaborator_form_class = AddCollaboratorForm
@@ -50,42 +51,78 @@ class EditorFileView(View):
     template = 'editor/code.html'
     editorLangsAndCode = json.dumps(constants.EDITOR_LANGUAGES)
     newCode = None
+    sync_str = None
 
-    def validate_request(self, request, namespace, repository, file_path):
+    def validate_request(self, request, namespace, repository, change, file_path):
         return True
 
-    def get(self, request, namespace, repository, file_path):
-        if self.validate_request(request, namespace, repository, file_path):
-            manager.sync_all()
-            user = request.user.username
+    def pre_request(self, request, namespace, repository, change, file_path):
+        if not self.validate_request(request=request, namespace=namespace, repository=repository, change=change,
+                                 file_path=file_path):
+            raise PermissionDenied('Invalid Request')
+
+    def pre_get(self, request):
+        manager.sync(self.sync_str)
+        return request.user.username
+
+    def proc_get(self, namespace, repository, file_path, change=None):
+        return {
+            'file_path': None,
+            'file_contents': None,
+            'prog_language': None
+        }
+
+    def post_get(self, request, file_path, file_contents, prog_language, user):
+        form = self.form_class(initial={'file_name': file_path, 'code': file_contents, 'language': prog_language})
+        orig = True
+        edits = []
+        global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
+        return render(request, self.template, context={'form': form, 'globalPermForm': global_perm_form,
+                                                       'owner': user, 'orig': orig, 'edits': edits,
+                                                       'new': self.newCode,
+                                                       'editorLang': self.editorLangsAndCode})
+
+    def get(self, request, namespace, repository, file_path, change=None):
+        self.pre_request(request=request, namespace=namespace, repository=repository, file_path=file_path,
+                         change=change)
+        user = self.pre_get(request=request)
+        prepared_params = self.proc_get(namespace=namespace, repository=repository, file_path=file_path, change=change)
+        prepared_params['user'] = user
+        prepared_params['request'] = request
+        return self.post_get(**prepared_params)
+
+
+class EditorFileView(GenericEditorFileView):
+
+    sync_str = "NRF"
+
+    def validate_request(self, request, namespace, repository, change, file_path):
+        return True
+
+    def proc_get(self, namespace, repository, file_path, change=None):
+        repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
+        repository_file = manager.select_preferred_backend_object(result_set=repository_files)
+        if repository_file is None:
+            manager.create_file(namespace=namespace, repository=repository, file_path=file_path, file_contents="",
+                                language="ot")
             repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
             repository_file = manager.select_preferred_backend_object(result_set=repository_files)
-            if repository_file is None:
-                manager.create_file(namespace=namespace, repository=repository, file_path=file_path, file_contents="",
-                                    language="ot")
-                repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
-                repository_file = manager.select_preferred_backend_object(result_set=repository_files)
-            file_contents = ''
-            if isinstance(repository_file,
-                          manager.select_preferred_backend_object(manager.get_repository_file_class())):
-                file_contents = repository_file.get_contents()
-            prog_language = 'ot'
-            if isinstance(repository_file,
-                          manager.select_preferred_backend_object(manager.get_repository_file_class())):
-                prog_language = repository_file.get_language()
-            form = self.form_class(initial={'file_name': file_path, 'code': file_contents, 'language': prog_language})
-            orig = True
-            edits = []
-            global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
-            return render(request, self.template, context={'form': form, 'globalPermForm': global_perm_form,
-                                                                       'owner': user, 'orig': orig, 'edits': edits,
-                                                                       'new': self.newCode,
-                                                                       'editorLang': self.editorLangsAndCode})
-        else:
-            raise PermissionDenied("Illegal Request")
+        file_contents = ''
+        if isinstance(repository_file,
+                      manager.select_preferred_backend_object(manager.get_repository_file_class())):
+            file_contents = repository_file.get_contents()
+        prog_language = 'ot'
+        if isinstance(repository_file,
+                      manager.select_preferred_backend_object(manager.get_repository_file_class())):
+            prog_language = repository_file.get_language()
+        return {
+            'file_path': file_path,
+            'file_contents': file_contents,
+            'prog_language': prog_language
+        }
 
     def post(self, request, namespace, repository, file_path):
-        if self.validate_request(request, namespace, repository, file_path):
+        if self.validate_request(request, namespace, repository, None, file_path):
             recieved_form = self.form_class(request.POST)
             if recieved_form.is_valid():
                 manager.sync_all()

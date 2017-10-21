@@ -345,76 +345,80 @@ class CodePersistenceBackend:
         c / C = Changes
         h / H = Change Files
     '''
-
     def sync(self, type):
-        should_sync_all = False
-        should_sync_namespaces = False
-        should_sync_repositories = False
-        should_sync_repository_files = False
-        should_sync_changes = False
-        should_sync_change_files = False
-        for flag in type:
-            if flag == 'A':
-                should_sync_all = True
-                should_sync_namespaces = True
-                should_sync_repositories = True
-                should_sync_repository_files = True
-                should_sync_changes = True
-                should_sync_change_files = True
-            elif flag == 'a':
-                should_sync_all = False
-                should_sync_namespaces = False
-                should_sync_repositories = False
-                should_sync_repository_files = False
-                should_sync_changes = False
-                should_sync_change_files = False
-            elif flag == 'N':
-                should_sync_namespaces = True
-            elif flag == 'n':
-                should_sync_namespaces = False
-                should_sync_all = False
-            elif flag == 'R':
-                should_sync_repositories = True
-            elif flag == 'r':
-                should_sync_repositories = False
-                should_sync_all = False
-            elif flag == 'F':
-                should_sync_repository_files = True
-            elif flag == 'f':
-                should_sync_repository_files = False
-                should_sync_all = False
-            elif flag == 'C':
-                should_sync_changes = True
-            elif flag == 'c':
-                should_sync_changes = False
-                should_sync_all = False
-            elif flag == 'H':
-                should_sync_change_files = True
-            elif flag == 'h':
-                should_sync_change_files = False
-                should_sync_all = False
+        if type is None or (isinstance(type, str) and len(type) == 0):
+            return
+        elif isinstance(type, str):
+            should_sync_all = False
+            should_sync_namespaces = False
+            should_sync_repositories = False
+            should_sync_repository_files = False
+            should_sync_changes = False
+            should_sync_change_files = False
+            for flag in type:
+                if flag == 'A':
+                    should_sync_all = True
+                    should_sync_namespaces = True
+                    should_sync_repositories = True
+                    should_sync_repository_files = True
+                    should_sync_changes = True
+                    should_sync_change_files = True
+                elif flag == 'a':
+                    should_sync_all = False
+                    should_sync_namespaces = False
+                    should_sync_repositories = False
+                    should_sync_repository_files = False
+                    should_sync_changes = False
+                    should_sync_change_files = False
+                elif flag == 'N':
+                    should_sync_namespaces = True
+                elif flag == 'n':
+                    should_sync_namespaces = False
+                    should_sync_all = False
+                elif flag == 'R':
+                    should_sync_repositories = True
+                elif flag == 'r':
+                    should_sync_repositories = False
+                    should_sync_all = False
+                elif flag == 'F':
+                    should_sync_repository_files = True
+                elif flag == 'f':
+                    should_sync_repository_files = False
+                    should_sync_all = False
+                elif flag == 'C':
+                    should_sync_changes = True
+                elif flag == 'c':
+                    should_sync_changes = False
+                    should_sync_all = False
+                elif flag == 'H':
+                    should_sync_change_files = True
+                elif flag == 'h':
+                    should_sync_change_files = False
+                    should_sync_all = False
+                else:
+                    raise ValueError(''''%c' is an unrecognized flag.
+                    Recognized Flags (lowercase to deactivate, uppercase to activate):
+                    a / A = Everything
+                    n / N = Namespaces
+                    r / R = Repositories
+                    f / F = Repository Files
+                    c / C = Changes
+                    h / H = Change Files''' % flag)
+            if should_sync_all:
+                self.sync_all()
             else:
-                raise ValueError(''''%c' is an unrecognized flag.
-                Recognized Flags (lowercase to deactivate, uppercase to activate):
-                a / A = Everything
-                n / N = Namespaces
-                r / R = Repositories
-                f / F = Repository Files
-                c / C = Changes
-                h / H = Change Files''' % flag)
-        if should_sync_all:
-            self.sync_all()
+                if should_sync_namespaces:
+                    self.sync_namespaces()
+                if should_sync_repositories:
+                    self.sync_repositories()
+                if should_sync_repository_files:
+                    self.sync_repository_files()
+                if should_sync_changes:
+                    self.sync_changes()
+                if should_sync_change_files:
+                    self.sync_change_files()
         else:
-            if should_sync_namespaces:
-                self.sync_namespaces()
-            if should_sync_repositories:
-                self.sync_repositories()
-            if should_sync_repository_files:
-                self.sync_repository_files()
-            if should_sync_changes:
-                self.sync_changes()
-            if should_sync_change_files:
-                self.sync_change_files()
+            raise ValueError("Type '%s' is an invalid type, expected None or a String" % type)
 
     def sync_all(self):
         self.sync_namespaces()
