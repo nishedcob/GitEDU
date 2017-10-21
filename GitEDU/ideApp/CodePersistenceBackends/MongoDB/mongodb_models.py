@@ -72,6 +72,7 @@ class ChangeFileModel(MongoModel):
     change = ReferenceField(ChangeModel)
     prog_language = CharField(choices=constants.LANGUAGE_NAMES)
     file_path = CharField()
+    file = ReferenceField(RepositoryFileModel)
 
     class Meta:
         pass
