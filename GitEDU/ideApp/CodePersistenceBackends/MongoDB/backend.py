@@ -671,6 +671,7 @@ class MongoChange(GenericChange):
     def save(self):
         if self.persistence_object is None:
             self.persistence_object = self.persistence_class()
+        self.persistence_object.change_id = self.id
         self.persistence_object.timestamp = self.timestamp
         self.persistence_object.repository = self.repository.persistence_object
         self.persistence_object.author = self.author

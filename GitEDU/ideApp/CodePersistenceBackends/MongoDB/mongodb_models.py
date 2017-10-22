@@ -53,6 +53,7 @@ class RepositoryFileModel(MongoModel):
 
 
 class ChangeModel(MongoModel):
+    change_id = CharField()
     comment = CharField()
     author = CharField()
     timestamp = TimestampField()
