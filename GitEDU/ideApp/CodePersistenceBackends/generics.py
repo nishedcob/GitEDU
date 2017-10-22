@@ -899,6 +899,10 @@ class CodePersistenceBackend:
             repository_str = repository
         else:
             raise ValueError("Repository is an Invalid Type")
+        if self.changes.get(namespace_str, None) is None:
+            self.changes[namespace_str] = {}
+        if self.changes[namespace_str].get(repository_str, None) is None:
+            self.changes[namespace_str][repository_str] = []
         return self.changes[namespace_str][repository_str]
 
     def search_changes(self, namespace, repository, query, regex=False):

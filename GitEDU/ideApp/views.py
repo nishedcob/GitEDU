@@ -1,4 +1,7 @@
 import json
+import hashlib
+import time
+import datetime
 
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
@@ -53,6 +56,8 @@ class GenericEditorFileView(View):
     editorLangsAndCode = json.dumps(constants.EDITOR_LANGUAGES)
     newCode = None
     sync_str = None
+    change_comment = "Edited from GitEDU"
+    hash_algo = 'sha1'
 
     def validate_request(self, request, namespace, repository, change, file_path):
         return True
@@ -106,7 +111,7 @@ class GenericEditorFileView(View):
                                                            'new': self.newCode,
                                                            'editorLang': self.editorLangsAndCode})
 
-    def proc_post(self, namespace, repository, file_path, recieved_form, change=None):
+    def proc_post(self, request, namespace, repository, file_path, recieved_form, change=None):
         pass
 
     def post_post(self, namespace, repository, new_file_path, change=None):
@@ -117,8 +122,8 @@ class GenericEditorFileView(View):
                          change=change)
         pre_proc_post = self.pre_post(request)
         if isinstance(pre_proc_post, self.form_class):
-            self.proc_post(namespace=namespace, repository=repository, file_path=file_path, recieved_form=pre_proc_post,
-                           change=change)
+            self.proc_post(request=request, namespace=namespace, repository=repository, file_path=file_path,
+                           recieved_form=pre_proc_post, change=change)
             return self.post_post(namespace=namespace, repository=repository,
                                   new_file_path=pre_proc_post.cleaned_data.get('file_path', file_path), change=change)
         elif isinstance(pre_proc_post, HttpResponse):
@@ -130,6 +135,7 @@ class GenericEditorFileView(View):
 class EditorFileView(GenericEditorFileView):
 
     sync_str = "NRF"
+    change_comment = "Edited from GitEDU: Normal File Editor"
 
     def validate_request(self, request, namespace, repository, change, file_path):
         return True
@@ -156,7 +162,7 @@ class EditorFileView(GenericEditorFileView):
             'prog_language': prog_language
         }
 
-    def proc_post(self, namespace, repository, file_path, recieved_form, change=None):
+    def proc_post(self, request, namespace, repository, file_path, recieved_form, change=None):
         manager.sync(self.sync_str)
         repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
         repository_file = manager.select_preferred_backend_object(result_set=repository_files)
@@ -184,3 +190,23 @@ class EditorFileView(GenericEditorFileView):
         repository_file.set_repository(repository_object)
         repository_file.set_language(language)
         repository_file.save()
+        comment = self.change_comment
+        timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+        if request.user.is_authenticated:
+            author = request.user.username
+        else:
+            author = "Anonymous"
+        hasher = hashlib.new(self.hash_algo)
+        hasher.update(repository_file.__str__().encode('utf-8'))
+        hasher.update(repository.encode('utf-8'))
+        hasher.update(namespace.encode('utf-8'))
+        hasher.update(comment.encode('utf-8'))
+        hasher.update(author.encode('utf-8'))
+        hasher.update(timestamp.encode('utf-8'))
+        id = hasher.hexdigest()
+        manager.create_change(namespace=namespace, repository=repository, id=id, comment=comment,
+                              author=author, timestamp=timestamp)
+        new_changes = manager.get_change(namespace=namespace, repository=repository, change=id)
+        new_change = manager.select_preferred_backend_object(result_set=new_changes)
+        new_change.save()
+

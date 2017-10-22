@@ -648,15 +648,15 @@ class CodePersistenceBackendManager(CodePersistenceBackend):
                     changes[backend_key] = backend['backend'].get_change(namespace, repository, change)
         return changes
 
-    def create_change(self, namespace, repository, author, comment=None,
+    def create_change(self, namespace, repository, id, author, comment=None,
                       timestamp=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
                       include_read=False, include_write=True):
         if include_read:
             for backend in self.code_persistence_backends_read:
-                backend['backend'].create_change(namespace, repository, author, comment, timestamp)
+                backend['backend'].create_change(namespace, repository, id, author, comment, timestamp)
         if include_write:
             for backend in self.code_persistence_backends_write:
-                backend['backend'].create_change(namespace, repository, author, comment, timestamp)
+                backend['backend'].create_change(namespace, repository, id, author, comment, timestamp)
 
     def delete_change(self, namespace, repository, change, include_read=False, include_write=True):
         if include_read:
