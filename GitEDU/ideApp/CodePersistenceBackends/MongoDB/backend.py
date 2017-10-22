@@ -952,6 +952,7 @@ class MongoChangeFile(GenericChangeFile):
         self.persistence_object.change = self.change.persistence_object
         self.persistence_object.language = self.language
         self.persistence_object.contents = self.contents
+        self.persistence_object.file = self.file.persistence_object
         self.persistence_object.save()
 
     def set_change(self, change):
@@ -975,6 +976,7 @@ class MongoChangeFile(GenericChangeFile):
         self.set_file_path(self.persistence_object.file_path)
         self.set_contents(self.persistence_object.contents)
         self.set_change(self.persistence_object.change)
+        self.set_file(self.persistence_object.file)
 
 global_persistence_classes = {
     'N': mongodb_models.NamespaceModel,
