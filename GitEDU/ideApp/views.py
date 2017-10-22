@@ -14,6 +14,7 @@ from . import constants
 from .forms import CodeForm, CodeGlobalPermissionsForm, AddCollaboratorForm
 
 from GitEDU.settings import CODE_PERSISTENCE_BACKEND_MANAGER_CLASS, load_code_persistence_backend_manager
+from ideApp.CodePersistenceBackends.MongoDB.backend import MongoChangeFile
 
 manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
 
@@ -209,4 +210,5 @@ class EditorFileView(GenericEditorFileView):
         new_changes = manager.get_change(namespace=namespace, repository=repository, change=id)
         new_change = manager.select_preferred_backend_object(result_set=new_changes)
         new_change.save()
-
+        mcf = MongoChangeFile(new_change, file_path, code, language, repository_file)
+        mcf.save()
