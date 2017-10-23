@@ -240,5 +240,12 @@ class EditorFileView(GenericEditorFileView):
         new_changes = manager.get_change(namespace=namespace, repository=repository, change=id)
         new_change = manager.select_preferred_backend_object(result_set=new_changes)
         new_change.save()
+        if repository_file.persistence_object.current_change_model is not None:
+            old_pmcf = repository_file.persistence_object.current_change_model
+            old_pchange = old_pmcf.change
+            new_change.parent_change = old_pchange
+            new_change.save()
         mcf = MongoChangeFile(new_change, file_path, code, language, repository_file)
         mcf.save()
+        repository_file.persistence_object.current_change_model = mcf
+        repository_file.persistence_object.save()
