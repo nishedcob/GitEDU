@@ -39,7 +39,7 @@ class RepositoryFileModel(MongoModel):
     repository = ReferenceField(RepositoryModel)
     prog_language = CharField(choices=constants.LANGUAGE_NAMES)
     file_path = CharField()
-    current_change_file = ReferenceField(ChangeFileModel, blank=True)
+    current_change_file = ReferenceField("ChangeFileModel", blank=True)
 
     class Meta:
         indexes = [IndexModel([('file_path', TEXT), ('repository', TEXT)], unique=True)]
