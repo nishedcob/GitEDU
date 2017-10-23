@@ -15,6 +15,7 @@ from .forms import CodeForm, CodeGlobalPermissionsForm, AddCollaboratorForm
 
 from GitEDU.settings import CODE_PERSISTENCE_BACKEND_MANAGER_CLASS, load_code_persistence_backend_manager
 from ideApp.CodePersistenceBackends.MongoDB.backend import MongoChangeFile
+from ideApp.CodePersistenceBackends.MongoDB.mongodb_models import ChangeModel, ChangeFileModel
 
 manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
 
@@ -69,7 +70,31 @@ class GenericEditorFileView(View):
             raise PermissionDenied('Invalid Request')
 
     def get_edits(self, namespace, repository, file_path):
-        pass
+        manager.sync("NRF")
+        namespace_objs = manager.get_namespace(namespace=namespace)
+        namespace_obj = manager.select_preferred_backend_object(result_set=namespace_objs)
+        repository_objs = manager.get_repository(namespace=namespace_obj, repository=repository)
+        repository_obj = manager.select_preferred_backend_object(result_set=repository_objs)
+        repository_file_objs = manager.get_file(namespace=namespace_obj, repository=repository_obj, file_path=file_path)
+        repository_file_obj = manager.select_preferred_backend_object(result_set=repository_file_objs)
+        file_edits = ChangeFileModel.objects.raw({
+            'file': repository_file_obj.persistence_object.pk,
+            'file_path': file_path
+        })
+        edits = []
+        for file_edit in file_edits:
+            change = ChangeModel.objects.raw({'_id': file_edit.change.pk}).first()
+            edit = {
+                'id': change.change_id,
+                'author': change.author,
+                'timestamp': change.timestamp.as_datetime().__str__(),
+                'namespace': namespace,
+                'repository': repository,
+                'file_path': file_edit.file_path
+            }
+            edits.append(edit)
+        edits = edits.sort(key=lambda k: k['timestamp'])
+        return edits
 
     def pre_get(self, request):
         manager.sync(self.sync_str)
@@ -82,10 +107,10 @@ class GenericEditorFileView(View):
             'prog_language': None
         }
 
-    def post_get(self, request, file_path, file_contents, prog_language, user):
+    def post_get(self, request, namespace, repository, file_path, file_contents, prog_language, user):
         form = self.form_class(initial={'file_name': file_path, 'code': file_contents, 'language': prog_language})
         orig = True
-        edits = []
+        edits = self.get_edits(namespace=namespace, repository=repository, file_path=file_path)
         global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
         return render(request, self.template, context={'form': form, 'globalPermForm': global_perm_form,
                                                        'owner': user, 'orig': orig, 'edits': edits,
@@ -99,16 +124,18 @@ class GenericEditorFileView(View):
         prepared_params = self.proc_get(namespace=namespace, repository=repository, file_path=file_path, change=change)
         prepared_params['user'] = user
         prepared_params['request'] = request
+        prepared_params['namespace'] = namespace
+        prepared_params['repository'] = repository
         return self.post_get(**prepared_params)
 
-    def pre_post(self, request):
+    def pre_post(self, request, namespace, repository, file_path):
         recieved_form = self.form_class(request.POST)
         if recieved_form.is_valid():
             return recieved_form
         else:
             user = request.user.username
             orig = True
-            edits = []
+            edits = self.get_edits(namespace=namespace, repository=repository, file_path=file_path)
             global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
             return render(request, self.template, context={'form': recieved_form, 'globalPermForm': global_perm_form,
                                                            'owner': user, 'orig': orig, 'edits': edits,
@@ -124,7 +151,7 @@ class GenericEditorFileView(View):
     def post(self, request, namespace, repository, file_path, change=None):
         self.pre_request(request=request, namespace=namespace, repository=repository, file_path=file_path,
                          change=change)
-        pre_proc_post = self.pre_post(request)
+        pre_proc_post = self.pre_post(request, namespace, repository, file_path)
         if isinstance(pre_proc_post, self.form_class):
             self.proc_post(request=request, namespace=namespace, repository=repository, file_path=file_path,
                            recieved_form=pre_proc_post, change=change)
