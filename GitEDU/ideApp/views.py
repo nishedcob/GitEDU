@@ -166,8 +166,10 @@ class GenericEditorFileView(View):
                          change=change)
         pre_proc_post = self.pre_post(request, namespace, repository, file_path)
         if isinstance(pre_proc_post, self.form_class):
-            self.proc_post(request=request, namespace=namespace, repository=repository, file_path=file_path,
-                           recieved_form=pre_proc_post, change=change)
+            this_proc_post = self.proc_post(request=request, namespace=namespace, repository=repository,
+                                            file_path=file_path, recieved_form=pre_proc_post, change=change)
+            if this_proc_post is not None and isinstance(this_proc_post, HttpResponse):
+                return this_proc_post
             return self.post_post(namespace=namespace, repository=repository,
                                   new_file_path=pre_proc_post.cleaned_data.get('file_path', file_path), change=change)
         elif isinstance(pre_proc_post, HttpResponse):
@@ -264,6 +266,7 @@ class EditorFileView(GenericEditorFileView):
         mcf.save()
         repository_file.persistence_object.current_change_file = mcf.persistence_object.pk
         repository_file.persistence_object.save()
+        return None
 
 
 class EditorChangeFileView(GenericEditorFileView):
@@ -296,4 +299,44 @@ class EditorChangeFileView(GenericEditorFileView):
         }
 
     def proc_post(self, request, namespace, repository, file_path, recieved_form, change=None):
-        pass
+        manager.sync(self.sync_str)
+        repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=file_path)
+        repository_file = manager.select_preferred_backend_object(result_set=repository_files)
+        repository_objects = manager.get_repository(namespace=namespace, repository=repository)
+        repository_object = manager.select_preferred_backend_object(result_set=repository_objects)
+        new_file_path = recieved_form.cleaned_data.get('file_name', file_path)
+        language = recieved_form.cleaned_data.get('language', "ot")
+        code = recieved_form.cleaned_data.get('code', "")
+        persisted_repository = repository_object.persistence_object
+        persisted_changes = ChangeModel.objects.raw({'change_id': change, 'repository': persisted_repository.pk})
+        persisted_change = persisted_changes.first()
+        new_change_file = ChangeFileModel()
+        new_change_file.prog_language = language
+        new_change_file.file_path = new_file_path
+        new_change_file.file = repository_file.persistence_object.pk
+        new_change_file.contents = code
+        comment = self.change_comment
+        timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+        if request.user.is_authenticated:
+            author = request.user.username
+        else:
+            author = "Anonymous"
+        hasher = hashlib.new(self.hash_algo)
+        hasher.update(new_change_file.__str__().encode('utf-8'))
+        hasher.update(repository.encode('utf-8'))
+        hasher.update(namespace.encode('utf-8'))
+        hasher.update(comment.encode('utf-8'))
+        hasher.update(author.encode('utf-8'))
+        hasher.update(timestamp.encode('utf-8'))
+        id = hasher.hexdigest()
+        manager.create_change(namespace=namespace, repository=repository, id=id, comment=comment,
+                              author=author, timestamp=timestamp)
+        new_changes = manager.get_change(namespace=namespace, repository=repository, change=id)
+        new_change = manager.select_preferred_backend_object(result_set=new_changes)
+        old_pchange = persisted_change.pk
+        new_change.persistence_object.parent_change = old_pchange
+        new_change.save()
+        new_change.persistence_object.save()
+        new_change_file.change = new_change.persistence_object.pk
+        new_change_file.save()
+        return redirect('ide:change_file_editor', namespace, repository, new_change.persistence_object.change_id, file_path)
