@@ -580,16 +580,22 @@ class CodePersistenceBackend:
             return None
 
     def repository_exists(self, namespace, repository):
+        if isinstance(repository, str):
+            repository_str = repository
+        elif isinstance(repository, self.get_repository_class()):
+            repository_str = repository.get_repository()
+        else:
+            raise ValueError("Repository '%s' is an unsupported type" % repository)
         try:
             if isinstance(repository, self.repository_class):
                 if not self.namespace_exists(namespace):
                     return False
                 for repo in self.list_repositories(namespace):
                     if isinstance(repo, self.repository_class):
-                        if repo.get_repository() == repository:
+                        if repo.get_repository() == repository_str:
                             return True
                     elif isinstance(repo, str):
-                        if repo == repository:
+                        if repo == repository_str:
                             return True
                 return False
             else:
@@ -598,10 +604,10 @@ class CodePersistenceBackend:
                         for nsp, repos in self.repositories.items():
                             for repo in repos:
                                 if isinstance(repo, self.repository_class):
-                                    if repo.get_repository() == repository:
+                                    if repo.get_repository() == repository_str:
                                         return True
                                 elif isinstance(repo, str):
-                                    if repo == repository:
+                                    if repo == repository_str:
                                         return True
                 return False
         except TypeError:
