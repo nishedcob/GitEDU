@@ -251,3 +251,24 @@ class EditorFileView(GenericEditorFileView):
         mcf.save()
         repository_file.persistence_object.current_change_file = mcf.persistence_object.pk
         repository_file.persistence_object.save()
+
+
+class EditorChangeFileView(GenericEditorFileView):
+
+    sync_str = "NRF"
+    change_comment = "Edited from GitEDU: Change File Editor"
+
+    def validate_request(self, request, namespace, repository, change, file_path):
+        return True
+
+    def proc_get(self, namespace, repository, file_path, change=None):
+        file_contents = None
+        prog_language = None
+        return {
+            'file_path': file_path,
+            'file_contents': file_contents,
+            'prog_language': prog_language
+        }
+
+    def proc_post(self, request, namespace, repository, file_path, recieved_form, change=None):
+        pass
