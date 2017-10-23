@@ -143,7 +143,27 @@
                 <h3 id="title" class=" navbar-custom ">Ediciones:</h3>
                 <ol>
                     {% for e in edits %}
-                        <li><a class="formularios" href="/code/{{ e.code_id }}/">{{ e.file_name }}</a></li>
+                        <li>
+                            <a class="formularios"
+                               href="{% url 'ide:change_file_editor' namespace=e.namespace repository=e.repository change=e.id file_path=e.file_path %}">
+                                {{ e.id }}
+                            </a> - <a class="formularios" href="{% url 'ide:namespace' namespace=e.namespace %}">
+                                {{ e.namespace }}
+                            </a> - <a class="formularios" href="{% url 'ide:repository' namespace=e.namespace repository=e.repository %}">
+                                {{ e.repository }}
+                            </a> - <a class="formularios"
+                                      href="{% url 'ide:file_editor' namespace=e.namespace repository=e.repository file_path=e.file_path %}">
+                                {{ e.file_path }}
+                            </a>
+                            <ul>
+                                <li>
+                                    Por: <a class="formularios" href="{% url "social:user" user=e.author %}">
+                                        {{ e.author }}
+                                    </a>
+                                </li>
+                                <li>{{ e.timestamp }}</li>
+                            </ul>
+                        </li>
                     {% endfor %}
                 </ol>
                 <hr>

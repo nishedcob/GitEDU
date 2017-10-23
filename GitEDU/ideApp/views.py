@@ -42,6 +42,18 @@ class EditorAssignmentView(View):
         pass
 
 
+class NamespaceView(View):
+
+    def get(self, request, namespace):
+        return HttpResponse("<html><body><h1>%s</h1></body></html>" % namespace)
+
+
+class RepositoryView(View):
+
+    def get(self, request, namespace, repository):
+        return HttpResponse("<html><body><h1>%s / %s</h1></body></html>" % (namespace, repository))
+
+
 class GenericEditorFileView(View):
     form_class = CodeForm
     global_permission_form_class = CodeGlobalPermissionsForm
@@ -93,7 +105,7 @@ class GenericEditorFileView(View):
                 'file_path': file_edit.file_path
             }
             edits.append(edit)
-        edits = edits.sort(key=lambda k: k['timestamp'])
+        edits.sort(key=lambda k: k['timestamp'])
         return edits
 
     def pre_get(self, request):
