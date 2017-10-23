@@ -28,4 +28,6 @@ urlpatterns = [
         views.EditorFileView.as_view(), name="file_editor"),
     url(r'^cf/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/(?P<change>[a-z0-9]*)/(?P<file_path>[a-zA-Z0-9/]*\.[a-zA-Z0-9]*)$',
         views.EditorChangeFileView.as_view(), name="change_file_editor"),
+    url(r'^checkout/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/(?P<change>[a-z0-9]*)/$',
+        views.CheckoutFileVersionView.as_view(), name="checkout"),
 ]

@@ -105,6 +105,12 @@
 
             <div id="editor" contenteditable="true" name="editor">{% if form.code.value is not None %}{{ form.code.value }}{% endif %}</div>
             <button class="btn btn-success btn-lg" type="submit" id="save" name="save">Guardar</button>
+            {% if represents_change %}
+                <a class="btn btn-success btn-lg"
+                   href="{% url 'ide:checkout' namespace=namespace repository=repository change=change_id %}">
+                    Utilizar esta version
+                </a>
+            {% endif %}
             <script type="text/javascript">
                 $(function () {
                     $('#save').click(function () {
@@ -123,7 +129,7 @@
                 editor.setTheme("ace/theme/twilight");
 
                 var langs ={{ editorLang|safe }};
-                //editor.session.setMode("ace/mode/python"); // consta.editor_laguage[valordebase usercode.language]['ace']
+                //editor.session.setMode("ace/mode/python");// consta.editor_laguage[valordebase usercode.language]['ace']
 
                 editor.session.setMode("ace/mode/" + {% if not new %}langs['{{ form.language.value }}']['ace']{% else %}"python"{% endif %}); // consta.editor_laguage[valordebase usercode.language]['ace']
 

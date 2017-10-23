@@ -16,7 +16,7 @@ from .forms import CodeForm, CodeGlobalPermissionsForm, AddCollaboratorForm
 from GitEDU.settings import CODE_PERSISTENCE_BACKEND_MANAGER_CLASS, load_code_persistence_backend_manager
 from ideApp.CodePersistenceBackends.MongoDB.backend import MongoChangeFile
 from ideApp.CodePersistenceBackends.MongoDB.mongodb_models import ChangeModel, ChangeFileModel, NamespaceModel,\
-    RepositoryModel
+    RepositoryModel, RepositoryFileModel
 
 manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
 
@@ -73,6 +73,7 @@ class GenericEditorFileView(View):
     sync_str = None
     change_comment = "Edited from GitEDU"
     hash_algo = 'sha1'
+    represents_change = False
 
     def validate_request(self, request, namespace, repository, change, file_path):
         return True
@@ -120,15 +121,12 @@ class GenericEditorFileView(View):
             'prog_language': None
         }
 
-    def post_get(self, request, namespace, repository, file_path, file_contents, prog_language, user):
+    def post_get(self, request, namespace, repository, file_path, file_contents, prog_language, user, change):
         form = self.form_class(initial={'file_name': file_path, 'code': file_contents, 'language': prog_language})
         orig = True
         edits = self.get_edits(namespace=namespace, repository=repository, file_path=file_path)
         global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
-        return render(request, self.template, context={'form': form, 'globalPermForm': global_perm_form,
-                                                       'owner': user, 'orig': orig, 'edits': edits,
-                                                       'new': self.newCode,
-                                                       'editorLang': self.editorLangsAndCode})
+        return self.render_editor(request, namespace, repository, form, global_perm_form, user, orig, edits, change)
 
     def get(self, request, namespace, repository, file_path, change=None):
         self.pre_request(request=request, namespace=namespace, repository=repository, file_path=file_path,
@@ -139,6 +137,7 @@ class GenericEditorFileView(View):
         prepared_params['request'] = request
         prepared_params['namespace'] = namespace
         prepared_params['repository'] = repository
+        prepared_params['change'] = change
         return self.post_get(**prepared_params)
 
     def pre_post(self, request, namespace, repository, file_path):
@@ -150,10 +149,8 @@ class GenericEditorFileView(View):
             orig = True
             edits = self.get_edits(namespace=namespace, repository=repository, file_path=file_path)
             global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
-            return render(request, self.template, context={'form': recieved_form, 'globalPermForm': global_perm_form,
-                                                           'owner': user, 'orig': orig, 'edits': edits,
-                                                           'new': self.newCode,
-                                                           'editorLang': self.editorLangsAndCode})
+            return self.render_editor(request, namespace, repository, recieved_form, global_perm_form, user, orig,
+                                      edits)
 
     def proc_post(self, request, namespace, repository, file_path, recieved_form, change=None):
         pass
@@ -176,6 +173,23 @@ class GenericEditorFileView(View):
             return pre_proc_post
         else:
             raise ValueError("'%s' is an unknown type" % pre_proc_post)
+
+    def render_editor(self, request, namespace, repository, form, global_perm_form, user, orig, edits, change_id=None):
+        context = {
+            'form': form,
+            'globalPermForm': global_perm_form,
+            'owner': user,
+            'orig': orig,
+            'edits': edits,
+            'new': self.newCode,
+            'represents_change': self.represents_change,
+            'editorLang': self.editorLangsAndCode,
+            'namespace': namespace,
+            'repository': repository
+        }
+        if self.represents_change and change_id is not None:
+            context['change_id'] = change_id
+        return render(request, self.template, context=context)
 
 
 class EditorFileView(GenericEditorFileView):
@@ -273,6 +287,7 @@ class EditorChangeFileView(GenericEditorFileView):
 
     sync_str = "NRF"
     change_comment = "Edited from GitEDU: Change File Editor"
+    represents_change = True
 
     def validate_request(self, request, namespace, repository, change, file_path):
         return True
@@ -340,3 +355,46 @@ class EditorChangeFileView(GenericEditorFileView):
         new_change_file.change = new_change.persistence_object.pk
         new_change_file.save()
         return redirect('ide:change_file_editor', namespace, repository, new_change.persistence_object.change_id, file_path)
+
+
+class CheckoutFileVersionView(View):
+
+    sync_str = "NRF"
+
+    def get(self, request, namespace, repository, change):
+        if not self.validate_request(request, namespace, repository):
+            raise PermissionDenied("Insufficient permision to carry out the requested operation")
+        manager.sync(self.sync_str)
+        managed_repositories = manager.get_repository(namespace, repository)
+        managed_repository = manager.select_preferred_backend_object(result_set=managed_repositories)
+        persisted_changes = ChangeModel.objects.raw({
+            'change_id': change,
+            'repository': managed_repository.persistence_object.pk
+        })
+        persisted_change = persisted_changes.first()
+        persisted_change_files = ChangeFileModel.objects.raw({
+            'change': persisted_change.pk
+        })
+        file_path = None
+        for pcf in persisted_change_files:
+            prf = RepositoryFileModel.objects.raw({
+                '_id': pcf.file.pk
+            }).first()
+            repository_files = manager.get_file(namespace=namespace, repository=repository, file_path=prf.file_path)
+            repository_file = manager.select_preferred_backend_object(result_set=repository_files)
+            prf.contents = pcf.contents
+            prf.prog_language = pcf.prog_language
+            prf.file_path = pcf.file_path
+            prf.current_change_file = pcf
+            prf.save()
+            repository_file.persistence_object = prf
+            repository_file.load_persisted_values()
+            repository_file.save()
+            if file_path is None:
+                file_path = prf.file_path
+        if file_path is None:
+            raise Exception("No file checked out")
+        return redirect('ide:file_editor', namespace, repository, file_path)
+
+    def validate_request(self, request, namespace, repository):
+        return True
