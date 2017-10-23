@@ -4,6 +4,8 @@ import re
 
 from ideApp.models import Backend, BackendType
 
+from bson.timestamp import Timestamp
+
 
 def validate_string(value, parameter_name=None):
     if value is None:
@@ -147,7 +149,14 @@ class GenericChange:
     author = None
 
     def validate_timestamp(self, timestamp):
-        validate_string(timestamp, "Timestamp")
+        try:
+            validate_string(timestamp, "Timestamp")
+            return timestamp
+        except ValueError as ve:
+            if isinstance(timestamp, Timestamp):
+                return timestamp.as_datetime().__str__()
+            else:
+                raise ve
 
     def validate_author(self, author):
         validate_string(author, "Author")
@@ -162,7 +171,9 @@ class GenericChange:
         self.id = id
         validate_string(comment, "Comment")
         self.comment = comment
-        self.validate_timestamp(timestamp)
+        #print(timestamp)
+        timestamp = self.validate_timestamp(timestamp)
+        #print(timestamp)
         self.timestamp = timestamp
         validate_string(author)
         self.author = author

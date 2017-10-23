@@ -68,6 +68,9 @@ class GenericEditorFileView(View):
                                  file_path=file_path):
             raise PermissionDenied('Invalid Request')
 
+    def get_edits(self, namespace, repository, file_path):
+        pass
+
     def pre_get(self, request):
         manager.sync(self.sync_str)
         return request.user.username
