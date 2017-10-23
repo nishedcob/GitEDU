@@ -70,8 +70,8 @@ class ChangeModel(MongoModel):
             timestamp = self.timestamp.as_datetime().__str__()
         else:
             timestamp = self.timestamp
-        return "ChangeMongoModel: \"%s\" :: %s :: %s :: [%s]" % (self.comment, self.author, timestamp,
-                                                                 self.repository)
+        return "ChangeMongoModel: %s :: \"%s\" :: %s :: %s :: [%s]" % (self.change_id, self.comment, self.author,
+                                                                       timestamp, self.repository)
 
 
 class ChangeFileModel(MongoModel):
