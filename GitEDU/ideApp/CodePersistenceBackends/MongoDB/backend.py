@@ -950,7 +950,7 @@ class MongoChangeFile(GenericChangeFile):
             self.persistence_object = self.persistence_class()
         self.persistence_object.file_path = self.file_path
         self.persistence_object.change = self.change.persistence_object
-        self.persistence_object.language = self.language
+        self.persistence_object.prog_language = self.language
         self.persistence_object.contents = self.contents
         self.persistence_object.file = self.file.persistence_object
         self.persistence_object.save()
