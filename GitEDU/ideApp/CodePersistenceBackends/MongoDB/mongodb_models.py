@@ -4,6 +4,8 @@ from pymongo import TEXT
 from pymodm import MongoModel
 from pymodm.fields import CharField, ReferenceField, TimestampField
 
+from bson import Timestamp
+
 from ideApp import constants
 from ideApp.CodePersistenceBackends.MongoDB import auto_connect
 # from GitEDU.settings import CODE_PERSISTENCE_BACKENDS, MONGODB_CONNECT_TO
@@ -64,7 +66,11 @@ class ChangeModel(MongoModel):
         #connection_alias = 'mongo_000'
 
     def __str__(self):
-        return "ChangeMongoModel: \"%s\" :: %s :: %s :: [%s]" % (self.comment, self.author, self.timestamp,
+        if isinstance(self.timestamp, Timestamp):
+            timestamp = self.timestamp.as_datetime().__str__()
+        else:
+            timestamp = self.timestamp
+        return "ChangeMongoModel: \"%s\" :: %s :: %s :: [%s]" % (self.comment, self.author, timestamp,
                                                                  self.repository)
 
 
