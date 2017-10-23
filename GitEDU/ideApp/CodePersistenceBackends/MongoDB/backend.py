@@ -1060,7 +1060,7 @@ def create_dto_object_from_persistence_object(type=None, persistence_object=None
             attributes['language'] = persistence_object.prog_language
         elif type == "C":
             # Change
-            attributes['id'] = persistence_object.id
+            attributes['id'] = persistence_object.change_id
             attributes['comment'] = persistence_object.comment
             attributes['author'] = persistence_object.author
             attributes['timestamp'] = persistence_object.timestamp
@@ -1075,7 +1075,7 @@ def create_dto_object_from_persistence_object(type=None, persistence_object=None
             # Change File
             attributes['file_path'] = persistence_object.file_path
             attributes['contents'] = persistence_object.contents
-            attributes['language'] = persistence_object.language
+            attributes['language'] = persistence_object.prog_language
             attributes['change'] = create_dto_object_from_persistence_object(type="C",
                                                                              persistence_object=persistence_object
                                                                              .change,
@@ -1259,10 +1259,18 @@ class MongoDBCodePersistenceBackend(CodePersistenceBackend):
                 for change, change_files in changes.items():
                     for change_file in change_files:
                         change_file.save()
+        for namespace, repositories in self.changes.items():
+            for repository, changes in repositories.items():
+                for change in changes:
+                    #print(change)
+                    mongo_change_id = change.persistence_object.pk
+                    #print(mongo_change_id)
                     persisted_nspc_repo_chg_files = list(mongodb_models.ChangeFileModel.objects.raw(
-                        {'change': change}
+                        {'change': mongo_change_id}
                     ))
-                    self.change_files[namespace][repository][change] = self.create_list_from_persistence_list(type="f",
-                                                                                                    persistence_list=
-                                                                                        persisted_nspc_repo_chg_files)
+                    print(list(persisted_nspc_repo_chg_files))
+                    change_id = change.persistence_object.change_id
+                    self.change_files[namespace][repository][change_id] = self.create_list_from_persistence_list(
+                        type="f", persistence_list=persisted_nspc_repo_chg_files
+                    )
         print("Change Files: %s" % self.change_files)
