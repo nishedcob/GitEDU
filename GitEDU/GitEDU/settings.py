@@ -230,15 +230,18 @@ CODE_PERSISTENCE_BACKENDS = {
         'connection_profile': 'nosql',
     },
     'gitlab': {
-        'use': True,
+        'use': False,
         'backend': 'ideApp.CodePersistenceBackends.GitLab.backend.GitLabCodePersistenceBackend',
         'connection_profiles': GITLAB_SERVERS,
         'connection_profile': GITLAB_DEFAULT_SERVER,
     }
 }
 
-CODE_PERSISTENCE_BACKEND_READ_PREFERENCE = ['mongodb', 'gitlab']
-CODE_PERSISTENCE_BACKEND_WRITE_OUT = ['mongodb', 'gitlab']
+# Example:
+#CODE_PERSISTENCE_BACKEND_READ_PREFERENCE = ['mongodb', 'gitlab']
+#CODE_PERSISTENCE_BACKEND_WRITE_OUT = ['mongodb', 'gitlab']
+CODE_PERSISTENCE_BACKEND_READ_PREFERENCE = ['mongodb']
+CODE_PERSISTENCE_BACKEND_WRITE_OUT = ['mongodb']
 
 MONGODB_CONNECT_TO = 'mongodb'
 GITLAB_CONNECT_TO = 'gitlab'
