@@ -15,7 +15,8 @@ from .forms import CodeForm, CodeGlobalPermissionsForm, AddCollaboratorForm
 
 from GitEDU.settings import CODE_PERSISTENCE_BACKEND_MANAGER_CLASS, load_code_persistence_backend_manager
 from ideApp.CodePersistenceBackends.MongoDB.backend import MongoChangeFile
-from ideApp.CodePersistenceBackends.MongoDB.mongodb_models import ChangeModel, ChangeFileModel
+from ideApp.CodePersistenceBackends.MongoDB.mongodb_models import ChangeModel, ChangeFileModel, NamespaceModel,\
+    RepositoryModel
 
 manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
 
@@ -274,8 +275,20 @@ class EditorChangeFileView(GenericEditorFileView):
         return True
 
     def proc_get(self, namespace, repository, file_path, change=None):
-        file_contents = None
-        prog_language = None
+        if change is None:
+            raise ValueError("Change can't be None")
+        if not isinstance(change, str):
+            raise ValueError("Change must be a string")
+        persisted_namespaces = NamespaceModel.objects.raw({'name': namespace})
+        persisted_namespace = persisted_namespaces.first()
+        persisted_repositories = RepositoryModel.objects.raw({'name': repository, 'namespace': persisted_namespace.pk})
+        persisted_repository = persisted_repositories.first()
+        persisted_changes = ChangeModel.objects.raw({'change_id': change, 'repository': persisted_repository.pk})
+        persisted_change = persisted_changes.first()
+        persisted_change_files = ChangeFileModel.objects.raw({'file_path': file_path, 'change': persisted_change.pk})
+        persisted_change_file = persisted_change_files.first()
+        file_contents = persisted_change_file.contents
+        prog_language = persisted_change_file.prog_language
         return {
             'file_path': file_path,
             'file_contents': file_contents,
