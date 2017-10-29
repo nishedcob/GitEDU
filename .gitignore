@@ -208,5 +208,5 @@ ENV/
 
 # End of https://www.gitignore.io/api/django,python,pycharm,pycharm+all
 
-docker/python-executor/code/env-*
+docker/python3-executor/code/env-*
 
