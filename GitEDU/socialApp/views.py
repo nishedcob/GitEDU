@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.views import View
 
 
-class UserView(View):
+class UserView(View):  # TODO
 
     def get(self, request, user):
         return HttpResponse("<html><body><h1>%s</h1></body></html>" % user)

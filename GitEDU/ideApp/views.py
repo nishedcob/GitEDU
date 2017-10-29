@@ -25,7 +25,7 @@ print("code persistence backend manager: <%s>" % manager)
 # Create your views here.
 
 
-class EditorClassView(View):
+class EditorClassView(View):  # TODO
 
     def get(self, class_id):
         pass
@@ -34,7 +34,7 @@ class EditorClassView(View):
         pass
 
 
-class EditorAssignmentView(View):
+class EditorAssignmentView(View):  # TODO
 
     def get(self, class_id, assignment_id):
         pass
@@ -43,13 +43,13 @@ class EditorAssignmentView(View):
         pass
 
 
-class NamespaceView(View):
+class NamespaceView(View):  # TODO
 
     def get(self, request, namespace):
         return HttpResponse("<html><body><h1>%s</h1></body></html>" % namespace)
 
 
-class RepositoryView(View):
+class RepositoryView(View):  # TODO
 
     def get(self, request, namespace, repository):
         return HttpResponse("<html><body><h1>%s / %s</h1></body></html>" % (namespace, repository))
