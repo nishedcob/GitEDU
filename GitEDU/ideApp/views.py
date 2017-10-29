@@ -43,10 +43,25 @@ class EditorAssignmentView(View):  # TODO
         pass
 
 
-class NamespaceView(View):  # TODO
+class NamespaceView(View):
+
+    template = 'editor/namespace.html'
+    sync_str = 'NR'
 
     def get(self, request, namespace):
-        return HttpResponse("<html><body><h1>%s</h1></body></html>" % namespace)
+        manager.sync(self.sync_str)
+        context = {}
+        backend_namespaces = manager.get_namespace(namespace=namespace)
+        backend_namespace = manager.select_preferred_backend_object(result_set=backend_namespaces)
+        context['namespace'] = backend_namespace
+        backend_repositories = manager.list_repositories(namespace=namespace)
+        prefered_backend_repositories = manager.select_preferred_backend_object(result_set=backend_repositories)
+        context['repositories'] = []
+        for backend_repository in prefered_backend_repositories:
+            context['repositories'].append(backend_repository)
+        context['detalles'] = True
+        print("context: %s" % context)
+        return render(request, self.template, context=context)
 
 
 class RepositoryView(View):  # TODO
