@@ -1,3 +1,13 @@
+#! /usr/bin/head -n 2
+# Execute this file with 'source commands-doc.sh'
+
+# Execute other commands-doc.sh recursively...
+for dir in `find . -type d | sed 's/^\.\///; /\//d; /^\.$/d'`; do
+    echo $dir;
+    cd $dir
+    source ./commands-doc.sh
+    cd ..
+done
 
 # to execute when images should be updated remotely:
 ########################################################
