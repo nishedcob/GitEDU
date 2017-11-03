@@ -1,3 +1,5 @@
+#! /usr/bin/head -n 2
+# Execute this file with 'source commands-doc.sh'
 
 # build Dockerfile:
 #######################
