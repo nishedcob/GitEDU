@@ -123,3 +123,13 @@ USE_TZ = False
 
 STATIC_URL = '/static/'
 
+NOSQL_DATABASES = {
+    'nosql': {
+        'NAME': 'eduNubeDB',
+        'USER': "eduNubeUser",
+        'PASSWORD': '3d?N_6E',
+        'HOST': '127.0.0.1',
+        'PORT': '27017',
+    }
+}
+
