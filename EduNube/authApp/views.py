@@ -13,15 +13,22 @@ from authApp.models import APIToken
 # Create your views here.
 
 
+def decode_api_token(api_token=None):
+    if api_token is None:
+        raise ValueError("API_Token can't be None")
+    return jwt.decode(api_token.token, api_token.secret_key, algorithms=[api_token.token_algo])
+
+
 def update_api_token(api_token=None, regen_secret_key=False):
     if api_token is None:
         raise ValueError("API_Token can't be None")
     if regen_secret_key or api_token.secret_key is None or len(api_token.secret_key) == 0:
         api_token.secret_key = bcrypt.gensalt()  # Generate Random Unique Secret_Key
+    api_token.edit_date_in_token = api_token.edit_date.__str__()
     payload = {
         'app_name': api_token.app_name,
         'created_date': api_token.created_date.__str__(),
-        'edit_date': api_token.edit_date.__str__(),
+        'edit_date': api_token.edit_date_in_token,
         'expires': api_token.expires
     }
     if api_token.expires:
@@ -72,6 +79,8 @@ class TokensView(PermissionRequiredMixin, View):
         if form_response.is_valid():
             api_token = form_response.save(commit=False)
             update_api_token(api_token=api_token, regen_secret_key=True)
+            # Update a second time to correct timestamp issue
+            update_api_token(api_token=api_token, regen_secret_key=False)
         else:
             context = self.build_context(form=form_response)
             return render(request, self.template, context)
