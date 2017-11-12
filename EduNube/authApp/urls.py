@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib.auth import views as auth_views
+from authApp import views
 
 login_template = 'auth/login'
 login_template = login_template + ".noreg"
@@ -22,6 +23,11 @@ login_template = login_template + ".html"
 
 appname = "authApp"
 urlpatterns = [
-    url("^logout", auth_views.logout, {'template_name': 'auth/logout.html', 'next_page': 'auth:login'}, name='logout'),
-    url("^login", auth_views.login, {'template_name': login_template}, name='login')
+    url("^logout$", auth_views.logout, {'template_name': 'auth/logout.html', 'next_page': 'auth:login'}, name='logout'),
+    url("^login$", auth_views.login, {'template_name': login_template}, name='login'),
+    url("^tokens$", views.TokensView.as_view(), name="tokens"),
+    url("^token/(?P<app_name>[a-zA-Z_0-9]*).json$", views.TokenView.as_view(), name="token"),
+    url("^token/edit/(?P<app_name>[a-zA-Z_0-9]*)$", views.EditTokenView.as_view(), name="edit_token"),
+    url("^token/delete/(?P<app_name>[a-zA-Z_0-9]*)$", views.DeleteTokenView.as_view(), name="delete_token"),
+    url("^token/secret/(?P<app_name>[a-zA-Z_0-9]*)$", views.SecretTokenView.as_view(), name="secret_token")
 ]
