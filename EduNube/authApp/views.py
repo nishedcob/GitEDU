@@ -13,6 +13,24 @@ from authApp.models import APIToken
 # Create your views here.
 
 
+def update_api_token(api_token=None, regen_secret_key=False):
+    if api_token is None:
+        raise ValueError("API_Token can't be None")
+    if regen_secret_key or api_token.secret_key is None or len(api_token.secret_key) == 0:
+        api_token.secret_key = bcrypt.gensalt()  # Generate Random Unique Secret_Key
+    payload = {
+        'app_name': api_token.app_name,
+        'created_date': api_token.created_date.__str__(),
+        'edit_date': api_token.edit_date.__str__(),
+        'expires': api_token.expires
+    }
+    if api_token.expires:
+        if api_token.expire_date is not None:
+            payload['expire_date'] = api_token.expire_date
+    api_token.token = jwt.encode(payload, api_token.secret_key, algorithm='HS256')  # Generate Token
+    api_token.save()
+
+
 class TokensView(PermissionRequiredMixin, View):
 
     permission_required = 'auth_admin.manage_tokens'
@@ -53,18 +71,7 @@ class TokensView(PermissionRequiredMixin, View):
         form_response = self.form(request.POST)
         if form_response.is_valid():
             api_token = form_response.save(commit=False)
-            api_token.secret_key = bcrypt.gensalt()  # Generate Random Unique Secret_Key
-            payload = {
-                'app_name': api_token.app_name,
-                'created_date': api_token.created_date.__str__(),
-                'edit_date': api_token.edit_date.__str__(),
-                'expires': api_token.expires
-            }
-            if api_token.expires:
-                if api_token.expire_date is not None:
-                    payload['expire_date'] = api_token.expire_date
-            api_token.token = jwt.encode(payload, api_token.secret_key, algorithm='HS256')  # Generate Token
-            api_token.save()
+            update_api_token(api_token=api_token, regen_secret_key=True)
         else:
             context = self.build_context(form=form_response)
             return render(request, self.template, context)
@@ -118,18 +125,7 @@ class SecretTokenView(PermissionRequiredMixin, View):
         if app_name is None:
             raise ValueError("App_Name can't be None")
         api_token = APIToken.objects.get(app_name=app_name)
-        api_token.secret_key = bcrypt.gensalt()  # Generate Random Unique Secret_Key
-        payload = {
-            'app_name': api_token.app_name,
-            'created_date': api_token.created_date.__str__(),
-            'edit_date': api_token.edit_date.__str__(),
-            'expires': api_token.expires
-        }
-        if api_token.expires:
-            if api_token.expire_date is not None:
-                payload['expire_date'] = api_token.expire_date
-        api_token.token = jwt.encode(payload, api_token.secret_key, algorithm='HS256')  # Generate Token
-        api_token.save()
+        update_api_token(api_token=api_token, regen_secret_key=True)
         return redirect('auth:edit_token', app_name)
 
 
@@ -159,17 +155,7 @@ class EditTokenView(PermissionRequiredMixin, View):
         form_response.instance = old_token
         if form_response.is_valid():
             api_token = form_response.save(commit=False)
-            payload = {
-                'app_name': api_token.app_name,
-                'created_date': api_token.created_date.__str__(),
-                'edit_date': api_token.edit_date.__str__(),
-                'expires': api_token.expires
-            }
-            if api_token.expires:
-                if api_token.expire_date is not None:
-                    payload['expire_date'] = api_token.expire_date
-            api_token.token = jwt.encode(payload, api_token.secret_key, algorithm='HS256')  # Generate Token
-            api_token.save()
+            update_api_token(api_token=api_token, regen_secret_key=False)
         else:
             context = self.build_context(form=form_response)
             return render(request, self.template, context)
