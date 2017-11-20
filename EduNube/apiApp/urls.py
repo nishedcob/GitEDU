@@ -15,9 +15,40 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 
-from apiApp import execution_urls
+#from apiApp import execution_urls
+from apiApp import views as api_views
 
 appname = "apiApp"
 urlpatterns = [
-    url('^execute/', include(execution_urls))
+    #url('^execute/', include(execution_urls))
 ]
+
+url_template = '^execute/%s/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/(?P<file_path>[a-zA-Z0-9/]*\.[a-zA-Z0-9]*)$'
+name_template = '%s-executor'
+languages = [
+    {
+        'language': 'Shell Script',
+        'lang_url': 'shell',
+        'view': api_views.ShellExecutionView
+    },
+    {
+        'language': 'Python 3',
+        'lang_url': 'python3',
+        'view': api_views.Python3ExecutionView
+    },
+    {
+        'language': 'PostgreSQL',
+        'lang_url': 'postgresql',
+        'view': api_views.PostgreSQLExecutionView
+    }
+]
+
+for language in languages:
+    if language.get('lang_url', None) is not None and language.get('view', None) is not None:
+        urlpatterns.append(
+            url(url_template % language.get('lang_url'),
+                language.get('view').as_view(),
+                name=name_template % language.get('lang_url')))
+
+for urlpattern in urlpatterns:
+    print(urlpattern)

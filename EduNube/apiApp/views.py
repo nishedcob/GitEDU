@@ -1,6 +1,8 @@
 
 from django.shortcuts import render, redirect
 from django.views import View
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
@@ -11,7 +13,10 @@ from EduNube.settings import DEFAULT_DOCKER_TAGS
 # Create your views here.
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class CodeExecutionView(View):
+
+    csrf_token_template = 'auth/csrf_token.html'
 
     executor_name = 'Generic'
 
@@ -36,8 +41,8 @@ class CodeExecutionView(View):
         if not validate_api_token(client_api_token=client_token):
             raise PermissionDenied("Invalid Token")
 
-    def not_authorized(self, request):
-        pass
+    def not_authorized(self, request, reason):
+        raise reason
 
     def validate_call(self, request, namespace, repository, file_path):
         return None
@@ -58,8 +63,14 @@ class CodeExecutionView(View):
                 response = func(request=request, namespace=namespace, repository=repository, file_path=file_path)
                 if response is not None:
                     return response
+            return None
         except PermissionDenied as pe:
-            return self.not_authorized(request=request)
+            return self.not_authorized(request=request, reason=pe)
+
+    def get(self, request, namespace, repository, file_path):
+        # TODO: Return CSRF Token
+        return render(request, self.csrf_token_template)
+        #return HttpResponse("<h1>%s</h1><br><h2>%s</h2><br><h2>%s</h2>" % (namespace, repository, file_path))
 
 
 class ShellExecutionView(CodeExecutionView):

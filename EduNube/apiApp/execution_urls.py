@@ -22,7 +22,7 @@ from apiApp import views as api_views
 urlpatterns = [
 ]
 
-url_template = '%s/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/(?P<file_path>[a-zA-Z0-9/]*\.[a-zA-Z0-9]*)$'
+url_template = '^%s/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/(?P<file_path>[a-zA-Z0-9/]*\.[a-zA-Z0-9]*)$'
 name_template = '%s-executor'
 languages = [
     {
