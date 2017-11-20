@@ -250,6 +250,7 @@ GITLAB_CONNECT_TO = 'gitlab'
 CODE_PERSISTENCE_BACKEND_MANAGER_CLASS = 'ideApp.CodePersistenceBackends.backend_manager.CodePersistenceBackendManager'
 
 EDUNUBE_CONFIG = {
+    "protocol": "http",
     "host": "127.0.0.1",
     "port": 8001,
     "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhcHBfbmFtZSI6IkdpdEVEVSIsImV4cGlyZXMiOmZhbHNlLCJjcmVhdGVkX2RhdGUi"
