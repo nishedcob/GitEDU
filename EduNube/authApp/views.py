@@ -13,10 +13,28 @@ from authApp.models import APIToken
 # Create your views here.
 
 
-def decode_api_token(api_token=None):
+def validate_api_token(client_api_token=None):
+    if client_api_token is None:
+        raise ValueError("API_Token can't be None")
+    stored_api_token = APIToken.objects.get(token=client_api_token)
+    if stored_api_token is None:
+        raise ValueError('No Stored API Token for token \'%s\'' % client_api_token)
+    api_token_values = decode_api_token(api_token=stored_api_token, token=client_api_token)
+    return stored_api_token.created_date.__str__() == api_token_values.get('created_date') and \
+        stored_api_token.edit_date_in_token == api_token_values.get('edit_date') and \
+        (
+            not stored_api_token.expires or
+            stored_api_token.expire_date.__str__() == api_token_values.get('expires')
+        ) and stored_api_token.app_name == api_token_values.get('app_name')
+
+
+def decode_api_token(api_token=None, token=None):
     if api_token is None:
         raise ValueError("API_Token can't be None")
-    return jwt.decode(api_token.token, api_token.secret_key, algorithms=[api_token.token_algo])
+    if token is None:
+        return jwt.decode(api_token.token, api_token.secret_key, algorithms=[api_token.token_algo])
+    else:
+        return jwt.decode(token, api_token.secret_key, algorithms=[api_token.token_algo])
 
 
 def update_api_token(api_token=None, regen_secret_key=False):

@@ -139,3 +139,16 @@ NOSQL_DATABASES = {
     }
 }
 
+# Lighter for Production
+ALPINE_DOCKER_TAG = 'alpine-3.6'
+# Easier for Testing
+DEBIAN_DOCKER_TAG = 'debian-stretch'
+
+DEFAULT_DOCKER_TAG = DEBIAN_DOCKER_TAG
+
+DEFAULT_DOCKER_TAGS = {
+    'default': DEFAULT_DOCKER_TAG,
+    'shell': ALPINE_DOCKER_TAG,
+    'python3': DEBIAN_DOCKER_TAG,
+    'postgresql': DEBIAN_DOCKER_TAG
+}
