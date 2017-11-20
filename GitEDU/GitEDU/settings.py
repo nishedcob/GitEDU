@@ -249,6 +249,14 @@ GITLAB_CONNECT_TO = 'gitlab'
 #from ideApp.CodePersistenceBackends.backend_manager import CodePersistenceBackendManager
 CODE_PERSISTENCE_BACKEND_MANAGER_CLASS = 'ideApp.CodePersistenceBackends.backend_manager.CodePersistenceBackendManager'
 
+EDUNUBE_CONFIG = {
+    "protocol": "http",
+    "host": "127.0.0.1",
+    "port": 8001,
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhcHBfbmFtZSI6IkdpdEVEVSIsImV4cGlyZXMiOmZhbHNlLCJjcmVhdGVkX2RhdGUi"
+             "OiIyMDE3LTExLTEyIDE3OjMzOjE3LjY0MTY4MSIsImVkaXRfZGF0ZSI6IjIwMTctMTEtMTIgMjA6MzY6NDAuMjc5NDAyIn0.825oh2rZU"
+             "lIPZFaP_UbYPDpdsXTE0XCaNsia-3NnGuc"
+}
 
 def load_code_persistence_backend_manager(load_class=CODE_PERSISTENCE_BACKEND_MANAGER_CLASS):
     try:
