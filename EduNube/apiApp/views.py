@@ -7,7 +7,7 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
 
-from authApp.views import validate_api_token
+from authApp.tokens import validate_api_token
 from EduNube.settings import DEFAULT_DOCKER_TAGS
 
 # Create your views here.
