@@ -258,6 +258,16 @@ EDUNUBE_CONFIG = {
              "lIPZFaP_UbYPDpdsXTE0XCaNsia-3NnGuc"
 }
 
+GIT_SERVER_HTTP_ENDPOINT_CONFIG = {
+    "protocol": "http",
+    "host": "127.0.0.1",
+    "port": 8002,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVzIjpmYWxzZSwiYXBwX25hbWUiOiJHaXRFRFUiLCJlZGl0X2RhdGUiOiIy"
+             "MDE3LTExLTI1IDIwOjI2OjIzLjQ3MDgxNyswMDowMCIsImNyZWF0ZWRfZGF0ZSI6IjIwMTctMTEtMjUgMjA6MjY6MjMuNDcwNzUwKzAwO"
+             "jAwIn0.jVHEmUAgJcQy7sU-qyULAnAiIrBAPNbeDjOiwjk5EEk"
+}
+
+
 def load_code_persistence_backend_manager(load_class=CODE_PERSISTENCE_BACKEND_MANAGER_CLASS):
     try:
         module_path, class_name = load_class.rsplit('.', 1)
