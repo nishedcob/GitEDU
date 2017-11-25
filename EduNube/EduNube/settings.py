@@ -152,3 +152,17 @@ DEFAULT_DOCKER_TAGS = {
     'python3': DEBIAN_DOCKER_TAG,
     'postgresql': DEBIAN_DOCKER_TAG
 }
+
+AUTH_TOKENS_SHOW = {
+    'app_name': True,
+    'dates': True,
+    'date_create': True,
+    'date_edit': True,
+    'date_expire': True,
+    'secret': False,
+    'token': True,
+    'full_token': False,
+    'edit': True,
+    'delete': True,
+    'regenerate_secret': True
+}
