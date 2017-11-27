@@ -6,20 +6,22 @@ url_template = "%s://%s:%d/api/%s/%s/%s"
 
 #object_type = 'ns'
 object_type = 'repo'
-operation = 'create'
-#operation = 'edit'
+#operation = 'create'
+operation = 'edit'
 namespace = 'nishedcob2'
 #new_namespace = None
 new_namespace = 'nishedcob3'
 repository = 'test'
+new_repository = 'test2'
 #object_path = "%s/" % namespace
 object_path = "%s/%s/" % (namespace, repository)
 
 url = url_template % (GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('protocol'), GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('host'),
                       GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('port'), object_type, operation, object_path)
 
-payload = {'token': GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('token')}
+#payload = {'token': GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('token')}
 #payload = {'token': GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('token'), 'new_namespace': new_namespace}
+payload = {'token': GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('token'), 'new_namespace': new_namespace, 'new_repository': new_repository}
 
 print('url: %s' % url)
 print('data: %s' % payload)
