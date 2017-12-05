@@ -50,3 +50,18 @@ r = requests.post(url=url, data=payload)
 # Should return 403 (because we don't send with JWT auth token)
 #r = requests.post(url=url)
 print("POST %s: %s" % (url, r))
+
+operation = 'edit/contents'
+contents = "print('hello world')\n"
+
+url = url_template % (GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('protocol'), GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('host'),
+                      GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('port'), object_type, operation, object_path)
+
+payload = {'token': GIT_SERVER_HTTP_ENDPOINT_CONFIG.get('token'), 'contents': contents}
+
+print('url: %s' % url)
+print('data: %s' % payload)
+
+r = requests.post(url=url, data=payload)
+
+print("POST %s: %s" % (url, r))
