@@ -117,8 +117,9 @@ class FileGitSrvHTTPEpConsumer(DefaultConfigGitSrvHTTPEpConsumer):
         object_path = self.build_object_path(namespace=namespace, repository=repository, file_path=file_path)
         return self.build_config_url(operation=operation, object_path=object_path)
 
-    def create_call(self, namespace, repository, file_path):
+    def create_call(self, namespace, repository, file_path, commit=True):
         payload = self.build_inicial_payload()
+        payload['commit'] = commit
         url = self.build_call_url(operation=self.create_operation, namespace=namespace, repository=repository,
                                   file_path=file_path)
         return self.post_url(url=url, payload=payload)
@@ -151,7 +152,8 @@ if test:
 
     # Example File Creation Call:
     file_consumer = FileGitSrvHTTPEpConsumer()
-    file_create = file_consumer.create_call(namespace=namespace, repository=repository, file_path=file_path)
+    file_create = file_consumer.create_call(namespace=namespace, repository=repository, file_path=file_path,
+                                            commit=False)
 
     print('url: %s' % file_create.request.url)
     print('data: %s' % file_create.request.body)
