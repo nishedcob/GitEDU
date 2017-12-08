@@ -18,6 +18,8 @@ from ideApp.CodePersistenceBackends.MongoDB.backend import MongoChangeFile
 from ideApp.CodePersistenceBackends.MongoDB.mongodb_models import ChangeModel, ChangeFileModel, NamespaceModel,\
     RepositoryModel, RepositoryFileModel
 
+from ideApp import git_server_http_endpoint
+
 manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
 
 print("code persistence backend manager: <%s>" % manager)
@@ -295,6 +297,9 @@ class EditorFileView(GenericEditorFileView):
         mcf.save()
         repository_file.persistence_object.current_change_file = mcf.persistence_object.pk
         repository_file.persistence_object.save()
+        git_file_consumer = git_server_http_endpoint.FileGitSrvHTTPEpConsumer()
+        git_edit_file = git_file_consumer.create_and_edit_contents_call(namespace=namespace, repository=repository,
+                                                                        file_path=file_path, contents=code)
         return None
 
 
@@ -409,6 +414,10 @@ class CheckoutFileVersionView(View):
                 file_path = prf.file_path
         if file_path is None:
             raise Exception("No file checked out")
+        git_file_consumer = git_server_http_endpoint.FileGitSrvHTTPEpConsumer()
+        git_edit_file = git_file_consumer.create_and_edit_contents_call(namespace=namespace, repository=repository,
+                                                                        file_path=file_path,
+                                                                        contents=repository_file.get_contents())
         return redirect('ide:file_editor', namespace, repository, file_path)
 
     def validate_request(self, request, namespace, repository):
