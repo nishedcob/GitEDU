@@ -152,9 +152,9 @@ class FileGitSrvHTTPEpConsumer(DefaultConfigGitSrvHTTPEpConsumer):
 # to test: set test to True and run "python manage.py -c "import ideApp.git_server_http_endpoint"
 test = False
 if test:
-    namespace = 'nishedcob3'
-    repository = 'test2'
-    file_path = 'folder/test2.py'
+    namespace = 'nishedcob1'
+    repository = 'test1'
+    file_path = 'folder/test1.py'
 
     # Example File Creation Call:
     file_consumer = FileGitSrvHTTPEpConsumer()
@@ -173,7 +173,7 @@ if test:
     print('url: %s' % file_edit.request.url)
     print('data: %s' % file_edit.request.body)
 
-    file_path = 'folder/test3.py'
+    file_path = 'folder/test2.py'
 
     file_create_and_edit = file_consumer.create_and_edit_contents_call(namespace=namespace, repository=repository,
                                                                        file_path=file_path, contents=contents)
