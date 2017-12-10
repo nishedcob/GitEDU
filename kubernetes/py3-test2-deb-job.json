@@ -1,0 +1,44 @@
+
+{
+	"apiVersion": "batch/v1",
+	"kind": "Job",
+	"metadata": {
+  		"name": "py3-test2-deb"
+	},
+	"spec": {
+		"template": {
+			"metadata": {
+				"name": "py3-test2-deb"
+			},
+			"spec": {
+				"containers": [
+					{
+						"name": "py3-test2-deb",
+						"image": "registry.gitlab.com/nishedcob/gitedu/python3-executor:debian-stretch",
+						"volumeMounts": [
+							{
+								"mountPath": "/code",
+								"name": "code-repo"
+							}
+						],
+						"command": [
+							"ls", "-l", "/code"
+						]
+					}
+				],
+				"restartPolicy": "Never",
+				"volumes": [
+					{
+						"name": "code-repo",
+						"gitRepo": {
+							"repository": "https://gitlab.com/nishedcob/python3-code-executor-template.git",
+							"revision": "70c5fa80dcad1ae98371ec1b60440f73bcfd25c1"
+						}
+					}
+				]
+			}
+		},
+		"backoffLimit": 4
+	}
+}
+
