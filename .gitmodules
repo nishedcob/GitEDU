@@ -4,3 +4,6 @@
 [submodule "kubernetes/shell-code-executor-template"]
 	path = kubernetes/shell-code-executor-template
 	url = https://gitlab.com/nishedcob/shell-code-executor-template.git
+[submodule "kubernetes/postgresql-code-executor-template"]
+	path = kubernetes/postgresql-code-executor-template
+	url = https://gitlab.com/nishedcob/postgresql-code-executor-template.git
