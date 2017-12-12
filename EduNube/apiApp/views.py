@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
 
 from authApp.tokens import validate_api_token
-from EduNube.settings import DEFAULT_DOCKER_TAGS
+from EduNube.settings import DEFAULT_DOCKER_TAGS, DEFAULT_DOCKER_REGISTRY
 
 # Create your views here.
 
@@ -16,11 +16,21 @@ from EduNube.settings import DEFAULT_DOCKER_TAGS
 @method_decorator(csrf_exempt, name='dispatch')
 class CodeExecutionView(View):
 
-    csrf_token_template = 'auth/csrf_token.html'
-
     executor_name = 'Generic'
 
-    docker_image = 'registry.gitlab.com/nishedcob/gitedu/%s-executor' % executor_name
+    def get_docker_registry(self):
+        return DEFAULT_DOCKER_REGISTRY.get('base', 'registry.gitlab.com')
+
+    def get_docker_registry_user(self):
+        return DEFAULT_DOCKER_REGISTRY.get('user', 'nishedcob')
+
+    def get_docker_registry_repo(self):
+        return '%s/%s' % (self.get_docker_registry_user(), DEFAULT_DOCKER_REGISTRY.get('repository', 'gitedu'))
+
+    def get_full_docker_image_string(self):
+        return '%s/%s/%s-executor' % (self.get_docker_registry(), self.get_docker_registry_repo(), self.executor_name)
+
+    docker_image = get_full_docker_image_string()
     docker_tag = DEFAULT_DOCKER_TAGS.get('default', None) if DEFAULT_DOCKER_TAGS.get(executor_name, None) is None\
         else DEFAULT_DOCKER_TAGS.get(executor_name)
 
@@ -66,11 +76,6 @@ class CodeExecutionView(View):
             return None
         except PermissionDenied as pe:
             return self.not_authorized(request=request, reason=pe)
-
-    def get(self, request, namespace, repository, file_path):
-        # TODO: Return CSRF Token
-        return render(request, self.csrf_token_template)
-        #return HttpResponse("<h1>%s</h1><br><h2>%s</h2><br><h2>%s</h2>" % (namespace, repository, file_path))
 
 
 class ShellExecutionView(CodeExecutionView):

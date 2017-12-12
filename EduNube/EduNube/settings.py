@@ -153,6 +153,12 @@ DEFAULT_DOCKER_TAGS = {
     'postgresql': DEBIAN_DOCKER_TAG
 }
 
+DEFAULT_DOCKER_REGISTRY = {
+    'base': 'registry.gitlab.com',
+    'user': 'nishedcob',
+    'repository': 'gitedu'
+}
+
 AUTH_TOKENS_SHOW = {
     'app_name': True,
     'dates': True,
@@ -165,4 +171,12 @@ AUTH_TOKENS_SHOW = {
     'edit': True,
     'delete': True,
     'regenerate_secret': True
+}
+
+GIT_SERVER_HOST = {
+    'protocol': "http",
+    'user': None,
+    'password': None,
+    'host': '192.168.99.1',
+    'port': None
 }
