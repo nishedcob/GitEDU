@@ -1,0 +1,41 @@
+
+{
+	"apiVersion": "batch/v1",
+	"kind": "Job",
+	"metadata": {
+  		"name": "sh-test1-alp"
+	},
+	"spec": {
+		"template": {
+			"metadata": {
+				"name": "sh-test1-alp"
+			},
+			"spec": {
+				"containers": [
+					{
+						"name": "sh-test1-alp",
+						"image": "registry.gitlab.com/nishedcob/gitedu/shell-executor:alpine-3.6",
+						"volumeMounts": [
+							{
+								"mountPath": "/code",
+								"name": "code-repo"
+							}
+						]
+					}
+				],
+				"restartPolicy": "Never",
+				"volumes": [
+					{
+						"name": "code-repo",
+						"gitRepo": {
+							"repository": "http://192.168.99.1/shell-code-executor-template.git",
+							"directory": "."
+						}
+					}
+				]
+			}
+		},
+		"backoffLimit": 4
+	}
+}
+
