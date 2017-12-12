@@ -180,3 +180,10 @@ GIT_SERVER_HOST = {
     'host': '192.168.99.1',
     'port': None
 }
+
+VIRTUALIZATION_BACKEND = {
+    'default': 'apiApp.VirtualizationBackends.Kubernetes.KubernetesVirtualizationBackend',
+    'shell': 'apiApp.VirtualizationBackends.Kubernetes.ShellKubernetesVirtualizationBackend',
+    'python3': 'apiApp.VirtualizationBackends.Kubernetes.Py3KubernetesVirtualizationBackend',
+    'postgresql': 'apiApp.VirtualizationBackends.Kubernetes.PGSQLKubernetesVirtualizationBackend'
+}
