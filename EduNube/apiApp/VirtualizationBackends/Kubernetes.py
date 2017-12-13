@@ -1,6 +1,9 @@
 
+import subprocess
+
 from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
+from apiApp.Validation import RepoSpec
 
 
 class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
@@ -105,14 +108,81 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             return "%s:%s" % (self.docker_image, self.docker_tag)
         return self.docker_image
 
-    def create_job(self, repository):
+    def format_command_result(self, command_proc):
+        return command_proc.stdout, command_proc.stderr, command_proc.exitcode
+
+    def get_repospec(self, repository):
+        # TODO: request GET git_domain?p=repo w/o domain;a=blob_plain;f=.repospec;hb=HEAD
+        # TODO: if request == 404 raise error
+        # TODO: return request text
         pass
+
+    def clone_or_pull(self, repository):
+        # TODO: test for repo in temp folder
+        # TODO:     if is git repo:
+        # TODO:         git checkout
+        # TODO:         git clean
+        # TODO:         git pull
+        # TODO:         on success:
+        # TODO:             return repo path
+        # TODO:         on failure:
+        # TODO:             rm -rdf repo path
+        # TODO:     else:
+        # TODO:         rm -rdf repo path
+        # TODO: clone repository in temp folder
+        # TODO: return repo path
+        pass
+
+    def build_edunube_ignore(self, repo_path, full_ignore_path, parent_repo_path):
+        # TODO: if parent_repo_path is None then copy repo_path/.edunubeignore -> full_ignore_path & return
+        # TODO: test for existence of file parent_repo_path.edunubeignore
+        # TODO: if doesn't exist generate recursively
+        # TODO: concat repo_path/.edunubeignore and parent_repo_path.edunubeignore as full_ignore_path.unsorted
+        # TODO: sort full_ignore_path.unsorted as full_ignore_path.sorted and rm full_ignore_path.unsorted
+        # TODO: uniq full_ignore_path.sorted as full_ignore_path and rm full_ignore_path.sorted
+        pass
+
+    def repo_sync(self, origin_repo, dest_repo, ignore):
+        # TODO: rsync -a origin_repo/ dest_repo/ --ignore-from ignore
+        pass
+
+    def build_exec_repo(self, repository, path):
+        if repository is None:
+            return None
+        if type(repository) == list:
+            for repo in repository:
+                self.build_exec_repo(repository=repo, path=path)
+        repospec = self.get_repospec(repository=repository)
+        RepoSpec.validate_repospec(repospec=repospec)
+        decoded_repospec = RepoSpec.decode(repospec=repospec)
+        parent_path = self.build_exec_repo(repository=decoded_repospec.get('parent'), path=path)[0]
+        repo_path = self.clone_or_pull(repository=repository)
+        edunube_ignore_path = "%s.edunubeignore" % repo_path
+        self.build_edunube_ignore(repo_path=repo_path, full_ignore_path=edunube_ignore_path,
+                                  parent_repo_path=parent_path)
+        self.repo_sync(origin_repo=repo_path, dest_repo=path, ignore=edunube_ignore_path)
+        return repo_path, path
+
+    def create_job(self, namespace, repository, repository_url):
+        unique_path = "%s-%s" % (namespace, repository)
+        self.build_exec_repo(repository=repository_url, path=unique_path)
+        # TODO: create new repo & commit built exec repo & push to remote repo
+        # TODO: build template and call kubernetes
+        # TODO: return job id
+
+    def kubectl__job_id(self, verb, job_id):
+        command = ['kubectl', verb, 'job/%s' % job_id]
+        cmd = subprocess.run(command, stdout=subprocess.PIPE)
+        return self.format_command_result(command_proc=cmd)
+
+    def job_describe(self, job_id):
+        return self.kubectl__job_id(verb='describe', job_id=job_id)
 
     def job_get(self, job_id):
-        pass
+        return self.kubectl__job_id(verb='get', job_id=job_id)
 
-    def job_log(self, job_id):
-        pass
+    def job_logs(self, job_id):
+        return self.kubectl__job_id(verb='logs', job_id=job_id)
 
 
 class Py3KubernetesVirtualizationBackend(KubernetesVirtualizationBackend):
