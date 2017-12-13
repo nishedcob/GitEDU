@@ -8,6 +8,9 @@ from apiApp.Validation import RepoSpec
 
 class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
 
+    def __init__(self):
+        self.docker_image = self.get_full_docker_image_string()
+
     kubernetes_job_template = {
         "apiVersion": "batch/v1",
         "kind": "Job",
@@ -97,7 +100,6 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def get_full_docker_image_string(self):
         return '%s/%s/%s-executor' % (self.get_docker_registry(), self.get_docker_registry_repo(), self.executor_name)
 
-    docker_image = get_full_docker_image_string()
     docker_tag = DEFAULT_DOCKER_TAGS.get('default', None) if DEFAULT_DOCKER_TAGS.get(executor_name, None) is None\
         else DEFAULT_DOCKER_TAGS.get(executor_name)
 
@@ -109,7 +111,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         return self.docker_image
 
     def format_command_result(self, command_proc):
-        return command_proc.stdout, command_proc.stderr, command_proc.exitcode
+        return command_proc.stdout, command_proc.stderr, command_proc.returncode
 
     def get_repospec(self, repository):
         # TODO: request GET git_domain?p=repo w/o domain;a=blob_plain;f=.repospec;hb=HEAD
@@ -163,16 +165,41 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         self.repo_sync(origin_repo=repo_path, dest_repo=path, ignore=edunube_ignore_path)
         return repo_path, path
 
+    def always_deterministic(self):
+        return False
+
+    def is_deterministic(self, namespace, repository, repository_url):
+        # TODO: look for job with default name
+        # TODO: if job does not exist, execute with default name
+        # TODO: look for job with secondary name
+        # TODO: if secondary name job doesn't exist, re-execute with second name
+        # TODO: compare logs, if == return true, else return false
+        pass
+
     def create_job(self, namespace, repository, repository_url):
         unique_path = "%s-%s" % (namespace, repository)
         self.build_exec_repo(repository=repository_url, path=unique_path)
         # TODO: create new repo & commit built exec repo & push to remote repo
+        # TODO: extract id of last commit
+        if self.always_deterministic():
+            # TODO: search for existence of repo
+            # TODO: return log if exists, else execute
+            pass
+        else:
+            if self.is_deterministic(namespace=namespace, repository=repository, repository_url=repository_url):
+                # TODO: return log
+                pass
+            else:
+                # TODO: re-execute
+                pass
+            pass
         # TODO: build template and call kubernetes
         # TODO: return job id
+        pass
 
     def kubectl__job_id(self, verb, job_id):
         command = ['kubectl', verb, 'job/%s' % job_id]
-        cmd = subprocess.run(command, stdout=subprocess.PIPE)
+        cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return self.format_command_result(command_proc=cmd)
 
     def job_describe(self, job_id):
@@ -193,6 +220,9 @@ class Py3KubernetesVirtualizationBackend(KubernetesVirtualizationBackend):
 class PGSQLKubernetesVirtualizationBackend(KubernetesVirtualizationBackend):
 
     executor_name = 'postgresql'
+
+    def always_deterministic(self):
+        return True
 
 
 class ShellKubernetesVirtualizationBackend(KubernetesVirtualizationBackend):
