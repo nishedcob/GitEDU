@@ -1,0 +1,41 @@
+
+{
+	"apiVersion": "batch/v1",
+	"kind": "Job",
+	"metadata": {
+  		"name": "py3-test1-alp"
+	},
+	"spec": {
+		"template": {
+			"metadata": {
+				"name": "py3-test1-alp"
+			},
+			"spec": {
+				"containers": [
+					{
+						"name": "py3-test5-deb",
+						"image": "registry.gitlab.com/nishedcob/gitedu/python3-executor:alpine-3.6",
+						"volumeMounts": [
+							{
+								"mountPath": "/code",
+								"name": "code-repo"
+							}
+						]
+					}
+				],
+				"restartPolicy": "Never",
+				"volumes": [
+					{
+						"name": "code-repo",
+						"gitRepo": {
+							"repository": "https://gitlab.com/nishedcob/python3-code-executor-template.git",
+							"directory": "."
+						}
+					}
+				]
+			}
+		},
+		"backoffLimit": 4
+	}
+}
+

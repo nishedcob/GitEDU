@@ -1,0 +1,41 @@
+
+{
+	"apiVersion": "batch/v1",
+	"kind": "Job",
+	"metadata": {
+  		"name": "sh-test1-deb"
+	},
+	"spec": {
+		"template": {
+			"metadata": {
+				"name": "sh-test1-deb"
+			},
+			"spec": {
+				"containers": [
+					{
+						"name": "sh-test1-deb",
+						"image": "registry.gitlab.com/nishedcob/gitedu/shell-executor:debian-stretch",
+						"volumeMounts": [
+							{
+								"mountPath": "/code",
+								"name": "code-repo"
+							}
+						]
+					}
+				],
+				"restartPolicy": "Never",
+				"volumes": [
+					{
+						"name": "code-repo",
+						"gitRepo": {
+							"repository": "http://192.168.99.1/shell-code-executor-template.git",
+							"directory": "."
+						}
+					}
+				]
+			}
+		},
+		"backoffLimit": 4
+	}
+}
+
