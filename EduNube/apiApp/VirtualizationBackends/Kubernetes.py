@@ -1,5 +1,8 @@
 
 import subprocess
+import json
+import pathlib
+import os
 
 from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
@@ -113,6 +116,10 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def format_command_result(self, command_proc):
         return command_proc.stdout, command_proc.stderr, command_proc.returncode
 
+    def run_command(self, command):
+        cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return self.format_command_result(command_proc=cmd)
+
     def get_repospec(self, repository):
         # TODO: request GET git_domain?p=repo w/o domain;a=blob_plain;f=.repospec;hb=HEAD
         # TODO: if request == 404 raise error
@@ -197,10 +204,27 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         # TODO: return job id
         pass
 
+    def write_json_manifest(self, path, json_data, overwrite=False):
+        file_path = pathlib.Path(path)
+        if overwrite:
+            if file_path.exists() and not file_path.is_file():
+                if file_path.is_dir():
+                    os.rmdir(path)
+                else:
+                    os.remove(path)
+        else:
+            if file_path.exists():
+                raise ValueError("Path %s already exists and we don't have permision to overwrite!" % path)
+        with open(path, mode='w') as json_manifest:
+            json_manifest.write(json.dumps(json_data))
+
+    def kubectl_create_from_manifest_file(self, manifest_path):
+        command = ['kubectl', 'create', '-f', manifest_path]
+        return self.run_command(command=command)
+
     def kubectl__job_id(self, verb, job_id):
         command = ['kubectl', verb, 'job/%s' % job_id]
-        cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return self.format_command_result(command_proc=cmd)
+        return self.run_command(command=command)
 
     def job_describe(self, job_id):
         return self.kubectl__job_id(verb='describe', job_id=job_id)
