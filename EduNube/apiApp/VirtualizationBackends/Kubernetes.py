@@ -218,9 +218,15 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         with open(path, mode='w') as json_manifest:
             json_manifest.write(json.dumps(json_data))
 
-    def kubectl_create_from_manifest_file(self, manifest_path):
-        command = ['kubectl', 'create', '-f', manifest_path]
+    def kubectl__manifest_file(self, verb, manifest_path):
+        command = ['kubectl', verb, '-f', manifest_path]
         return self.run_command(command=command)
+
+    def kubectl_create_from_manifest_file(self, manifest_path):
+        return self.kubectl__manifest_file(verb='create', manifest_path=manifest_path)
+
+    def kubectl_delete_from_manifest_file(self, manifest_path):
+        return self.kubectl__manifest_file(verb='delete', manifest_path=manifest_path)
 
     def kubectl__job_id(self, verb, job_id):
         command = ['kubectl', verb, 'job/%s' % job_id]
