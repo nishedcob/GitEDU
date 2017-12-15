@@ -117,8 +117,11 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def format_command_result(self, command_proc):
         return command_proc.stdout, command_proc.stderr, command_proc.returncode
 
-    def run_command(self, command):
-        cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    def run_command(self, command, cwd=None):
+        if cwd is None:
+            cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        else:
+            cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
         return self.format_command_result(command_proc=cmd)
 
     def get_repospec(self, repository):
@@ -183,6 +186,13 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         # TODO: if secondary name job doesn't exist, re-execute with second name
         # TODO: compare logs, if == return true, else return false
         pass
+
+    commit_id_regex = re.compile("commit ([0-9a-f]*)\\\\n")
+
+    def get_id_last_git_commit(self, repository_path):
+        command = ["git", "show", "HEAD"]
+        cmd = self.run_command(command=command, cwd=repository_path)
+        return self.commit_id_regex.findall(str(cmd[0]))[0]
 
     def create_job(self, namespace, repository, repository_url):
         unique_path = "%s-%s" % (namespace, repository)
