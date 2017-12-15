@@ -286,6 +286,15 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def job_finished(self, job_id):
         return self.job_status(job_id=job_id).get('finished')
 
+    def execute(self, namespace, repository, repository_url):
+        return self.create_job(namespace=namespace, repository=repository, repository_url=repository_url)
+
+    def status(self, id):
+        return self.job_status(job_id=id)
+
+    def result(self, id):
+        return self.job_logs(job_id=id)[0]
+
 
 class Py3KubernetesVirtualizationBackend(KubernetesVirtualizationBackend):
 

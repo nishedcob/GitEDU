@@ -24,14 +24,11 @@ class GenericVirtualizationBackend:
 
     prog_language = None
 
-    def execute(self, repo):
-        # TODO: execute repo + return id
+    def execute(self, namespace, repository, repository_url):
         pass
 
     def status(self, id):
-        # TODO: return execution status
         pass
 
     def result(self, id):
-        # TODO: return execution result
         pass
