@@ -182,11 +182,13 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         return False
 
     def is_deterministic(self, namespace, repository, repository_url):
+        # TODO: Look up in Database if we have data on namespace/repository/commit as deterministic or not
+        # TODO: If we have already answered the question previously, return that answer
         # TODO: look for job with default name
         # TODO: if job does not exist, execute with default name
         # TODO: look for job with secondary name
         # TODO: if secondary name job doesn't exist, re-execute with second name
-        # TODO: compare logs, if == return true, else return false
+        # TODO: compare logs, if == save to database and return true, else save to database and return false
         pass
 
     commit_id_regex = re.compile("commit ([0-9a-f]*)\\\\n")
