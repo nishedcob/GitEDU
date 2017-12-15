@@ -12,6 +12,8 @@ from apiApp.Validation import RepoSpec
 
 class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
 
+    path_class = 'k8s'
+
     def __init__(self):
         self.docker_image = self.get_full_docker_image_string()
 

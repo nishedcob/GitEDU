@@ -187,3 +187,13 @@ VIRTUALIZATION_BACKEND = {
     'python3': 'apiApp.VirtualizationBackends.Kubernetes.Py3KubernetesVirtualizationBackend',
     'postgresql': 'apiApp.VirtualizationBackends.Kubernetes.PGSQLKubernetesVirtualizationBackend'
 }
+
+VIRTUALIZATION_BACKEND_TMP_PATHS = {
+    'base': '/tmp/edunube/virt'
+}
+
+VIRTUALIZATION_BACKEND_TMP_PATHS['generic'] = VIRTUALIZATION_BACKEND_TMP_PATHS['base'] + "/generic"
+VIRTUALIZATION_BACKEND_TMP_PATHS['k8s'] = VIRTUALIZATION_BACKEND_TMP_PATHS['base'] + "/k8s"
+
+VIRTUALIZATION_BACKEND_REPO_SUBPATH = "/repos"
+VIRTUALIZATION_BACKEND_MANIFEST_SUBPATH = "/manifests"
