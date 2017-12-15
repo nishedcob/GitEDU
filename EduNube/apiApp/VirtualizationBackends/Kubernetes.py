@@ -3,6 +3,7 @@ import subprocess
 import json
 import pathlib
 import os
+import re
 
 from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
@@ -189,19 +190,19 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         # TODO: create new repo & commit built exec repo & push to remote repo
         # TODO: extract id of last commit
         if self.always_deterministic():
-            # TODO: search for existence of repo
-            # TODO: return log if exists, else execute
+            # TODO: search for existence of job
+            # TODO: return log if exists, else execute and return execution in progress
             pass
         else:
             if self.is_deterministic(namespace=namespace, repository=repository, repository_url=repository_url):
                 # TODO: return log
                 pass
             else:
-                # TODO: re-execute
+                # TODO: re-execute and return execution in progress
                 pass
             pass
         # TODO: build template and call kubernetes
-        # TODO: return job id
+        # TODO: return job id and log
         pass
 
     def write_json_manifest(self, path, json_data, overwrite=False):
@@ -240,6 +241,25 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
 
     def job_logs(self, job_id):
         return self.kubectl__job_id(verb='logs', job_id=job_id)
+
+    executing_regex = re.compile("  0  ")
+
+    def job_status(self, job_id):
+        get_job = self.job_get(job_id=job_id)
+        status = {
+            'exists': False
+        }
+        if get_job[2] == 0:
+            status['exists'] = True
+            get_job_str = str(get_job[0])
+            status['finished'] = self.executing_regex.search(get_job_str) is None
+        return status
+
+    def job_exists(self, job_id):
+        return self.job_status(job_id=job_id).get('exists')
+
+    def job_finished(self, job_id):
+        return self.job_status(job_id=job_id).get('finished')
 
 
 class Py3KubernetesVirtualizationBackend(KubernetesVirtualizationBackend):
