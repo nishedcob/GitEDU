@@ -197,14 +197,25 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         return self.commit_id_regex.findall(str(cmd[0]))[0]
 
     def create_job(self, namespace, repository, repository_url):
-        unique_path = "%s-%s" % (namespace, repository)
+        unique_name = "%s-%s" % (namespace, repository)
+        unique_path = "%s/%s" % (self.get_tmp_repo_path(), unique_name)
         self.build_exec_repo(repository=repository_url, path=unique_path)
         # TODO: create new repo & commit built exec repo & push to remote repo
-        # TODO: extract id of last commit
+        exec_repo_url = ''
+        commit_id = self.get_id_last_git_commit(repository_path=unique_path)
+        job_name = "%s-%s" % (unique_name, commit_id)
         if self.always_deterministic():
-            # TODO: search for existence of job
-            # TODO: return log if exists, else execute and return execution in progress
-            pass
+            job_status = self.job_status(job_id=job_name)
+            if job_status.get('exists'):
+                if job_status.get('finished'):
+                    job_status['log'] = self.job_logs(job_id=job_name)
+            else:
+                manifest = self.build_job_template(job_name=job_name, git_repo=exec_repo_url)
+                manifest_path = self.get_tmp_manifest_path() + "/" + job_name + ".json"
+                self.write_json_manifest(path=manifest_path, json_data=manifest, overwrite=True)
+                self.kubectl_create_from_manifest_file(manifest_path=manifest_path)
+                job_status = self.job_status(job_id=job_name)
+            return job_status
         else:
             if self.is_deterministic(namespace=namespace, repository=repository, repository_url=repository_url):
                 # TODO: return log
