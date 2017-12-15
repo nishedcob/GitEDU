@@ -5,7 +5,7 @@ job_name = 'py3-pytest-3'
 git_repo = 'https://gitlab.com/nishedcob/python3-code-executor-template.git'
 manifest = kvb.build_job_template(job_name=job_name, git_repo=git_repo)
 manifest_path = '/tmp/%s.json' % job_name
-kvb.write_json_manifest(path=manifest_path, json_data=manifest)
+kvb.write_json_manifest(path=manifest_path, json_data=manifest, overwrite=True)
 print(kvb.kubectl_create_from_manifest_file(manifest_path=manifest_path))
 print(kvb.job_describe(job_id=job_name))
 import re
