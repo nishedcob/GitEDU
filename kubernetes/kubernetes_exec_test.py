@@ -1,6 +1,5 @@
 # coding: utf-8
 
-import re
 import time
 
 from apiApp.VirtualizationBackends.Kubernetes import Py3KubernetesVirtualizationBackend
