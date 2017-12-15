@@ -17,21 +17,19 @@ manifest_path = '%s/%s.json' % (kubernetes_working_tmp_dir, job_name)
 kvb.write_json_manifest(path=manifest_path, json_data=manifest, overwrite=True)
 
 # create job with manifest
+print(kvb.job_status(job_id=job_name))
 print(kvb.kubectl_create_from_manifest_file(manifest_path=manifest_path))
 
 # job info
 print(kvb.job_describe(job_id=job_name))
 
 # get job status & wait until job completion
-detect_zero = re.compile(' 0 ')
-job_get = kvb.job_get(job_id=job_name)
-print(job_get)
-job_get_str = str(job_get[0])
-while detect_zero.search(job_get_str) is not None:
+print(kvb.job_get(job_id=job_name))
+while not kvb.job_finished(job_id=job_name):
+    print(kvb.job_status(job_id=job_name))
     time.sleep(1)
-    job_get = kvb.job_get(job_id=job_name)
-    print(job_get)
-    job_get_str = str(job_get[0])
+print(kvb.job_status(job_id=job_name))
+print(kvb.job_get(job_id=job_name))
 
 # job info
 print(kvb.job_describe(job_id=job_name))
