@@ -208,6 +208,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         job_name = "%s-%s" % (unique_name, commit_id)
         if self.always_deterministic():
             job_status = self.job_status(job_id=job_name)
+            job_status['job_id'] = job_name
             if job_status.get('exists'):
                 if job_status.get('finished'):
                     job_status['log'] = self.job_logs(job_id=job_name)
@@ -220,8 +221,10 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             return job_status
         else:
             if self.is_deterministic(namespace=namespace, repository=repository, repository_url=repository_url):
-                # TODO: return log
-                pass
+                job_status = self.job_status(job_id=job_name)
+                job_status['job_id'] = job_name
+                job_status['log'] = self.job_logs(job_id=job_name)
+                return job_status
             else:
                 # TODO: re-execute and return execution in progress
                 pass
