@@ -13,5 +13,5 @@ class APIToken(models.Model):
     expires = models.BooleanField(default=False)
     expire_date = models.DateTimeField(default=None, blank=True, null=True)
     secret_key = models.CharField(max_length=constants.SECRET_KEY_SIZE, unique=True)
-    token = models.CharField(max_length=constants.TOKEN_SIZE)
+    token = models.CharField(max_length=constants.API_TOKEN_SIZE)
     token_algo = models.CharField(max_length=constants.MAX_ALGO_NAME_LENGTH, default=constants.DEFAULT_ALGO)
