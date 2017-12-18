@@ -132,21 +132,35 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         # TODO: return request text
         pass
 
-    def clone_or_pull(self, repository):
-        # TODO: test for repo in temp folder
-        # TODO:     if is git repo:
-        # TODO:         git checkout
-        # TODO:         git clean
-        # TODO:         git pull
-        # TODO:         on success:
-        # TODO:             return repo path
-        # TODO:         on failure:
-        # TODO:             rm -rdf repo path
-        # TODO:     else:
-        # TODO:         rm -rdf repo path
-        # TODO: clone repository in temp folder
-        # TODO: return repo path
-        pass
+    def clone_or_pull(self, repository, path):
+        path_object = pathlib.Path(path)
+        if path_object.exists():
+            if not path_object.is_dir():
+                os.remove(path)
+        os.makedirs(path, self.dir_mode, exist_ok=True)
+        command = ['git', 'status']
+        git_status = self.run_command(command=command, cwd=path)
+        if git_status[2] == 0:
+            commands = [
+                ['git', 'checkout'],
+                ['git', 'clean'],
+                ['git', 'pull']
+            ]
+            git_command = None
+            failure = False
+            for command in commands:
+                git_command = self.run_command(command=command, cwd=path)
+                print(git_command[0])
+                if git_command[2] != 0:
+                    print(git_command[1])
+                    failure = True
+                    break
+            else:
+                os.rmdir(path)
+            if not failure:
+                return git_command
+        command = ['git', 'clone', repository, path]
+        return self.run_command(command)
 
     def build_edunube_ignore(self, repo_path, full_ignore_path, parent_repo_path):
         # TODO: if parent_repo_path is None then copy repo_path/.edunubeignore -> full_ignore_path & return
@@ -158,25 +172,29 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         pass
 
     def repo_sync(self, origin_repo, dest_repo, ignore):
-        # TODO: rsync -a origin_repo/ dest_repo/ --ignore-from ignore
-        pass
+        command = ['rsync', '-a', origin_repo, dest_repo, '--ignore-from', ignore]
+        return self.run_command(command=command)
 
-    def build_exec_repo(self, repository, path):
+    extract_repo_name = re.compile("/([a-zA-Z0-9-_]+)\.git$")
+
+    def build_exec_repo(self, repository, repo_path):
         if repository is None:
             return None
         if type(repository) == list:
             for repo in repository:
-                self.build_exec_repo(repository=repo, path=path)
+                self.build_exec_repo(repository=repo, repo_path=repo_path)
         repospec = self.get_repospec(repository=repository)
         RepoSpec.validate_repospec(repospec=repospec)
         decoded_repospec = RepoSpec.decode(repospec=repospec)
-        parent_path = self.build_exec_repo(repository=decoded_repospec.get('parent'), path=path)[0]
-        repo_path = self.clone_or_pull(repository=repository)
-        edunube_ignore_path = "%s.edunubeignore" % repo_path
-        self.build_edunube_ignore(repo_path=repo_path, full_ignore_path=edunube_ignore_path,
+        parent_path = self.build_exec_repo(repository=decoded_repospec.get('parent'), repo_path=repo_path)[0]
+        repository_name = self.extract_repo_name.search(repository)[0]
+        current_repo_path = self.get_tmp_repo_path() + "/" + repository_name
+        self.clone_or_pull(repository=repository, path=current_repo_path)
+        edunube_ignore_path = "%s.edunubeignore" % current_repo_path
+        self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path,
                                   parent_repo_path=parent_path)
-        self.repo_sync(origin_repo=repo_path, dest_repo=path, ignore=edunube_ignore_path)
-        return repo_path, path
+        self.repo_sync(origin_repo=current_repo_path, dest_repo=repo_path, ignore=edunube_ignore_path)
+        return repo_path
 
     def always_deterministic(self):
         return False
@@ -201,7 +219,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def create_job(self, namespace, repository, repository_url):
         unique_name = "%s-%s" % (namespace, repository)
         unique_path = "%s/%s" % (self.get_tmp_repo_path(), unique_name)
-        self.build_exec_repo(repository=repository_url, path=unique_path)
+        self.build_exec_repo(repository=repository_url, repo_path=unique_path)
         # TODO: create new repo & commit built exec repo & push to remote repo
         exec_repo_url = ''
         commit_id = self.get_id_last_git_commit(repository_path=unique_path)

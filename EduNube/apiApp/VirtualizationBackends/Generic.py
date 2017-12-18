@@ -4,6 +4,8 @@ from EduNube.settings import VIRTUALIZATION_BACKEND_TMP_PATHS, VIRTUALIZATION_BA
 
 class GenericVirtualizationBackend:
 
+    dir_mode = 0o770
+
     path_class = 'generic'
 
     def get_tmp_base_path(self):
