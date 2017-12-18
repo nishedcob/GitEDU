@@ -4,6 +4,7 @@ import json
 import pathlib
 import os
 import re
+import shutil
 
 from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
@@ -127,6 +128,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         return self.format_command_result(command_proc=cmd)
 
     def get_repospec(self, repository):
+        # TODO: extract git_domain and repo from repository
         # TODO: request GET git_domain?p=repo w/o domain;a=blob_plain;f=.repospec;hb=HEAD
         # TODO: if request == 404 raise error
         # TODO: return request text
@@ -162,14 +164,59 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         command = ['git', 'clone', repository, path]
         return self.run_command(command)
 
-    def build_edunube_ignore(self, repo_path, full_ignore_path, parent_repo_path):
-        # TODO: if parent_repo_path is None then copy repo_path/.edunubeignore -> full_ignore_path & return
-        # TODO: test for existence of file parent_repo_path.edunubeignore
-        # TODO: if doesn't exist generate recursively
-        # TODO: concat repo_path/.edunubeignore and parent_repo_path.edunubeignore as full_ignore_path.unsorted
-        # TODO: sort full_ignore_path.unsorted as full_ignore_path.sorted and rm full_ignore_path.unsorted
-        # TODO: uniq full_ignore_path.sorted as full_ignore_path and rm full_ignore_path.sorted
-        pass
+    def build_edunube_ignore(self, repo_path, full_ignore_path, parent_repo_path=None):
+        current_edunube_ignore = repo_path + "/.edunubeingore"
+        current_edunube_ignore_path = pathlib.Path(current_edunube_ignore)
+        if parent_repo_path is None:
+            if current_edunube_ignore_path.exists() and current_edunube_ignore_path.is_file():
+                shutil.copy(current_edunube_ignore, full_ignore_path)
+            else:
+                with open(full_ignore_path, mode='w') as full_ignore_path_fd:
+                    full_ignore_path_fd.write("")
+            return
+        parent_edunube_ingore = parent_repo_path + ".edunubeignore"
+        parent_edunube_ingore_path = pathlib.Path(parent_edunube_ingore)
+        if parent_edunube_ingore_path.exists():
+            if not parent_edunube_ingore_path.is_file():
+                if parent_edunube_ingore_path.is_dir():
+                    os.rmdir(parent_edunube_ingore)
+                else:
+                    os.remove(parent_edunube_ingore)
+        if parent_edunube_ingore_path.exists():
+            with open(full_ignore_path, mode='w') as full_ignore_path_fd:
+                with open(parent_edunube_ingore, mode='r') as parent_edunube_ingore_fd:
+                    full_ignore_path_fd.write(parent_edunube_ingore_fd.read())
+                    if current_edunube_ignore_path.exists() and current_edunube_ignore_path.is_file():
+                        with open(current_edunube_ignore, mode='r') as current_edunube_ignore_fd:
+                            full_ignore_path_fd.write(current_edunube_ignore_fd.read())
+        else:
+            # TODO: review logic for recursive construction:
+            repospec_file = repo_path + "/.repospec"
+            repospec_file_path = pathlib.Path(repospec_file)
+            if not repospec_file_path.exists() or not repospec_file_path.is_file():
+                raise ValueError("Error with repository's RepoSpec")
+            with open(repospec_file, mode='r') as repospec_fd:
+                repospec_data = repospec_fd.read()
+            decoded_repospec = RepoSpec.decode_repospec(repospec=repospec_data)
+            repository = decoded_repospec.get('parent')
+            repository_name = self.extract_repo_name.findall(repository)[0]
+            current_repo_path = self.get_tmp_repo_path() + "/" + repository_name
+            self.clone_or_pull(repository=repository, path=current_repo_path)
+            edunube_ignore_path = "%s.edunubeignore" % current_repo_path
+            parent_repospec = self.get_repospec(repository=repository)
+            decoded_parent_repospec = RepoSpec.decode_repospec(repospec=parent_repospec)
+            parent_repository = decoded_parent_repospec.get('parent')
+            if parent_repository is not None:
+                parent_repository_name = self.extract_repo_name.findall(parent_repository)[0]
+                parent_repo_path = self.get_tmp_repo_path() + "/" + parent_repository_name
+                self.clone_or_pull(repository=parent_repository, path=parent_repo_path)
+                self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path,
+                                          parent_repo_path=parent_repo_path)
+        # TODO: execute the following:
+        cmd = ['sort', full_ignore_path, ">", "%s.sorted" % full_ignore_path]
+        cmd = ['rm', full_ignore_path]
+        cmd = ['uniq', "%s.sorted" % full_ignore_path, ">", full_ignore_path]
+        return
 
     def repo_sync(self, origin_repo, dest_repo, ignore):
         command = ['rsync', '-a', origin_repo, dest_repo, '--ignore-from', ignore]
