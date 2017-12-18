@@ -187,7 +187,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         RepoSpec.validate_repospec(repospec=repospec)
         decoded_repospec = RepoSpec.decode(repospec=repospec)
         parent_path = self.build_exec_repo(repository=decoded_repospec.get('parent'), repo_path=repo_path)[0]
-        repository_name = self.extract_repo_name.search(repository)[0]
+        repository_name = self.extract_repo_name.findall(repository)[0]
         current_repo_path = self.get_tmp_repo_path() + "/" + repository_name
         self.clone_or_pull(repository=repository, path=current_repo_path)
         edunube_ignore_path = "%s.edunubeignore" % current_repo_path
