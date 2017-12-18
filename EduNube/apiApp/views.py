@@ -12,6 +12,7 @@ from django.core.exceptions import PermissionDenied
 
 from authApp.tokens import validate_api_token
 from EduNube.settings import DEFAULT_DOCKER_TAGS, DEFAULT_DOCKER_REGISTRY, VIRTUALIZATION_BACKEND
+from apiApp.Validation import RepoSpec
 
 # Create your views here.
 
@@ -25,7 +26,7 @@ class CodeExecutionView(View):
             virt_bk_str = VIRTUALIZATION_BACKEND.get('default', None)
         return virt_bk_str
 
-    virt_backend_str = get_virt_backend_str()
+    #virt_backend_str = get_virt_backend_str()
 
     def load_virt_backend(self):
         load_class = self.virt_backend_str
@@ -44,7 +45,7 @@ class CodeExecutionView(View):
             six.reraise(ImportError, ImportError(msg), sys.exc_info()[2])
         return backend_manager_class()
 
-    virt_backend = load_virt_backend()
+    #virt_backend = load_virt_backend()
 
     executor_name = 'Generic'
 
@@ -60,7 +61,7 @@ class CodeExecutionView(View):
     def get_full_docker_image_string(self):
         return '%s/%s/%s-executor' % (self.get_docker_registry(), self.get_docker_registry_repo(), self.executor_name)
 
-    docker_image = get_full_docker_image_string()
+    #docker_image = get_full_docker_image_string()
     docker_tag = DEFAULT_DOCKER_TAGS.get('default', None) if DEFAULT_DOCKER_TAGS.get(executor_name, None) is None\
         else DEFAULT_DOCKER_TAGS.get(executor_name)
 
@@ -136,3 +137,40 @@ class PostgreSQLExecutionView(CodeExecutionView):
     #docker_image = 'registry.gitlab.com/nishedcob/gitedu/postgresql-executor'
     # can override default pulled from settings with:
     #docker_tag = None
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class RepoSpecGenericView(View):
+
+    def authenticate(self, request):
+        client_token = request.POST.get('token')
+        if client_token is None:
+            raise PermissionDenied("No client token provided")
+        if not validate_api_token(client_api_token=client_token):
+            raise PermissionDenied("Invalid Token")
+
+    def post_proc_steps(self):
+        return [self.validate_call, self.post_pre_proc, self.post_proc, self.post_post_proc]
+
+    def validate_call(self):
+        return None
+
+    def post_pre_proc(self):
+        return None
+    
+    def post_proc(self):
+        return None
+
+    def post_post_proc(self):
+        return None
+
+    def post(self, request):
+        try:
+            self.authenticate(request=request)
+            for func in self.post_proc_steps():
+                response = func(request=request)
+                if response is not None:
+                    return response
+            return None
+        except PermissionDenied as pe:
+            return self.not_authorized(request=request, reason=pe)
