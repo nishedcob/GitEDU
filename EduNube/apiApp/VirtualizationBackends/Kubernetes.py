@@ -175,20 +175,32 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                     full_ignore_path_fd.write("")
             return
         parent_edunube_ingore = parent_repo_path + ".edunubeignore"
+        parent_edunube_ingore_children = parent_edunube_ingore + ".children"
         parent_edunube_ingore_path = pathlib.Path(parent_edunube_ingore)
+        parent_edunube_ingore_path_children = pathlib.Path(parent_edunube_ingore_children)
         if parent_edunube_ingore_path.exists():
             if not parent_edunube_ingore_path.is_file():
                 if parent_edunube_ingore_path.is_dir():
                     os.rmdir(parent_edunube_ingore)
                 else:
                     os.remove(parent_edunube_ingore)
-        if parent_edunube_ingore_path.exists():
+        if parent_edunube_ingore_path_children.exists():
+            if not parent_edunube_ingore_path_children.is_file():
+                if parent_edunube_ingore_path_children.is_dir():
+                    os.rmdir(parent_edunube_ingore)
+                else:
+                    os.remove(parent_edunube_ingore)
+        if parent_edunube_ingore_path.exists() or parent_edunube_ingore_path_children.exists():
             with open(full_ignore_path, mode='w') as full_ignore_path_fd:
-                with open(parent_edunube_ingore, mode='r') as parent_edunube_ingore_fd:
-                    full_ignore_path_fd.write(parent_edunube_ingore_fd.read())
-                    if current_edunube_ignore_path.exists() and current_edunube_ignore_path.is_file():
-                        with open(current_edunube_ignore, mode='r') as current_edunube_ignore_fd:
-                            full_ignore_path_fd.write(current_edunube_ignore_fd.read())
+                if parent_edunube_ingore_path.exists():
+                    with open(parent_edunube_ingore, mode='r') as parent_edunube_ingore_fd:
+                        full_ignore_path_fd.write(parent_edunube_ingore_fd.read())
+                if parent_edunube_ingore_path_children.exists():
+                    with open(parent_edunube_ingore_children, mode='r') as parent_edunube_ingore_children_fd:
+                        full_ignore_path_fd.write(parent_edunube_ingore_children_fd.read())
+                if current_edunube_ignore_path.exists() and current_edunube_ignore_path.is_file():
+                    with open(current_edunube_ignore, mode='r') as current_edunube_ignore_fd:
+                        full_ignore_path_fd.write(current_edunube_ignore_fd.read())
         else:
             # TODO: review logic for recursive construction:
             repospec_file = repo_path + "/.repospec"
