@@ -20,6 +20,10 @@ from apiApp import views as api_views
 
 appname = "apiApp"
 urlpatterns = [
+    url('^repospec/create$', api_views.CreateRepoSpecView.as_view()),
+    url('^repospec/get$', api_views.GetRepoSpecView.as_view()),
+    url('^repospec/get_or_create$', api_views.GetOrCreateRepoSpecView.as_view()),
+    url('^repospec/edit$', api_views.EditRepoSpecView.as_view()),
     #url('^execute/', include(execution_urls))
 ]
 
