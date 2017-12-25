@@ -202,7 +202,6 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                     with open(current_edunube_ignore, mode='r') as current_edunube_ignore_fd:
                         full_ignore_path_fd.write(current_edunube_ignore_fd.read())
         else:
-            # TODO: review logic for recursive construction:
             repospec_file = repo_path + "/.repospec"
             repospec_file_path = pathlib.Path(repospec_file)
             if not repospec_file_path.exists() or not repospec_file_path.is_file():
@@ -224,11 +223,27 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                 self.clone_or_pull(repository=parent_repository, path=parent_repo_path)
                 self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path,
                                           parent_repo_path=parent_repo_path)
-        # TODO: execute the following:
+            else:
+                self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path)
+            self.build_edunube_ignore(repo_path=repo_path, full_ignore_path=full_ignore_path,
+                                      parent_repo_path=parent_repo_path)
         cmd = ['sort', full_ignore_path, ">", "%s.sorted" % full_ignore_path]
-        cmd = ['rm', full_ignore_path]
-        cmd = ['uniq', "%s.sorted" % full_ignore_path, ">", full_ignore_path]
-        return
+        command = self.run_command(command=cmd)
+        command_results = command
+        if command[2] == 0:
+            command_results = [command[0], command[1], command[2]]
+            cmd = ['rm', full_ignore_path]
+            command = self.run_command(command=cmd)
+            command_results[0] += command[0]
+            command_results[1] += command[1]
+            command_results[2] += command[2]
+            if command[2] == 0:
+                cmd = ['uniq', "%s.sorted" % full_ignore_path, ">", full_ignore_path]
+                command = self.run_command(command=cmd)
+                command_results[0] += command[0]
+                command_results[1] += command[1]
+                command_results[2] += command[2]
+        return command_results
 
     def repo_sync(self, origin_repo, dest_repo, ignore):
         command = ['rsync', '-a', origin_repo, dest_repo, '--ignore-from', ignore]
