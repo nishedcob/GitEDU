@@ -5,6 +5,7 @@ import pathlib
 import os
 import re
 import shutil
+import requests
 
 from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
@@ -127,12 +128,17 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
         return self.format_command_result(command_proc=cmd)
 
+    git_repo_data_extractor = re.compile('(https?://[a-z0-9\.]+)/.*?/?([-a-zA-Z0-9]+)\.git')
+
     def get_repospec(self, repository):
-        # TODO: extract git_domain and repo from repository
-        # TODO: request GET git_domain?p=repo w/o domain;a=blob_plain;f=.repospec;hb=HEAD
-        # TODO: if request == 404 raise error
-        # TODO: return request text
-        pass
+        git_data = self.git_repo_data_extractor.findall(repository)
+        git_domain, repo = git_data
+        request_url = "%s/?p=%s;a=blob_plain;f=.repospec,hb=HEAD" % (git_domain, repo)
+        print(request_url)
+        repospec_request = requests.get(request_url)
+        if repospec_request.status_code == 404:
+            raise Exception('Failure to get RepoSpec')
+        return repospec_request.text
 
     def clone_or_pull(self, repository, path):
         path_object = pathlib.Path(path)
