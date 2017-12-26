@@ -1,7 +1,7 @@
 
 from pymodm import connect
 
-from .mongodb_settings import CONNECTION_DEFAULTS, MONGODB_ALIAS_STRING
+from apiApp.mongodb_settings import CONNECTION_DEFAULTS, MONGODB_ALIAS_STRING
 
 mongodb_conn_num = 0
 

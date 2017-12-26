@@ -139,6 +139,8 @@ NOSQL_DATABASES = {
     }
 }
 
+MONGODB_CONNECT_TO = 'nosql'
+
 # Lighter for Production
 ALPINE_DOCKER_TAG = 'alpine-3.6'
 # Easier for Testing

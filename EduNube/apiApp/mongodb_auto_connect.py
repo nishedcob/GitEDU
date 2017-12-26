@@ -1,10 +1,10 @@
 
-from ideApp.CodePersistenceBackends.MongoDB.mongodb_connect import build_connection_from_settings
+from apiApp.mongodb_connect import build_connection_from_settings
 
-from GitEDU.settings import CODE_PERSISTENCE_BACKENDS, MONGODB_CONNECT_TO
+from EduNube.settings import MONGODB_CONNECT_TO, NOSQL_DATABASES
 
-profiles = CODE_PERSISTENCE_BACKENDS[MONGODB_CONNECT_TO]['connection_profiles']
-alias = CODE_PERSISTENCE_BACKENDS[MONGODB_CONNECT_TO]['connection_profile']
+profiles = NOSQL_DATABASES
+alias = MONGODB_CONNECT_TO
 config = profiles[alias]
 
 #print(config)
