@@ -301,6 +301,12 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         unique_path = "%s/%s" % (self.get_tmp_repo_path(), unique_name)
         self.build_exec_repo(repository=repository_url, repo_path=unique_path)
         # TODO: create new repo & commit built exec repo & push to remote repo
+        # TODO: Backup exec repo
+        # TODO: Try to Clone or Pull Exec Repo
+        # TODO: restore backup
+        # TODO: commit
+        # TODO: create/push to remote repo
+        # TODO: populate exec_repo_url
         exec_repo_url = ''
         commit_id = self.get_id_last_git_commit(repository_path=unique_path)
         job_name = "%s-%s" % (unique_name, commit_id)
