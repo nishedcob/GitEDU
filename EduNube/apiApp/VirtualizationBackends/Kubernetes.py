@@ -282,6 +282,9 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def always_execute(self):
         return False
 
+    def build_new_name(self, name, index):
+        return "%s-%d" % (name, index)
+
     def is_deterministic(self, namespace, repository, repository_url):
         # TODO: Look up in Database if we have data on namespace/repository/commit as deterministic or not
         # TODO: If we have already answered the question previously, return that answer
@@ -289,7 +292,9 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         # if the job has never been executed, execute it with default job name and return None
         # TODO: if job does not exist, execute with default name, save execution as not deterministic, return None
         # TODO: look for job with secondary name
-        # TODO: if secondary name job doesn't exist, re-execute with second name
+        # TODO: if secondary name job doesn't exist, re-execute with second name, compare logs, if ==, modify previous
+        # TODO:     entry as deterministic, save current execution as deterministic,
+        # TODO:     else save current execution as not deterministic, return (None, None)
         # TODO: compare logs, if == save to database, modify previous entry as True and return true,
         # TODO: else save to database and return false
         pass
@@ -316,7 +321,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         commit_id = self.get_id_last_git_commit(repository_path=unique_path)
         job_name = "%s-%s" % (unique_name, commit_id)
         if self.always_execute():
-            # TODO: eliminate previous job if it exists and create new job
+            # TODO: eliminate previous job (default name) if it exists and create new job
             pass
         else:
             if self.always_deterministic():
@@ -333,15 +338,32 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                     job_status = self.job_status(job_id=job_name)
                 return job_status
             else:
-                if self.is_deterministic(namespace=namespace, repository=repository, repository_url=repository_url):
+                determinism = self.is_deterministic(namespace=namespace, repository=repository,
+                                                    repository_url=repository_url)
+                if determinism is None:
                     job_status = self.job_status(job_id=job_name)
                     job_status['job_id'] = job_name
                     job_status['log'] = self.job_logs(job_id=job_name)
                     return job_status
+                elif type(determinism) == tuple and determinism == (None, None):
+                    job_name = self.build_new_name(name=job_name, index=2)
+                    job_status = self.job_status(job_id=job_name)
+                    job_status['job_id'] = job_name
+                    job_status['log'] = self.job_logs(job_id=job_name)
+                    return job_status
+                elif type(determinism) == bool:
+                    if determinism:
+                        job_status = self.job_status(job_id=job_name)
+                        job_status['job_id'] = job_name
+                        job_status['log'] = self.job_logs(job_id=job_name)
+                        return job_status
+                    else:
+                        # TODO: Count number of executions
+                        # TODO: new job name with execution_number++
+                        # TODO: re-execute and return execution in progress
+                        pass
                 else:
-                    # TODO: re-execute and return execution in progress
-                    pass
-                pass
+                    raise ValueError("Invalid or Unimplemented Response from is_deterministic: %s" % determinism)
         # TODO: build template and call kubernetes
         # TODO: return job id and log
         pass
