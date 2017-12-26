@@ -279,14 +279,19 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def always_deterministic(self):
         return False
 
+    def always_execute(self):
+        return False
+
     def is_deterministic(self, namespace, repository, repository_url):
         # TODO: Look up in Database if we have data on namespace/repository/commit as deterministic or not
         # TODO: If we have already answered the question previously, return that answer
         # TODO: look for job with default name
-        # TODO: if job does not exist, execute with default name
+        # if the job has never been executed, execute it with default job name and return None
+        # TODO: if job does not exist, execute with default name, save execution as not deterministic, return None
         # TODO: look for job with secondary name
         # TODO: if secondary name job doesn't exist, re-execute with second name
-        # TODO: compare logs, if == save to database and return true, else save to database and return false
+        # TODO: compare logs, if == save to database, modify previous entry as True and return true,
+        # TODO: else save to database and return false
         pass
 
     commit_id_regex = re.compile("commit ([0-9a-f]*)\\\\n")
@@ -310,29 +315,33 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         exec_repo_url = ''
         commit_id = self.get_id_last_git_commit(repository_path=unique_path)
         job_name = "%s-%s" % (unique_name, commit_id)
-        if self.always_deterministic():
-            job_status = self.job_status(job_id=job_name)
-            job_status['job_id'] = job_name
-            if job_status.get('exists'):
-                if job_status.get('finished'):
-                    job_status['log'] = self.job_logs(job_id=job_name)
-            else:
-                manifest = self.build_job_template(job_name=job_name, git_repo=exec_repo_url)
-                manifest_path = self.get_tmp_manifest_path() + "/" + job_name + ".json"
-                self.write_json_manifest(path=manifest_path, json_data=manifest, overwrite=True)
-                self.kubectl_create_from_manifest_file(manifest_path=manifest_path)
-                job_status = self.job_status(job_id=job_name)
-            return job_status
+        if self.always_execute():
+            # TODO: eliminate previous job if it exists and create new job
+            pass
         else:
-            if self.is_deterministic(namespace=namespace, repository=repository, repository_url=repository_url):
+            if self.always_deterministic():
                 job_status = self.job_status(job_id=job_name)
                 job_status['job_id'] = job_name
-                job_status['log'] = self.job_logs(job_id=job_name)
+                if job_status.get('exists'):
+                    if job_status.get('finished'):
+                        job_status['log'] = self.job_logs(job_id=job_name)
+                else:
+                    manifest = self.build_job_template(job_name=job_name, git_repo=exec_repo_url)
+                    manifest_path = self.get_tmp_manifest_path() + "/" + job_name + ".json"
+                    self.write_json_manifest(path=manifest_path, json_data=manifest, overwrite=True)
+                    self.kubectl_create_from_manifest_file(manifest_path=manifest_path)
+                    job_status = self.job_status(job_id=job_name)
                 return job_status
             else:
-                # TODO: re-execute and return execution in progress
+                if self.is_deterministic(namespace=namespace, repository=repository, repository_url=repository_url):
+                    job_status = self.job_status(job_id=job_name)
+                    job_status['job_id'] = job_name
+                    job_status['log'] = self.job_logs(job_id=job_name)
+                    return job_status
+                else:
+                    # TODO: re-execute and return execution in progress
+                    pass
                 pass
-            pass
         # TODO: build template and call kubernetes
         # TODO: return job id and log
         pass
