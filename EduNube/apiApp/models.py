@@ -17,7 +17,7 @@ class JobSpec(models.Model):
     docker_image = models.CharField(max_length=constants.MAX_URL_LENGTH)
     git_repo = models.CharField(max_length=constants.MAX_URL_LENGTH)
     job_name = models.CharField(max_length=constants.MAX_NAME_LENGTH, unique=True)
-    deterministic = models.BooleanField()
+    deterministic = models.NullBooleanField(blank=True, null=True)
 
 
 class JobNameCounter(models.Model):

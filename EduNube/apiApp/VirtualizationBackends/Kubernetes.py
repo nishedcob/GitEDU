@@ -10,6 +10,7 @@ import requests
 from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
 from apiApp.Validation import RepoSpec
+from apiApp import models, mongodb_models
 
 
 class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
@@ -285,19 +286,62 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def build_new_name(self, name, index):
         return "%s-%d" % (name, index)
 
-    def is_deterministic(self, namespace, repository, repository_url):
-        # TODO: Look up in Database if we have data on namespace/repository/commit as deterministic or not
-        # TODO: If we have already answered the question previously, return that answer
-        # TODO: look for job with default name
-        # if the job has never been executed, execute it with default job name and return None
-        # TODO: if job does not exist, execute with default name, save execution as not deterministic, return None
-        # TODO: look for job with secondary name
-        # TODO: if secondary name job doesn't exist, re-execute with second name, compare logs, if ==, modify previous
-        # TODO:     entry as deterministic, save current execution as deterministic,
-        # TODO:     else save current execution as not deterministic, return (None, None)
-        # TODO: compare logs, if == save to database, modify previous entry as True and return true,
-        # TODO: else save to database and return false
-        pass
+    def is_deterministic(self, namespace, repository, repository_url, unique_path, unique_name):
+        commit_id = self.get_id_last_git_commit(repository_path=unique_path)
+        jobSpec = models.JobSpec.objects.get(job_name=unique_name)
+        if jobSpec is not None:
+            if jobSpec.deterministic is not None:
+                return jobSpec.deterministic
+            # executed at least once but determism not determined
+            unique_name_2 = self.build_new_name(name=unique_name, index=2)
+            jobSpec2 = models.JobSpec.objects.get(job_name=unique_name_2)
+            executed = False
+            if jobSpec2 is not None:
+                if jobSpec2.deterministic is not None:
+                    # determism determined previously, database not in sync
+                    jobSpec.deterministic = jobSpec2.deterministic
+                    jobSpec.save()
+                    return jobSpec2.deterministic
+            else:
+                # execute once with second name
+                self.execute_job(namespace=namespace, repository=repository, repository_url=repository_url,
+                                 repository_path=unique_path, job_name=unique_name_2)
+                executed = True
+            params_dict = {
+                'namespace': namespace,
+                'repository': repository,
+                'commit_id': commit_id
+            }
+            log1_params = params_dict.copy()
+            log1_params['execution_number'] = 1
+            executionLog1 = mongodb_models.ExecutionLogModel.objects.get(log1_params)
+            log2_params = params_dict.copy()
+            log2_params['execution_number'] = 1
+            executionLog2 = mongodb_models.ExecutionLogModel.objects.get(log2_params)
+            if executionLog1.stdout == executionLog2.stdout and executionLog1.stderr == executionLog2.stderr:
+                executionLog1.deterministic = True
+                executionLog2.deterministic = True
+                jobSpec.deterministic = True
+                jobSpec2.deterministic = True
+            else:
+                executionLog1.deterministic = False
+                executionLog2.deterministic = False
+                jobSpec.deterministic = False
+                jobSpec2.deterministic = False
+            executionLog1.save()
+            executionLog2.save()
+            jobSpec.save()
+            jobSpec2.save()
+            if executed:
+                return None, None
+            else:
+                return jobSpec.deterministic
+        else:
+            # never executed, execute once and return none
+            # execute once with default name
+            self.execute_job(namespace=namespace, repository=repository, repository_url=repository_url,
+                             repository_path=unique_path, job_name=unique_name)
+            return None
 
     commit_id_regex = re.compile("commit ([0-9a-f]*)\\\\n")
 
@@ -305,6 +349,11 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         command = ["git", "show", "HEAD"]
         cmd = self.run_command(command=command, cwd=repository_path)
         return self.commit_id_regex.findall(str(cmd[0]))[0]
+
+    def execute_job(self, namespace, repository, repository_url, repository_path, job_name):
+        # TODO: Lower level execution utility without all the major preflight checks found in create_job
+        # TODO: save determinism as null
+        pass
 
     def create_job(self, namespace, repository, repository_url):
         unique_name = "%s-%s" % (namespace, repository)
@@ -339,7 +388,8 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                 return job_status
             else:
                 determinism = self.is_deterministic(namespace=namespace, repository=repository,
-                                                    repository_url=repository_url)
+                                                    repository_url=repository_url, unique_path=unique_path,
+                                                    unique_name=unique_name)
                 if determinism is None:
                     job_status = self.job_status(job_id=job_name)
                     job_status['job_id'] = job_name
