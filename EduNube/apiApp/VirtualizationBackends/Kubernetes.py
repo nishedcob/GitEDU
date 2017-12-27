@@ -350,12 +350,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         cmd = self.run_command(command=command, cwd=repository_path)
         return self.commit_id_regex.findall(str(cmd[0]))[0]
 
-    def execute_job(self, namespace, repository, repository_url, repository_path, job_name):
-        # TODO: Lower level execution utility without all the major preflight checks found in create_job
-        # TODO: save determinism as null
-        pass
-
-    def create_job(self, namespace, repository, repository_url):
+    def prepare_job(self, namespace, repository, repository_url):
         unique_name = "%s-%s" % (namespace, repository)
         unique_path = "%s/%s" % (self.get_tmp_repo_path(), unique_name)
         self.build_exec_repo(repository=repository_url, repo_path=unique_path)
@@ -367,11 +362,40 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         # TODO: create/push to remote repo
         # TODO: populate exec_repo_url
         exec_repo_url = ''
+        return {
+            'unique_name': unique_name,
+            'unique_path': unique_path,
+            'exec_repo_url': exec_repo_url
+        }
+
+    def execute_job(self, namespace, repository, repository_url, repository_path, job_name, prep_job=False):
+        if not prep_job:
+            prep_job = self.prepare_job(namespace=namespace, repository=repository, repository_url=repository_url)
+            job_name = prep_job.get('unique_name')
+            repository_path = prep_job.get('unique_path')
+            repository_url = prep_job.get('exec_repo_url')
+        # TODO: Lower level execution utility without all the major preflight checks found in create_job
+        # TODO: save determinism as null
+        # TODO: if job_spec didn't exist:
+        # TODO:     increment job_count
+        pass
+
+    def create_job(self, namespace, repository, repository_url):
+        prep_job = self.prepare_job(namespace=namespace, repository=repository, repository_url=repository_url)
+        unique_name = prep_job.get('unique_name')
+        unique_path = prep_job.get('unique_path')
+        exec_repo_url = prep_job.get('exec_repo_url')
         commit_id = self.get_id_last_git_commit(repository_path=unique_path)
         job_name = "%s-%s" % (unique_name, commit_id)
         if self.always_execute():
-            # TODO: eliminate previous job (default name) if it exists and create new job
-            pass
+            job_status = self.job_status(job_id=job_name)
+            if job_status.get('exists'):
+                self.job_delete(job_id=job_name)
+            self.execute_job(namespace=namespace, repository=repository, repository_url=exec_repo_url,
+                             repository_path=unique_path, job_name=job_name, prep_job=True)
+            return {
+                'job_id': job_name
+            }
         else:
             if self.always_deterministic():
                 job_status = self.job_status(job_id=job_name)
@@ -388,7 +412,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                 return job_status
             else:
                 determinism = self.is_deterministic(namespace=namespace, repository=repository,
-                                                    repository_url=repository_url, unique_path=unique_path,
+                                                    repository_url=exec_repo_url, unique_path=unique_path,
                                                     unique_name=unique_name)
                 if determinism is None:
                     job_status = self.job_status(job_id=job_name)
@@ -408,15 +432,22 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                         job_status['log'] = self.job_logs(job_id=job_name)
                         return job_status
                     else:
-                        # TODO: Count number of executions
-                        # TODO: new job name with execution_number++
-                        # TODO: re-execute and return execution in progress
-                        pass
+                        job_counter = models.JobNameCounter.objects.get(orig_job_name=job_name)
+                        if job_counter is None:
+                            job_counter = models.JobNameCounter(job_name=job_name, job_count=0)
+                            jobs = models.JobSpec.objects.filter(job_name__startswith=job_name)
+                            job_counter.job_count = jobs.count()
+                            job_counter.save()
+                        job_counter.job_count += 1
+                        job_counter.save()
+                        job_name = self.build_new_name(name=job_name, index=job_counter.job_count)
+                        self.execute_job(namespace=namespace, repository=repository, repository_url=exec_repo_url,
+                                         repository_path=unique_path, job_name=job_name, prep_job=True)
+                        return {
+                            'job_id': job_name
+                        }
                 else:
                     raise ValueError("Invalid or Unimplemented Response from is_deterministic: %s" % determinism)
-        # TODO: build template and call kubernetes
-        # TODO: return job id and log
-        pass
 
     def write_json_manifest(self, path, json_data, overwrite=False):
         file_path = pathlib.Path(path)
@@ -454,6 +485,9 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
 
     def job_logs(self, job_id):
         return self.kubectl__job_id(verb='logs', job_id=job_id)
+
+    def job_delete(self, job_id):
+        return self.kubectl__job_id(verb='delete', job_id=job_id)
 
     executing_regex = re.compile("  0  ")
 
