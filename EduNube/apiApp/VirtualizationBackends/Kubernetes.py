@@ -350,8 +350,17 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         cmd = self.run_command(command=command, cwd=repository_path)
         return self.commit_id_regex.findall(str(cmd[0]))[0]
 
+    def build_unique_name(self, namespace, repository):
+        return "%s-%s" % (namespace, repository)
+
+    def build_job_name(self, unique_name, commit_id):
+        return "%s-%s" % (unique_name, commit_id)
+
+    def build_full_job_name(self, namespace, repository, commit_id):
+        return "%s-%s" % (self.build_unique_name(namespace=namespace, repository=repository), commit_id)
+
     def prepare_job(self, namespace, repository, repository_url):
-        unique_name = "%s-%s" % (namespace, repository)
+        unique_name = self.build_unique_name(namespace=namespace, repository=repository)
         unique_path = "%s/%s" % (self.get_tmp_repo_path(), unique_name)
         self.build_exec_repo(repository=repository_url, repo_path=unique_path)
         # TODO: create new repo & commit built exec repo & push to remote repo
@@ -368,17 +377,30 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             'exec_repo_url': exec_repo_url
         }
 
-    def execute_job(self, namespace, repository, repository_url, repository_path, job_name, prep_job=False):
+    def execute_job(self, namespace, repository, repository_url, repository_path, job_name, prep_job=False,
+                    overwrite_manifest=False):
         if not prep_job:
             prep_job = self.prepare_job(namespace=namespace, repository=repository, repository_url=repository_url)
             job_name = prep_job.get('unique_name')
             repository_path = prep_job.get('unique_path')
             repository_url = prep_job.get('exec_repo_url')
-        # TODO: Lower level execution utility without all the major preflight checks found in create_job
-        # TODO: save determinism as null
-        # TODO: if job_spec didn't exist:
-        # TODO:     increment job_count
-        pass
+        job_spec = models.JobSpec.objects.get(job_name=job_name)
+        existed_previously = job_spec is not None
+        manifest = self.build_job_template(job_name=job_name, git_repo=repository_url)
+        manifest_path = "%s/%s.json" % (self.get_tmp_base_path(), job_name)
+        self.write_json_manifest(path=manifest_path, json_data=manifest, overwrite=overwrite_manifest)
+        self.kubectl_create_from_manifest_file(manifest_path=manifest_path)
+        job_spec = models.JobSpec.objects.get_or_create(job_name=job_name)
+        job_spec.docker_image = self.build_docker_string()
+        job_spec.git_repo = repository_url
+        job_spec.deterministic = None
+        job_spec.save()
+        if not existed_previously:
+            commit_id = self.get_id_last_git_commit(repository_path=repository_path)
+            orig_job_name = self.build_full_job_name(namespace=namespace, repository=repository, commit_id=commit_id)
+            job_count = models.JobNameCounter.objects.get_or_create(orig_job_name=orig_job_name)
+            job_count.job_count += 1
+            job_count.save()
 
     def create_job(self, namespace, repository, repository_url):
         prep_job = self.prepare_job(namespace=namespace, repository=repository, repository_url=repository_url)
@@ -386,7 +408,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         unique_path = prep_job.get('unique_path')
         exec_repo_url = prep_job.get('exec_repo_url')
         commit_id = self.get_id_last_git_commit(repository_path=unique_path)
-        job_name = "%s-%s" % (unique_name, commit_id)
+        job_name = self.build_job_name(unique_name=unique_name, commit_id=commit_id)
         if self.always_execute():
             job_status = self.job_status(job_id=job_name)
             if job_status.get('exists'):
