@@ -289,13 +289,14 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
 
     def is_deterministic(self, namespace, repository, repository_url, unique_path, unique_name):
         commit_id = self.get_id_last_git_commit(repository_path=unique_path)
-        jobSpec = models.JobSpec.objects.get(job_name=unique_name)
+        job_name = self.build_job_name(unique_name=unique_name, commit_id=commit_id)
+        jobSpec = models.JobSpec.objects.get(job_name=job_name)
         if jobSpec is not None:
             if jobSpec.deterministic is not None:
                 return jobSpec.deterministic
             # executed at least once but determism not determined
-            unique_name_2 = self.build_new_name(name=unique_name, index=2)
-            jobSpec2 = models.JobSpec.objects.get(job_name=unique_name_2)
+            job_name_2 = self.build_new_name(name=job_name, index=2)
+            jobSpec2 = models.JobSpec.objects.get(job_name=job_name_2)
             executed = False
             if jobSpec2 is not None:
                 if jobSpec2.deterministic is not None:
@@ -306,7 +307,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             else:
                 # execute once with second name
                 self.execute_job(namespace=namespace, repository=repository, repository_url=repository_url,
-                                 repository_path=unique_path, job_name=unique_name_2)
+                                 repository_path=unique_path, job_name=job_name_2)
                 executed = True
             params_dict = {
                 'namespace': namespace,
@@ -341,7 +342,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             # never executed, execute once and return none
             # execute once with default name
             self.execute_job(namespace=namespace, repository=repository, repository_url=repository_url,
-                             repository_path=unique_path, job_name=unique_name)
+                             repository_path=unique_path, job_name=job_name)
             return None
 
     commit_id_regex = re.compile("commit ([0-9a-f]*)\\\\n")
@@ -349,12 +350,17 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def get_id_last_git_commit(self, repository_path):
         command = ["git", "show", "HEAD"]
         cmd = self.run_command(command=command, cwd=repository_path)
+        if cmd[2] != 0:
+            # No commits yet?
+            return None
         return self.commit_id_regex.findall(str(cmd[0]))[0]
 
     def build_unique_name(self, namespace, repository):
         return "%s-%s" % (namespace, repository)
 
     def build_job_name(self, unique_name, commit_id):
+        if commit_id is None:
+            return unique_name
         return "%s-%s" % (unique_name, commit_id)
 
     def build_full_job_name(self, namespace, repository, commit_id):
