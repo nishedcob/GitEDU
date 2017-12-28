@@ -27,6 +27,9 @@ class GenericVirtualizationBackend:
     def get_tmp_backup_repo_path(self):
         return self.get_tmp_base_path() + VIRTUALIZATION_BACKEND_BACKUP_REPO_SUBPATH
 
+    def get_remote_execution_namespace(self):
+        return 'edunube-exec'
+
     prog_language = None
 
     def execute(self, namespace, repository, repository_url):

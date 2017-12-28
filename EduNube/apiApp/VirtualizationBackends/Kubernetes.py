@@ -10,6 +10,7 @@ import requests
 from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS, GIT_SERVER_HOST
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
 from apiApp.Validation import RepoSpec
+from apiApp.git_server_http_endpoint import RepositoryGitSrvHTTPEpConsumer
 from apiApp import models, mongodb_models
 
 
@@ -396,7 +397,8 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         if cmd[2] == 0:
             command = ['rm', '-rdfv', unique_path]
             cmd = self.run_command(command=command)
-        git_exec_repo_url = "%s/%s.git" % (self.build_git_base_url(), unique_name)
+        remote_namespace = self.get_remote_execution_namespace()
+        git_exec_repo_url = "%s/%s/%s.git" % (self.build_git_base_url(), remote_namespace, unique_name)
         command = ['git', 'clone', git_exec_repo_url, unique_path]
         cmd = self.run_command(command=command)
         not_cloned = False
@@ -411,7 +413,8 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             cmd = self.run_command(command=command, cwd=unique_path)
             command = ['git', 'remote', 'add', 'origin', git_exec_repo_url]
             cmd = self.run_command(command=command, cwd=unique_path)
-            # TODO: Create Repo in Git Server
+            repoGitSrvHTTPepConsumer = RepositoryGitSrvHTTPEpConsumer()
+            repoGitSrvHTTPepConsumer.create_call(namespace=remote_namespace, repository=unique_name)
         command = ['git', 'add', '.']
         cmd = self.run_command(command=command, cwd=unique_path)
         command = ['git', 'commit', '-m', '"Update to Exec Repo"']
