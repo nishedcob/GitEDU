@@ -105,6 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LOGIN_URL = '/auth/login'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
@@ -181,6 +182,17 @@ GIT_SERVER_HOST = {
     'password': None,
     'host': '192.168.99.1',
     'port': None
+}
+
+GIT_HTTP_ENDPOINT_HOST = {
+    'protocol': "http",
+    'user': None,
+    'password': None,
+    'host': '192.168.99.1',
+    'port': 8002,
+    'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlZGl0X2RhdGUiOiIyMDE3LTEyLTI4IDE3OjQxOjU1LjI1NjM1NyswMDowMCIsImV4'
+             'cGlyZXMiOmZhbHNlLCJhcHBfbmFtZSI6IkVkdU51YmUiLCJjcmVhdGVkX2RhdGUiOiIyMDE3LTEyLTI4IDE3OjQxOjU1LjI1NjMyMiswM'
+             'DowMCJ9.9sxxaa23DuXyUb_Q_t5v18dO0RkDCraBwn1mvMb-LKw'
 }
 
 VIRTUALIZATION_BACKEND = {
