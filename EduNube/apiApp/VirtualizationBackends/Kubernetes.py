@@ -152,25 +152,28 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         git_status = self.run_command(command=command, cwd=path)
         if git_status[2] == 0:
             commands = [
-                ['git', 'checkout'],
-                ['git', 'clean'],
-                ['git', 'pull']
+                ['git', 'checkout', '--', '.'],
+                ['git', 'clean', '-f'],
+                ['git', 'pull', repository, 'master']
             ]
             git_command = None
             failure = False
             for command in commands:
+                print(command)
                 git_command = self.run_command(command=command, cwd=path)
                 print(git_command[0])
                 if git_command[2] != 0:
                     print(git_command[1])
                     failure = True
                     break
+            if failure:
+                command = ['rm', '-rdvf', path]
+                cmd = self.run_command(command=command)
+                print(cmd[0])
             else:
-                os.rmdir(path)
-            if not failure:
                 return git_command
         command = ['git', 'clone', repository, path]
-        return self.run_command(command)
+        return self.run_command(command=command)
 
     def build_edunube_ignore(self, repo_path, full_ignore_path, parent_repo_path=None):
         current_edunube_ignore = repo_path + "/.edunubeingore"
@@ -254,9 +257,10 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         return command_results
 
     def repo_sync(self, origin_repo, dest_repo, ignore):
-        command = ['rsync', '-a', origin_repo, dest_repo, '--ignore-from', ignore]
+        command = ['rsync', '-a', "%s/" % origin_repo, dest_repo, '--exclude-from', ignore]
         return self.run_command(command=command)
 
+    extract_ns_name = re.compile("[hf]t?tps?://[a-zA-Z0-9-_\.]+/([a-zA-Z0-9-_]+)?/[a-zA-Z0-9-_]+\.git")
     extract_repo_name = re.compile("/([a-zA-Z0-9-_]+)\.git$")
 
     def build_exec_repo(self, repository, repo_path):
@@ -269,13 +273,21 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         RepoSpec.validate_repospec(repospec=repospec)
         decoded_repospec = RepoSpec.decode(repospec=repospec)
         parent_path = self.build_exec_repo(repository=decoded_repospec.get('parent'), repo_path=repo_path)
+        namespace_name = self.extract_ns_name.findall(repository)
+        if namespace_name is not None:
+            namespace_name = namespace_name[0]
         repository_name = self.extract_repo_name.findall(repository)[0]
-        current_repo_path = self.get_tmp_repo_path() + "/" + repository_name
+        current_repo_path = self.get_tmp_repo_path() + "/"
+        if namespace_name is not None:
+            current_repo_path += namespace_name + "/"
+            os.makedirs(current_repo_path, self.dir_mode, exist_ok=True)
+        current_repo_path += repository_name
         self.clone_or_pull(repository=repository, path=current_repo_path)
         edunube_ignore_path = "%s.edunubeignore" % current_repo_path
         self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path,
                                   parent_repo_path=parent_path)
-        self.repo_sync(origin_repo=current_repo_path, dest_repo=repo_path, ignore=edunube_ignore_path)
+        cmd = self.repo_sync(origin_repo=current_repo_path, dest_repo=repo_path, ignore=edunube_ignore_path)
+        print(cmd)
         return repo_path
 
     def always_deterministic(self):
