@@ -79,7 +79,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'edunubedb',
-        'USER': 'edunubeser',
+        'USER': 'edunubeuser',
         'PASSWORD': '3d?N_6E',
         'HOST': '127.0.0.1',
         'PORT': '5432',
