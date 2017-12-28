@@ -302,13 +302,19 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def is_deterministic(self, namespace, repository, repository_url, unique_path, unique_name):
         commit_id = self.get_id_last_git_commit(repository_path=unique_path)
         job_name = self.build_job_name(unique_name=unique_name, commit_id=commit_id)
-        jobSpec = models.JobSpec.objects.get(job_name=job_name)
+        try:
+            jobSpec = models.JobSpec.objects.get(job_name=job_name)
+        except models.JobSpec.DoesNotExist:
+            jobSpec = None
         if jobSpec is not None:
             if jobSpec.deterministic is not None:
                 return jobSpec.deterministic
             # executed at least once but determism not determined
             job_name_2 = self.build_new_name(name=job_name, index=2)
-            jobSpec2 = models.JobSpec.objects.get(job_name=job_name_2)
+            try:
+                jobSpec2 = models.JobSpec.objects.get(job_name=job_name_2)
+            except models.JobSpec.DoesNotExist:
+                jobSpec2 = None
             executed = False
             if jobSpec2 is not None:
                 if jobSpec2.deterministic is not None:
@@ -319,7 +325,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             else:
                 # execute once with second name
                 self.execute_job(namespace=namespace, repository=repository, repository_url=repository_url,
-                                 repository_path=unique_path, job_name=job_name_2)
+                                 repository_path=unique_path, job_name=job_name_2, prep_job=True)
                 executed = True
             params_dict = {
                 'namespace': namespace,
@@ -328,10 +334,16 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             }
             log1_params = params_dict.copy()
             log1_params['execution_number'] = 1
-            executionLog1 = mongodb_models.ExecutionLogModel.objects.get(log1_params)
+            try:
+                executionLog1 = mongodb_models.ExecutionLogModel.objects.get(log1_params)
+            except mongodb_models.ExecutionLogModel.DoesNotExist:
+                executionLog1 = mongodb_models.ExecutionLogModel(**log1_params)
             log2_params = params_dict.copy()
             log2_params['execution_number'] = 1
-            executionLog2 = mongodb_models.ExecutionLogModel.objects.get(log2_params)
+            try:
+                executionLog2 = mongodb_models.ExecutionLogModel.objects.get(log2_params)
+            except mongodb_models.ExecutionLogModel.DoesNotExist:
+                executionLog2 = mongodb_models.ExecutionLogModel(**log2_params)
             if executionLog1.stdout == executionLog2.stdout and executionLog1.stderr == executionLog2.stderr:
                 executionLog1.deterministic = True
                 executionLog2.deterministic = True
@@ -354,7 +366,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             # never executed, execute once and return none
             # execute once with default name
             self.execute_job(namespace=namespace, repository=repository, repository_url=repository_url,
-                             repository_path=unique_path, job_name=job_name)
+                             repository_path=unique_path, job_name=job_name, prep_job=True)
             return None
 
     commit_id_regex = re.compile("commit ([0-9a-f]*)\\\\n")
@@ -453,13 +465,16 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             job_name = prep_job.get('unique_name')
             repository_path = prep_job.get('unique_path')
             repository_url = prep_job.get('exec_repo_url')
-        job_spec = models.JobSpec.objects.get(job_name=job_name)
+        try:
+            job_spec = models.JobSpec.objects.get(job_name=job_name)
+        except models.JobSpec.DoesNotExist:
+            job_spec = None
         existed_previously = job_spec is not None
         manifest = self.build_job_template(job_name=job_name, git_repo=repository_url)
         manifest_path = "%s/%s.json" % (self.get_tmp_base_path(), job_name)
         self.write_json_manifest(path=manifest_path, json_data=manifest, overwrite=overwrite_manifest)
         self.kubectl_create_from_manifest_file(manifest_path=manifest_path)
-        job_spec = models.JobSpec.objects.get_or_create(job_name=job_name)
+        job_spec = models.JobSpec.objects.get_or_create(job_name=job_name)[0]
         job_spec.docker_image = self.build_docker_string()
         job_spec.git_repo = repository_url
         job_spec.deterministic = None
@@ -467,7 +482,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         if not existed_previously:
             commit_id = self.get_id_last_git_commit(repository_path=repository_path)
             orig_job_name = self.build_full_job_name(namespace=namespace, repository=repository, commit_id=commit_id)
-            job_count = models.JobNameCounter.objects.get_or_create(orig_job_name=orig_job_name)
+            job_count = models.JobNameCounter.objects.get_or_create(orig_job_name=orig_job_name)[0]
             job_count.job_count += 1
             job_count.save()
 
