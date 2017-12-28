@@ -7,7 +7,7 @@ import re
 import shutil
 import requests
 
-from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS
+from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS, GIT_SERVER_HOST
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
 from apiApp.Validation import RepoSpec
 from apiApp import models, mongodb_models
@@ -359,18 +359,66 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def build_full_job_name(self, namespace, repository, commit_id):
         return "%s-%s" % (self.build_unique_name(namespace=namespace, repository=repository), commit_id)
 
+    def build_git_base_url(self):
+        protocol = GIT_SERVER_HOST.get('protocol')
+        if protocol is None:
+            raise ValueError("GIT_SERVER_HOST doesn't define a Protocol")
+        host = GIT_SERVER_HOST.get('host')
+        if host is None:
+            raise ValueError("GIT_SERVER_HOST doesn't define a Host")
+        url = "%s://" % protocol
+        print("Building Git Base URL: %s" % url)
+        user = GIT_SERVER_HOST.get('user')
+        if user is not None:
+            url = "%s%s" % (url, user)
+            print("Building Git Base URL: %s" % url)
+            password = GIT_SERVER_HOST.get('password')
+            if password is not None:
+                url = "%s:%s" % (url, password)
+                print("Building Git Base URL: %s" % url)
+            url = "%s@" % url
+            print("Building Git Base URL: %s" % url)
+        url = "%s%s" % (url, host)
+        print("Building Git Base URL: %s" % url)
+        port = GIT_SERVER_HOST.get('port')
+        if port is not None:
+            url = "%s:%s" % (url, str(port))
+            print("Building Git Base URL: %s" % url)
+        return url
+
     def prepare_job(self, namespace, repository, repository_url):
         unique_name = self.build_unique_name(namespace=namespace, repository=repository)
         unique_path = "%s/%s" % (self.get_tmp_repo_path(), unique_name)
         self.build_exec_repo(repository=repository_url, repo_path=unique_path)
-        # TODO: create new repo & commit built exec repo & push to remote repo
-        # TODO: Backup exec repo
-        # TODO: Try to Clone or Pull Exec Repo
-        # TODO: restore backup
-        # TODO: commit
-        # TODO: create/push to remote repo
-        # TODO: populate exec_repo_url
-        exec_repo_url = ''
+        unique_backup_path = "%s/%s" % (self.get_tmp_backup_repo_path(), unique_name)
+        command = ['rsync', '-av', '--progress', unique_path, unique_backup_path]
+        cmd = self.run_command(command=command)
+        if cmd[2] == 0:
+            command = ['rm', '-rdfv', unique_path]
+            cmd = self.run_command(command=command)
+        git_exec_repo_url = "%s/%s.git" % (self.build_git_base_url(), unique_name)
+        command = ['git', 'clone', git_exec_repo_url, unique_path]
+        cmd = self.run_command(command=command)
+        not_cloned = False
+        if cmd[2] != 0:
+            # Failure to clone
+            os.makedirs(unique_path, self.dir_mode, exist_ok=True)
+            not_cloned = True
+        command = ['rsync', '-av', '--progress', unique_backup_path, unique_path]
+        cmd = self.run_command(command=command)
+        if not_cloned:
+            command = ['git', 'init']
+            cmd = self.run_command(command=command, cwd=unique_path)
+            command = ['git', 'remote', 'add', 'origin', git_exec_repo_url]
+            cmd = self.run_command(command=command, cwd=unique_path)
+            # TODO: Create Repo in Git Server
+        command = ['git', 'add', '.']
+        cmd = self.run_command(command=command, cwd=unique_path)
+        command = ['git', 'commit', '-m', '"Update to Exec Repo"']
+        cmd = self.run_command(command=command, cwd=unique_path)
+        command = ['git', 'push', 'origin', 'master']
+        cmd = self.run_command(command=command, cwd=unique_path)
+        exec_repo_url = git_exec_repo_url
         return {
             'unique_name': unique_name,
             'unique_path': unique_path,
