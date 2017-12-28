@@ -59,3 +59,22 @@ py3_code_exec_template_repospec = RepoSpec.update_repo(old_repo=py3_code_exec_te
                                                        regen_secret_key=True)
 # token != py3_code_exec_template_repospec.token
 # secret_key != py3_code_exec_template_repospec.secret_key
+
+from apiApp.Validation import RepoSpec
+postgresql_code_exec_template_repospec = RepoSpec.create(repo="postgresql-code-executor-template", parent=None)
+token = postgresql_code_exec_template_repospec.token
+print(token)
+secret_key = postgresql_code_exec_template_repospec.secret_key
+print(secret_key)
+postgresql_code_exec_template_repospec = RepoSpec.RepoSpec.objects.get(repo="postgresql-code-executor-template")
+# str(token, 'utf-8') == postgresql_code_exec_template_repospec.token
+# str(secret_key, 'utf-8') == postgresql_code_exec_template_repospec.secret_key
+# RepoSpec.validate_repospec(postgresql_code_exec_template_repospec.token) == True
+# RepoSpec.decode_repospec(repospec=postgresql_code_exec_template_repospec.token,
+#                          stored_repospec=postgresql_code_exec_template_repospec)
+#                          == {'repo': "postgresql-code-executor-template"}
+# RepoSpec.decode_repospec(repospec=postgresql_code_exec_template_repospec.token) == {'repo': "postgresql-executor-template"}
+# RepoSpec.decode(stored_repospec=postgresql_code_exec_template_repospec, repospec=None, decode_stored=True)
+#                   == {'repo': "postgresql-code-executor-template"}
+
+
