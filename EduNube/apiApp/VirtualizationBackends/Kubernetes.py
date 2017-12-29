@@ -7,9 +7,10 @@ import re
 import shutil
 import requests
 
-from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS
+from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS, GIT_SERVER_HOST
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
 from apiApp.Validation import RepoSpec
+from apiApp.git_server_http_endpoint import RepositoryGitSrvHTTPEpConsumer
 from apiApp import models, mongodb_models
 
 
@@ -129,12 +130,12 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
         return self.format_command_result(command_proc=cmd)
 
-    git_repo_data_extractor = re.compile('(https?://[a-z0-9\.]+)/.*?/?([-a-zA-Z0-9]+)\.git')
+    git_repo_data_extractor = re.compile('(https?://[a-z0-9\.]+)/([-a-zA-Z0-9/]+)\.git')
 
     def get_repospec(self, repository):
         git_data = self.git_repo_data_extractor.findall(repository)
-        git_domain, repo = git_data
-        request_url = "%s/?p=%s;a=blob_plain;f=.repospec,hb=HEAD" % (git_domain, repo)
+        git_domain, repo = git_data[0]
+        request_url = "%s/?p=%s.git;a=blob_plain;f=.repospec;hb=HEAD" % (git_domain, repo)
         print(request_url)
         repospec_request = requests.get(request_url)
         if repospec_request.status_code == 404:
@@ -151,25 +152,28 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         git_status = self.run_command(command=command, cwd=path)
         if git_status[2] == 0:
             commands = [
-                ['git', 'checkout'],
-                ['git', 'clean'],
-                ['git', 'pull']
+                ['git', 'checkout', '--', '.'],
+                ['git', 'clean', '-f'],
+                ['git', 'pull', repository, 'master']
             ]
             git_command = None
             failure = False
             for command in commands:
+                print(command)
                 git_command = self.run_command(command=command, cwd=path)
                 print(git_command[0])
                 if git_command[2] != 0:
                     print(git_command[1])
                     failure = True
                     break
+            if failure:
+                command = ['rm', '-rdvf', path]
+                cmd = self.run_command(command=command)
+                print(cmd[0])
             else:
-                os.rmdir(path)
-            if not failure:
                 return git_command
         command = ['git', 'clone', repository, path]
-        return self.run_command(command)
+        return self.run_command(command=command)
 
     def build_edunube_ignore(self, repo_path, full_ignore_path, parent_repo_path=None):
         current_edunube_ignore = repo_path + "/.edunubeingore"
@@ -253,9 +257,10 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         return command_results
 
     def repo_sync(self, origin_repo, dest_repo, ignore):
-        command = ['rsync', '-a', origin_repo, dest_repo, '--ignore-from', ignore]
+        command = ['rsync', '-a', "%s/" % origin_repo, dest_repo, '--exclude-from', ignore]
         return self.run_command(command=command)
 
+    extract_ns_name = re.compile("[hf]t?tps?://[a-zA-Z0-9-_\.]+/([a-zA-Z0-9-_]+)?/[a-zA-Z0-9-_]+\.git")
     extract_repo_name = re.compile("/([a-zA-Z0-9-_]+)\.git$")
 
     def build_exec_repo(self, repository, repo_path):
@@ -267,14 +272,22 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         repospec = self.get_repospec(repository=repository)
         RepoSpec.validate_repospec(repospec=repospec)
         decoded_repospec = RepoSpec.decode(repospec=repospec)
-        parent_path = self.build_exec_repo(repository=decoded_repospec.get('parent'), repo_path=repo_path)[0]
+        parent_path = self.build_exec_repo(repository=decoded_repospec.get('parent'), repo_path=repo_path)
+        namespace_name = self.extract_ns_name.findall(repository)
+        if namespace_name is not None:
+            namespace_name = namespace_name[0]
         repository_name = self.extract_repo_name.findall(repository)[0]
-        current_repo_path = self.get_tmp_repo_path() + "/" + repository_name
+        current_repo_path = self.get_tmp_repo_path() + "/"
+        if namespace_name is not None:
+            current_repo_path += namespace_name + "/"
+            os.makedirs(current_repo_path, self.dir_mode, exist_ok=True)
+        current_repo_path += repository_name
         self.clone_or_pull(repository=repository, path=current_repo_path)
         edunube_ignore_path = "%s.edunubeignore" % current_repo_path
         self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path,
                                   parent_repo_path=parent_path)
-        self.repo_sync(origin_repo=current_repo_path, dest_repo=repo_path, ignore=edunube_ignore_path)
+        cmd = self.repo_sync(origin_repo=current_repo_path, dest_repo=repo_path, ignore=edunube_ignore_path)
+        print(cmd)
         return repo_path
 
     def always_deterministic(self):
@@ -288,13 +301,20 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
 
     def is_deterministic(self, namespace, repository, repository_url, unique_path, unique_name):
         commit_id = self.get_id_last_git_commit(repository_path=unique_path)
-        jobSpec = models.JobSpec.objects.get(job_name=unique_name)
+        job_name = self.build_job_name(unique_name=unique_name, commit_id=commit_id)
+        try:
+            jobSpec = models.JobSpec.objects.get(job_name=job_name)
+        except models.JobSpec.DoesNotExist:
+            jobSpec = None
         if jobSpec is not None:
             if jobSpec.deterministic is not None:
                 return jobSpec.deterministic
             # executed at least once but determism not determined
-            unique_name_2 = self.build_new_name(name=unique_name, index=2)
-            jobSpec2 = models.JobSpec.objects.get(job_name=unique_name_2)
+            job_name_2 = self.build_new_name(name=job_name, index=2)
+            try:
+                jobSpec2 = models.JobSpec.objects.get(job_name=job_name_2)
+            except models.JobSpec.DoesNotExist:
+                jobSpec2 = None
             executed = False
             if jobSpec2 is not None:
                 if jobSpec2.deterministic is not None:
@@ -305,7 +325,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             else:
                 # execute once with second name
                 self.execute_job(namespace=namespace, repository=repository, repository_url=repository_url,
-                                 repository_path=unique_path, job_name=unique_name_2)
+                                 repository_path=unique_path, job_name=job_name_2, prep_job=True)
                 executed = True
             params_dict = {
                 'namespace': namespace,
@@ -314,10 +334,16 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             }
             log1_params = params_dict.copy()
             log1_params['execution_number'] = 1
-            executionLog1 = mongodb_models.ExecutionLogModel.objects.get(log1_params)
+            try:
+                executionLog1 = mongodb_models.ExecutionLogModel.objects.get(log1_params)
+            except mongodb_models.ExecutionLogModel.DoesNotExist:
+                executionLog1 = mongodb_models.ExecutionLogModel(**log1_params)
             log2_params = params_dict.copy()
             log2_params['execution_number'] = 1
-            executionLog2 = mongodb_models.ExecutionLogModel.objects.get(log2_params)
+            try:
+                executionLog2 = mongodb_models.ExecutionLogModel.objects.get(log2_params)
+            except mongodb_models.ExecutionLogModel.DoesNotExist:
+                executionLog2 = mongodb_models.ExecutionLogModel(**log2_params)
             if executionLog1.stdout == executionLog2.stdout and executionLog1.stderr == executionLog2.stderr:
                 executionLog1.deterministic = True
                 executionLog2.deterministic = True
@@ -340,7 +366,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             # never executed, execute once and return none
             # execute once with default name
             self.execute_job(namespace=namespace, repository=repository, repository_url=repository_url,
-                             repository_path=unique_path, job_name=unique_name)
+                             repository_path=unique_path, job_name=job_name, prep_job=True)
             return None
 
     commit_id_regex = re.compile("commit ([0-9a-f]*)\\\\n")
@@ -348,37 +374,117 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def get_id_last_git_commit(self, repository_path):
         command = ["git", "show", "HEAD"]
         cmd = self.run_command(command=command, cwd=repository_path)
+        if cmd[2] != 0:
+            # No commits yet?
+            return None
         return self.commit_id_regex.findall(str(cmd[0]))[0]
 
+    def build_unique_name(self, namespace, repository):
+        return "%s-%s" % (namespace, repository)
+
+    def build_job_name(self, unique_name, commit_id):
+        if commit_id is None:
+            return unique_name
+        return "%s-%s" % (unique_name, commit_id)
+
+    def build_full_job_name(self, namespace, repository, commit_id):
+        return "%s-%s" % (self.build_unique_name(namespace=namespace, repository=repository), commit_id)
+
+    def build_git_base_url(self):
+        protocol = GIT_SERVER_HOST.get('protocol')
+        if protocol is None:
+            raise ValueError("GIT_SERVER_HOST doesn't define a Protocol")
+        host = GIT_SERVER_HOST.get('host')
+        if host is None:
+            raise ValueError("GIT_SERVER_HOST doesn't define a Host")
+        url = "%s://" % protocol
+        print("Building Git Base URL: %s" % url)
+        user = GIT_SERVER_HOST.get('user')
+        if user is not None:
+            url = "%s%s" % (url, user)
+            print("Building Git Base URL: %s" % url)
+            password = GIT_SERVER_HOST.get('password')
+            if password is not None:
+                url = "%s:%s" % (url, password)
+                print("Building Git Base URL: %s" % url)
+            url = "%s@" % url
+            print("Building Git Base URL: %s" % url)
+        url = "%s%s" % (url, host)
+        print("Building Git Base URL: %s" % url)
+        port = GIT_SERVER_HOST.get('port')
+        if port is not None:
+            url = "%s:%s" % (url, str(port))
+            print("Building Git Base URL: %s" % url)
+        return url
+
     def prepare_job(self, namespace, repository, repository_url):
-        unique_name = "%s-%s" % (namespace, repository)
+        unique_name = self.build_unique_name(namespace=namespace, repository=repository)
         unique_path = "%s/%s" % (self.get_tmp_repo_path(), unique_name)
         self.build_exec_repo(repository=repository_url, repo_path=unique_path)
-        # TODO: create new repo & commit built exec repo & push to remote repo
-        # TODO: Backup exec repo
-        # TODO: Try to Clone or Pull Exec Repo
-        # TODO: restore backup
-        # TODO: commit
-        # TODO: create/push to remote repo
-        # TODO: populate exec_repo_url
-        exec_repo_url = ''
+        unique_backup_path = "%s/%s" % (self.get_tmp_backup_repo_path(), unique_name)
+        command = ['rsync', '-av', '--progress', unique_path, unique_backup_path]
+        cmd = self.run_command(command=command)
+        if cmd[2] == 0:
+            command = ['rm', '-rdfv', unique_path]
+            cmd = self.run_command(command=command)
+        remote_namespace = self.get_remote_execution_namespace()
+        git_exec_repo_url = "%s/%s/%s.git" % (self.build_git_base_url(), remote_namespace, unique_name)
+        command = ['git', 'clone', git_exec_repo_url, unique_path]
+        cmd = self.run_command(command=command)
+        not_cloned = False
+        if cmd[2] != 0:
+            # Failure to clone
+            os.makedirs(unique_path, self.dir_mode, exist_ok=True)
+            not_cloned = True
+        command = ['rsync', '-av', '--progress', unique_backup_path, unique_path]
+        cmd = self.run_command(command=command)
+        if not_cloned:
+            command = ['git', 'init']
+            cmd = self.run_command(command=command, cwd=unique_path)
+            command = ['git', 'remote', 'add', 'origin', git_exec_repo_url]
+            cmd = self.run_command(command=command, cwd=unique_path)
+            repoGitSrvHTTPepConsumer = RepositoryGitSrvHTTPEpConsumer()
+            repoGitSrvHTTPepConsumer.create_call(namespace=remote_namespace, repository=unique_name)
+        command = ['git', 'add', '.']
+        cmd = self.run_command(command=command, cwd=unique_path)
+        command = ['git', 'commit', '-m', '"Update to Exec Repo"']
+        cmd = self.run_command(command=command, cwd=unique_path)
+        command = ['git', 'push', 'origin', 'master']
+        cmd = self.run_command(command=command, cwd=unique_path)
+        exec_repo_url = git_exec_repo_url
         return {
             'unique_name': unique_name,
             'unique_path': unique_path,
             'exec_repo_url': exec_repo_url
         }
 
-    def execute_job(self, namespace, repository, repository_url, repository_path, job_name, prep_job=False):
+    def execute_job(self, namespace, repository, repository_url, repository_path, job_name, prep_job=False,
+                    overwrite_manifest=False):
         if not prep_job:
             prep_job = self.prepare_job(namespace=namespace, repository=repository, repository_url=repository_url)
             job_name = prep_job.get('unique_name')
             repository_path = prep_job.get('unique_path')
             repository_url = prep_job.get('exec_repo_url')
-        # TODO: Lower level execution utility without all the major preflight checks found in create_job
-        # TODO: save determinism as null
-        # TODO: if job_spec didn't exist:
-        # TODO:     increment job_count
-        pass
+        try:
+            job_spec = models.JobSpec.objects.get(job_name=job_name)
+        except models.JobSpec.DoesNotExist:
+            job_spec = None
+        existed_previously = job_spec is not None
+        manifest = self.build_job_template(job_name=job_name, git_repo=repository_url)
+        manifest_path = "%s/%s.json" % (self.get_tmp_base_path(), job_name)
+        self.write_json_manifest(path=manifest_path, json_data=manifest, overwrite=overwrite_manifest)
+        self.kubectl_create_from_manifest_file(manifest_path=manifest_path)
+        job_spec = models.JobSpec.objects.get_or_create(job_name=job_name)[0]
+        job_spec.docker_image = self.build_docker_string()
+        job_spec.git_repo = repository_url
+        job_spec.deterministic = None
+        job_spec.save()
+        if not existed_previously:
+            commit_id = self.get_id_last_git_commit(repository_path=repository_path)
+            orig_job_name = self.build_full_job_name(namespace=namespace, repository=repository, commit_id=commit_id)
+            job_count = models.JobNameCounter.objects.get_or_create(orig_job_name=orig_job_name)[0]
+            job_count.job_count += 1
+            job_count.save()
 
     def create_job(self, namespace, repository, repository_url):
         prep_job = self.prepare_job(namespace=namespace, repository=repository, repository_url=repository_url)
@@ -386,7 +492,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         unique_path = prep_job.get('unique_path')
         exec_repo_url = prep_job.get('exec_repo_url')
         commit_id = self.get_id_last_git_commit(repository_path=unique_path)
-        job_name = "%s-%s" % (unique_name, commit_id)
+        job_name = self.build_job_name(unique_name=unique_name, commit_id=commit_id)
         if self.always_execute():
             job_status = self.job_status(job_id=job_name)
             if job_status.get('exists'):

@@ -1,6 +1,6 @@
 
 from EduNube.settings import VIRTUALIZATION_BACKEND_TMP_PATHS, VIRTUALIZATION_BACKEND_MANIFEST_SUBPATH,\
-    VIRTUALIZATION_BACKEND_REPO_SUBPATH
+    VIRTUALIZATION_BACKEND_REPO_SUBPATH, VIRTUALIZATION_BACKEND_BACKUP_REPO_SUBPATH
 
 class GenericVirtualizationBackend:
 
@@ -23,6 +23,12 @@ class GenericVirtualizationBackend:
 
     def get_tmp_manifest_path(self):
         return self.get_tmp_base_path() + VIRTUALIZATION_BACKEND_MANIFEST_SUBPATH
+
+    def get_tmp_backup_repo_path(self):
+        return self.get_tmp_base_path() + VIRTUALIZATION_BACKEND_BACKUP_REPO_SUBPATH
+
+    def get_remote_execution_namespace(self):
+        return 'edunube-exec'
 
     prog_language = None
 

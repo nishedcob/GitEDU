@@ -79,7 +79,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'edunubedb',
-        'USER': 'edunubeser',
+        'USER': 'edunubeuser',
         'PASSWORD': '3d?N_6E',
         'HOST': '127.0.0.1',
         'PORT': '5432',
@@ -105,6 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LOGIN_URL = '/auth/login'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
@@ -183,6 +184,17 @@ GIT_SERVER_HOST = {
     'port': None
 }
 
+GIT_HTTP_ENDPOINT_HOST = {
+    'protocol': "http",
+    'user': None,
+    'password': None,
+    'host': '192.168.99.1',
+    'port': 8002,
+    'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlZGl0X2RhdGUiOiIyMDE3LTEyLTI4IDE3OjQxOjU1LjI1NjM1NyswMDowMCIsImV4'
+             'cGlyZXMiOmZhbHNlLCJhcHBfbmFtZSI6IkVkdU51YmUiLCJjcmVhdGVkX2RhdGUiOiIyMDE3LTEyLTI4IDE3OjQxOjU1LjI1NjMyMiswM'
+             'DowMCJ9.9sxxaa23DuXyUb_Q_t5v18dO0RkDCraBwn1mvMb-LKw'
+}
+
 VIRTUALIZATION_BACKEND = {
     'default': 'apiApp.VirtualizationBackends.Kubernetes.KubernetesVirtualizationBackend',
     'shell': 'apiApp.VirtualizationBackends.Kubernetes.ShellKubernetesVirtualizationBackend',
@@ -199,3 +211,4 @@ VIRTUALIZATION_BACKEND_TMP_PATHS['k8s'] = VIRTUALIZATION_BACKEND_TMP_PATHS['base
 
 VIRTUALIZATION_BACKEND_REPO_SUBPATH = "/repos"
 VIRTUALIZATION_BACKEND_MANIFEST_SUBPATH = "/manifests"
+VIRTUALIZATION_BACKEND_BACKUP_REPO_SUBPATH = "/backups/repos"

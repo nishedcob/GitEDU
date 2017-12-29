@@ -1,13 +1,16 @@
 
+import re
 import jwt
 import bcrypt
 
 from apiApp.models import RepoSpec
 
+clean_repospec = re.compile('([a-zA-Z0-9_\.]+)')
 
 def validate_repospec(repospec=None):
     if repospec is None:
         raise ValueError("RepoSpec can't be None")
+    repospec = clean_repospec.findall(repospec)[0]
     stored_repospec = RepoSpec.objects.get(token=repospec)
     if stored_repospec is None:
         raise ValueError('No Stored RepoSpec Token for token \'%s\'' % repospec)
@@ -17,6 +20,7 @@ def validate_repospec(repospec=None):
 
 
 def decode_repospec(repospec, stored_repospec=None):
+    repospec = clean_repospec.findall(repospec)[0]
     return decode(repospec=repospec, stored_repospec=stored_repospec, decode_stored=False)
 
 
@@ -25,6 +29,7 @@ def decode(repospec=None, stored_repospec=None, decode_stored=False):
         if repospec is None:
             raise ValueError("RepoSpec can't be None")
         else:
+            repospec = clean_repospec.findall(repospec)[0]
             if stored_repospec is None:
                 stored_repospec = RepoSpec.objects.get(token=repospec)
             if stored_repospec is None:
@@ -35,6 +40,7 @@ def decode(repospec=None, stored_repospec=None, decode_stored=False):
             raise ValueError("Both RepoSpec and Stored_RepoSpec can't be None")
         else:
             if stored_repospec is None:
+                repospec = clean_repospec.findall(repospec)[0]
                 stored_repospec = RepoSpec.objects.get(token=repospec)
             if stored_repospec is None:
                 raise ValueError('No Stored RepoSpec Token for token \'%s\'' % repospec)
