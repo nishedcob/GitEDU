@@ -59,8 +59,20 @@ class NamespaceView(View):
         backend_repositories = manager.list_repositories(namespace=namespace)
         prefered_backend_repositories = manager.select_preferred_backend_object(result_set=backend_repositories)
         context['repositories'] = []
+        context['users'] = []
         for backend_repository in prefered_backend_repositories:
             context['repositories'].append(backend_repository)
+            repository = backend_repository.persistence_object
+            repo_changes = ChangeModel.objects.raw({'repository': repository.pk})
+            for repo_change in repo_changes:
+                context['users'].append(repo_change.author)
+            #manager.sync_changes()
+            #backend_repo_changes = manager.list_changes(namespace=namespace, repository=backend_repository.repository)
+            #prefered_backend_repo_changes = manager.select_preferred_backend_object(result_set=backend_repo_changes)
+            #if prefered_backend_repo_changes is not None:
+            #    for repo_change in prefered_backend_repo_changes:
+            #        context['users'].append(repo_change.author)
+        context['users'] = set(context['users'])
         context['detalles'] = True
         print("context: %s" % context)
         return render(request, self.template, context=context)

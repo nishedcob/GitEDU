@@ -3,7 +3,7 @@
 {% block title %}Namespace - {{namespace.namespace}}{% endblock %}
 
 {% block content %}
-    <h2 class="navbar-custom">Contenidos de {{namespace.namespace}}</h2>
+    <h2 class="navbar-custom">Contenidos del Namespace {{namespace.namespace}}</h2>
     {% comment %}
     {% if detalles %}
         <p><em>Dueno:</em> {{user.first_name}}</p>
@@ -41,6 +41,16 @@
                     {{ repository.repository }}
                 </a>
             </li>
+        {% endfor %}
+    </ul>
+    <h3>Usuarios Activos:</h3>
+    <ul>
+        {% for user in users %}
+            {% if user == 'Anonymous' %}
+                <li>{{ user }}</li>
+            {% else %}
+                <li><a href="{% url 'social:user' user %}">{{ user }}</a></li>
+            {% endif %}
         {% endfor %}
     </ul>
 {% endblock %}
