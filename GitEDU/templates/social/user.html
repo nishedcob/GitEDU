@@ -20,6 +20,14 @@
         {% endfor %}
         </ul>
     {% endif %}
+    {% if has_group_repos %}
+        <h3 class="titulos">Es miembro de un grupo con los siguientes repositorios:</h3>
+        <ul>
+            {% for ns, repo in group_repos %}
+                <li><a href="{% url 'ide:namespace' namespace=ns %}">{{ ns }}</a> / <a href="{% url 'ide:repository' namespace=ns repository=repo %}">{{ repo }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
     {% if tiene_codigo %}
         <h3 class="titulos">Es dueño de(los) codigo(s):</h3>
         {% for code in mycode %}
