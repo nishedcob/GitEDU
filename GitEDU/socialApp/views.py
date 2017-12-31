@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.views import View
 
 from GitEDU.settings import CODE_PERSISTENCE_BACKEND_MANAGER_CLASS, load_code_persistence_backend_manager
+from ideApp.CodePersistenceBackends.MongoDB import mongodb_models as ide_mongodb_models
 from ideApp import models as ide_models
 from socialApp import models as social_models
 
@@ -43,16 +44,27 @@ class UserView(View):  # TODO
                 group_repos.append(group_repo)
         group_repos = set(group_repos)
         group_repos = group_repos - personal_repos
+        modified_repos = []
+        changes_made = ide_mongodb_models.ChangeModel.objects.raw({'author': username})
+        for change_made in changes_made:
+            repo = change_made.repository
+            ns = repo.namespace
+            modified_repos.append((ns.name, repo.name))
+        modified_repos = set(modified_repos)
+        modified_repos = modified_repos - personal_repos
+        modified_repos = modified_repos - group_repos
         tiene_codigo = False
         esCollab = False
         context = self.build_context(username=username, same=same, user=user_obj, tiene_codigo=tiene_codigo,
-                                     esCollab=esCollab, personal_repos=personal_repos, group_repos=group_repos)
+                                     esCollab=esCollab, personal_repos=personal_repos, group_repos=group_repos,
+                                     modified_repos=modified_repos)
         print("context: %s" % context)
         return render(request, self.template, context=context)
 
-    def build_context(self, username, same, user, tiene_codigo, esCollab, personal_repos, group_repos):
+    def build_context(self, username, same, user, tiene_codigo, esCollab, personal_repos, group_repos, modified_repos):
         has_personal_repos = len(personal_repos) > 0
         has_group_repos = len(group_repos) > 0
+        has_modified_repos = len(modified_repos) > 0
         context = {
             "username": username,
             "same": same,
@@ -60,10 +72,13 @@ class UserView(View):  # TODO
             "tiene_codigo": tiene_codigo,
             "esCollab": esCollab,
             'has_personal_repos': has_personal_repos,
-            'has_group_repos': has_group_repos
+            'has_group_repos': has_group_repos,
+            'has_modified_repos': has_modified_repos
         }
         if has_personal_repos:
             context['personal_repos'] = personal_repos
         if has_group_repos:
             context['group_repos'] = group_repos
+        if has_modified_repos:
+            context['modified_repos'] = modified_repos
         return context
