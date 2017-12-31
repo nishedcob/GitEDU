@@ -17,6 +17,7 @@ from GitEDU.settings import CODE_PERSISTENCE_BACKEND_MANAGER_CLASS, load_code_pe
 from ideApp.CodePersistenceBackends.MongoDB.backend import MongoChangeFile
 from ideApp.CodePersistenceBackends.MongoDB.mongodb_models import ChangeModel, ChangeFileModel, NamespaceModel,\
     RepositoryModel, RepositoryFileModel
+from ideApp.models import Repository as RepositoryMetadataModel
 
 from ideApp import git_server_http_endpoint
 
@@ -78,10 +79,37 @@ class NamespaceView(View):
         return render(request, self.template, context=context)
 
 
-class RepositoryView(View):  # TODO
+class RepositoryView(View):
+
+    template = 'editor/repository.html'
 
     def get(self, request, namespace, repository):
-        return HttpResponse("<html><body><h1>%s / %s</h1></body></html>" % (namespace, repository))
+        context = {}
+        context['namespace'] = namespace
+        context['repository'] = repository
+        context['users'] = []
+        mongo_ns = NamespaceModel.objects.get({'name': namespace})
+        mongo_repo = RepositoryModel.objects.get({'name': repository, 'namespace': mongo_ns.pk})
+        mongo_changes = ChangeModel.objects.raw({'repository': mongo_repo.pk})
+        for mongo_change in mongo_changes:
+            context['users'].append(mongo_change.author)
+        context['users'] = set(context['users'])
+        repo = RepositoryMetadataModel.objects.get_or_create(name=repository, namespace=namespace)
+        #if repo[1]:
+        #    repo.owner = None
+        #    repo.owning_group = None
+        repo = repo[0]
+        repo.save()
+        context['owner'] = repo.owner
+        context['group'] = repo.owning_group
+        context['files'] = []
+        mongo_repo_files = RepositoryFileModel.objects.raw({'repository': mongo_repo.pk})
+        for mongo_repo_file in mongo_repo_files:
+            context['files'].append(mongo_repo_file.file_path)
+        context['files'] = set(context['files'])
+        context['detalles'] = True
+        print("context: %s" % context)
+        return render(request, self.template, context=context)
 
 
 class GenericEditorFileView(View):
