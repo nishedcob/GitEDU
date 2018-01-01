@@ -22,6 +22,7 @@ urlpatterns = [
     url(r'^(?P<class_id>[0-9]*)/$', views.EditorClassView.as_view(), name="class"),
     url(r'^(?P<class_id>[0-9]*)/(?P<assignment_id>[0-9]*)$', views.EditorAssignmentView.as_view(), name="assignment"),
     url(r'^ns/(?P<namespace>[a-zA-Z0-9]*)/$', views.NamespaceView.as_view(), name="namespace"),
+    url(r'^new/namespace/$', views.NewNamespaceView.as_view(), name="new_namespace"),
     url(r'^repo/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/', views.RepositoryView.as_view(),
         name="repository"),
     url(r'^rf/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/(?P<file_path>[a-zA-Z0-9/]*\.[a-zA-Z0-9]*)$',

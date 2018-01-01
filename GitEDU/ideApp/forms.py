@@ -29,3 +29,7 @@ class AddCollaboratorForm(Form):
     canRead = BooleanField(label="Permitir Lectura?", required=False)
     canExecute = BooleanField(label="Permitir Ejecucion?", required=False)
     canDownload = BooleanField(label="Permitir Descargar?", required=False)
+
+
+class NamespaceForm(Form):
+    namespace = CharField(label="Namespace:", max_length=50)

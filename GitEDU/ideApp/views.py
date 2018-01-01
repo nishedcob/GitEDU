@@ -20,6 +20,7 @@ from ideApp.CodePersistenceBackends.MongoDB.mongodb_models import ChangeModel, C
 from ideApp.models import Repository as RepositoryMetadataModel
 
 from ideApp import git_server_http_endpoint
+from ideApp import forms
 
 manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
 
@@ -108,6 +109,20 @@ class FormView(View):
 
     def proc_form(self, form, **kwargs):
         pass
+
+
+class NewNamespaceView(FormView):
+    form_class = forms.NamespaceForm
+    template = 'editor/namespace_form.html'
+
+    def proc_form(self, form, **kwargs):
+        namespace = form.cleaned_data.get('namespace')
+        try:
+            NamespaceModel.objects.get({'name': namespace})
+            return HttpResponse('ALREADY EXISTS', status=200)
+        except NamespaceModel.DoesNotExist:
+            NamespaceModel(name=namespace).save()
+        return HttpResponse('OK', status=201)
 
 
 class RepositoryView(View):
