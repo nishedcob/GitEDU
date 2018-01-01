@@ -79,6 +79,37 @@ class NamespaceView(View):
         return render(request, self.template, context=context)
 
 
+class FormView(View):
+
+    form_class = None
+    template = 'form.html'
+
+    def build_context(self, form, **kwargs):
+        return {
+            'form': form
+        }
+
+    def prepare_form(self, **kwargs):
+        return self.form_class()
+
+    def get(self, request, **kwargs):
+        return render(request=request, template_name=self.template,
+                      context=self.build_context(form=self.prepare_form()))
+
+    def load_form(self, request, **kwargs):
+        return self.form_class(request.POST)
+
+    def post(self, request, **kwargs):
+        data_form = self.load_form(request=request)
+        if data_form.is_valid():
+            return self.proc_form(form=data_form)
+        else:
+            return render(request=request, template_name=self.template, context=self.build_context(form=data_form))
+
+    def proc_form(self, form, **kwargs):
+        pass
+
+
 class RepositoryView(View):
 
     template = 'editor/repository.html'
