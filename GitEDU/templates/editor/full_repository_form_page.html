@@ -1,0 +1,9 @@
+{% extends 'form_page.html' %}
+
+{% block title %}Formulario - Repositorio{% endblock %}
+
+{% block page_title %}Formulario: Repositorio{% endblock %}
+
+{% block form_target %}{% url 'ide:new_full_repository' %}{% endblock %}
+
+{% block form_additional_def %}target="_blank"{% endblock %}

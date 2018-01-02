@@ -31,5 +31,13 @@ class AddCollaboratorForm(Form):
     canDownload = BooleanField(label="Permitir Descargar?", required=False)
 
 
+namespace_field = CharField(label="Namespace:", max_length=50)
+
+
 class NamespaceForm(Form):
-    namespace = CharField(label="Namespace:", max_length=50)
+    namespace = namespace_field
+
+
+class FullRepositoryForm(Form):
+    namespace = namespace_field
+    repository = CharField(label="Repository:", max_length=50)

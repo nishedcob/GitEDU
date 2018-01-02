@@ -22,6 +22,8 @@ from ideApp.models import Repository as RepositoryMetadataModel
 from ideApp import git_server_http_endpoint
 from ideApp import forms
 
+from socialApp import models as social_models
+
 manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
 
 print("code persistence backend manager: <%s>" % manager)
@@ -103,11 +105,11 @@ class FormView(View):
     def post(self, request, **kwargs):
         data_form = self.load_form(request=request)
         if data_form.is_valid():
-            return self.proc_form(form=data_form)
+            return self.proc_form(form=data_form, request=request)
         else:
             return render(request=request, template_name=self.template, context=self.build_context(form=data_form))
 
-    def proc_form(self, form, **kwargs):
+    def proc_form(self, form, request, **kwargs):
         pass
 
 
@@ -115,13 +117,47 @@ class NewNamespaceView(FormView):
     form_class = forms.NamespaceForm
     template = 'editor/namespace_form_page.html'
 
-    def proc_form(self, form, **kwargs):
+    def proc_form(self, form, request, **kwargs):
         namespace = form.cleaned_data.get('namespace')
         try:
             NamespaceModel.objects.get({'name': namespace})
             return HttpResponse('ALREADY EXISTS', status=200)
         except NamespaceModel.DoesNotExist:
             NamespaceModel(name=namespace).save()
+        return HttpResponse('OK', status=201)
+
+
+class NewFullRepositoryView(FormView):
+    form_class = forms.FullRepositoryForm
+    template = 'editor/full_repository_form_page.html'
+
+    def proc_form(self, form, request, **kwargs):
+        namespace = form.cleaned_data.get('namespace')
+        try:
+            NamespaceModel.objects.get({'name': namespace})
+        except NamespaceModel.DoesNotExist:
+            NamespaceModel(name=namespace).save()
+        namespace_str = namespace
+        namespace = NamespaceModel.objects.get({'name': namespace})
+        repository = form.cleaned_data.get('repository')
+        try:
+            RepositoryModel.objects.get({'namespace': namespace.pk, 'name': repository})
+            rmm = RepositoryMetadataModel.objects.get_or_create(namespace=namespace_str, name=repository)
+            if rmm[1]:
+                rmm = rmm[0]
+                owner_person = social_models.Person.objects.get_or_create(user=request.user)[0]
+                rmm.owner = owner_person
+                rmm.save()
+                return HttpResponse('MOSTLY ALREADY EXISTED', status=200)
+            return HttpResponse('ALREADY EXISTS', status=200)
+        except RepositoryModel.DoesNotExist:
+            RepositoryModel(name=repository, namespace=namespace).save()
+            rmm = RepositoryMetadataModel.objects.get_or_create(namespace=namespace_str, name=repository)
+            if rmm[1]:
+                rmm = rmm[0]
+                owner_person = social_models.Person.objects.get_or_create(user=request.user)[0]
+                rmm.owner = owner_person
+                rmm.save()
         return HttpResponse('OK', status=201)
 
 
