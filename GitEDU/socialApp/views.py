@@ -17,6 +17,7 @@ manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER
 class UserView(View):
 
     namespace_form = ide_forms.NamespaceForm
+    repository_form = ide_forms.FullRepositoryForm
     template = 'social/user.html'
 
     def get(self, request, user):
@@ -72,6 +73,7 @@ class UserView(View):
             "same": same,
             "user": user,
             "namespace_form": self.namespace_form(),
+            "repository_form": self.repository_form(),
             "tiene_codigo": tiene_codigo,
             "esCollab": esCollab,
             'has_personal_repos': has_personal_repos,
