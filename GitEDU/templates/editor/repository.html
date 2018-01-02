@@ -5,7 +5,7 @@
 {% block content %}
     <h2 class="navbar-custom">Contenidos del Repositorio {{namespace}} / {{ repository }}</h2>
     {% if detalles %}
-        <p><em>Dueño:</em> {{ owner }}</p>
+        <p><em>Dueño:</em> <a href="{% url 'social:user' owner.user.username %}">{{ owner.user.username }}</a></p>
         <p><em>Grupo:</em> {{ group }}</p>
         <p><em>Namespace:</em> <a href="{% url 'ide:namespace' namespace=namespace %}">{{ namespace }}</a></p>
         {% comment %}<p><a class="btn-outline" href="{% url 'new-code' user.username %}">Crear nuevo archivo de codigo</a></p>{% endcomment %}
