@@ -83,7 +83,7 @@ class NamespaceView(View):
 class FormView(View):
 
     form_class = None
-    template = 'form.html'
+    template = 'form_page.html'
 
     def build_context(self, form, **kwargs):
         return {
