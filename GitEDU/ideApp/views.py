@@ -113,7 +113,7 @@ class FormView(View):
 
 class NewNamespaceView(FormView):
     form_class = forms.NamespaceForm
-    template = 'editor/namespace_form.html'
+    template = 'editor/namespace_form_page.html'
 
     def proc_form(self, form, **kwargs):
         namespace = form.cleaned_data.get('namespace')

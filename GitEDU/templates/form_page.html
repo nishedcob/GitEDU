@@ -4,5 +4,16 @@
 
 {% block content %}
     <h2 class="navbar-custom">{% block page_title %}Formulario Generico{% endblock %}</h2>
-    {% include 'form.html' %}
+    {% block form_def %}
+        <form method="{% block form_method %}post{% endblock %}" action="{% block form_target %}{% endblock %}"
+                {% block form_additional_def %}{% endblock %}>
+    {% endblock %}
+            {% csrf_token %}
+            {% block form_content %}
+                {{ form.as_p }}
+            {% endblock %}
+            {% block form_submit %}
+                <input type="submit" value="{% block form_submit_text %}Enviar{% endblock %}">
+            {% endblock %}
+        </form>
 {% endblock %}
