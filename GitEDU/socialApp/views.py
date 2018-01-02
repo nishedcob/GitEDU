@@ -7,14 +7,16 @@ from django.views import View
 from GitEDU.settings import CODE_PERSISTENCE_BACKEND_MANAGER_CLASS, load_code_persistence_backend_manager
 from ideApp.CodePersistenceBackends.MongoDB import mongodb_models as ide_mongodb_models
 from ideApp import models as ide_models
+from ideApp import forms as ide_forms
 from socialApp import models as social_models
 
 # Create your views here.
 manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
 
 
-class UserView(View):  # TODO
+class UserView(View):
 
+    namespace_form = ide_forms.NamespaceForm
     template = 'social/user.html'
 
     def get(self, request, user):
@@ -69,6 +71,7 @@ class UserView(View):  # TODO
             "username": username,
             "same": same,
             "user": user,
+            "namespace_form": self.namespace_form(),
             "tiene_codigo": tiene_codigo,
             "esCollab": esCollab,
             'has_personal_repos': has_personal_repos,

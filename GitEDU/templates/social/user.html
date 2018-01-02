@@ -8,6 +8,8 @@
         <p><em>Nombres:</em> {{user.first_name}}</p>
         <p><em>Apellidos:</em> {{user.last_name}}</p>
         <p><em>Correo Electronico:</em> {{user.email}}</p>
+        <h3 class="titulos">Crear un nuevo namespace</h3>
+        {% include 'editor/namespace_form.html' with form=namespace_form only %}
         {% comment %}
         <p><a class="btn-outline" href="{% url 'new-code' user.username %}">Crear nuevo archivo de codigo</a></p>
         {% endcomment %}
