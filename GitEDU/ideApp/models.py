@@ -10,8 +10,8 @@ from socialApp.models import Person, Group
 class Repository(models.Model):
     namespace = models.CharField(max_length=50, null=False)
     name = models.CharField(max_length=50, null=False)
-    owner = models.ForeignKey(Person, null=False)
-    owning_group = models.ForeignKey(Group, null=True)
+    owner = models.ForeignKey(Person, null=True, blank=True)
+    owning_group = models.ForeignKey(Group, null=True, blank=True)
 
 
 class File(models.Model):

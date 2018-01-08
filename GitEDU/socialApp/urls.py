@@ -19,5 +19,5 @@ from . import views
 
 appname = "socialApp"
 urlpatterns = [
-    url(r'^(?P<user>[a-zA-Z0-9]*)/$', views.UserView.as_view(), name="user"),
+    url(r'^user/(?P<user>[a-zA-Z0-9]*)/$', views.UserView.as_view(), name="user"),
 ]

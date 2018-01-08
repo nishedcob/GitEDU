@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Repositorio - {{ namespace }} / {{repository}}{% endblock %}
+
+{% block content %}
+    <h2 class="navbar-custom">Contenidos del Repositorio {{namespace}} / {{ repository }}</h2>
+    {% if detalles %}
+        <p><em>Dueño:</em> <a href="{% url 'social:user' owner.user.username %}">{{ owner.user.username }}</a></p>
+        <p><em>Grupo:</em> {{ group }}</p>
+        <p><em>Namespace:</em> <a href="{% url 'ide:namespace' namespace=namespace %}">{{ namespace }}</a></p>
+        {% comment %}<p><a class="btn-outline" href="{% url 'new-code' user.username %}">Crear nuevo archivo de codigo</a></p>{% endcomment %}
+    {% endif %}
+    <h3>Archivos:</h3>
+    <ul>
+        {% for file in files %}
+            <li>
+                <a href="{% url 'ide:file_editor' namespace=namespace repository=repository file_path=file %}">
+                    {{ file }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+    <h3>Usuarios Activos:</h3>
+    <ul>
+        {% for user in users %}
+            {% if user == 'Anonymous' %}
+                <li>{{ user }}</li>
+            {% else %}
+                <li><a href="{% url 'social:user' user %}">{{ user }}</a></li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+{% endblock %}

@@ -17,8 +17,12 @@ from GitEDU.settings import CODE_PERSISTENCE_BACKEND_MANAGER_CLASS, load_code_pe
 from ideApp.CodePersistenceBackends.MongoDB.backend import MongoChangeFile
 from ideApp.CodePersistenceBackends.MongoDB.mongodb_models import ChangeModel, ChangeFileModel, NamespaceModel,\
     RepositoryModel, RepositoryFileModel
+from ideApp.models import Repository as RepositoryMetadataModel
 
 from ideApp import git_server_http_endpoint
+from ideApp import forms
+
+from socialApp import models as social_models
 
 manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
 
@@ -59,17 +63,135 @@ class NamespaceView(View):
         backend_repositories = manager.list_repositories(namespace=namespace)
         prefered_backend_repositories = manager.select_preferred_backend_object(result_set=backend_repositories)
         context['repositories'] = []
+        context['users'] = []
         for backend_repository in prefered_backend_repositories:
             context['repositories'].append(backend_repository)
+            repository = backend_repository.persistence_object
+            repo_changes = ChangeModel.objects.raw({'repository': repository.pk})
+            for repo_change in repo_changes:
+                context['users'].append(repo_change.author)
+            #manager.sync_changes()
+            #backend_repo_changes = manager.list_changes(namespace=namespace, repository=backend_repository.repository)
+            #prefered_backend_repo_changes = manager.select_preferred_backend_object(result_set=backend_repo_changes)
+            #if prefered_backend_repo_changes is not None:
+            #    for repo_change in prefered_backend_repo_changes:
+            #        context['users'].append(repo_change.author)
+        context['users'] = set(context['users'])
         context['detalles'] = True
         print("context: %s" % context)
         return render(request, self.template, context=context)
 
 
-class RepositoryView(View):  # TODO
+class FormView(View):
+
+    form_class = None
+    template = 'form_page.html'
+
+    def build_context(self, form, **kwargs):
+        return {
+            'form': form
+        }
+
+    def prepare_form(self, **kwargs):
+        return self.form_class()
+
+    def get(self, request, **kwargs):
+        return render(request=request, template_name=self.template,
+                      context=self.build_context(form=self.prepare_form()))
+
+    def load_form(self, request, **kwargs):
+        return self.form_class(request.POST)
+
+    def post(self, request, **kwargs):
+        data_form = self.load_form(request=request)
+        if data_form.is_valid():
+            return self.proc_form(form=data_form, request=request)
+        else:
+            return render(request=request, template_name=self.template, context=self.build_context(form=data_form))
+
+    def proc_form(self, form, request, **kwargs):
+        pass
+
+
+class NewNamespaceView(FormView):
+    form_class = forms.NamespaceForm
+    template = 'editor/namespace_form_page.html'
+
+    def proc_form(self, form, request, **kwargs):
+        namespace = form.cleaned_data.get('namespace')
+        try:
+            NamespaceModel.objects.get({'name': namespace})
+            return HttpResponse('ALREADY EXISTS', status=200)
+        except NamespaceModel.DoesNotExist:
+            NamespaceModel(name=namespace).save()
+        return HttpResponse('OK', status=201)
+
+
+class NewFullRepositoryView(FormView):
+    form_class = forms.FullRepositoryForm
+    template = 'editor/full_repository_form_page.html'
+
+    def proc_form(self, form, request, **kwargs):
+        namespace = form.cleaned_data.get('namespace')
+        try:
+            NamespaceModel.objects.get({'name': namespace})
+        except NamespaceModel.DoesNotExist:
+            NamespaceModel(name=namespace).save()
+        namespace_str = namespace
+        namespace = NamespaceModel.objects.get({'name': namespace})
+        repository = form.cleaned_data.get('repository')
+        try:
+            RepositoryModel.objects.get({'namespace': namespace.pk, 'name': repository})
+            rmm = RepositoryMetadataModel.objects.get_or_create(namespace=namespace_str, name=repository)
+            if rmm[1]:
+                rmm = rmm[0]
+                owner_person = social_models.Person.objects.get_or_create(user=request.user)[0]
+                rmm.owner = owner_person
+                rmm.save()
+                return HttpResponse('MOSTLY ALREADY EXISTED', status=200)
+            return HttpResponse('ALREADY EXISTS', status=200)
+        except RepositoryModel.DoesNotExist:
+            RepositoryModel(name=repository, namespace=namespace).save()
+            rmm = RepositoryMetadataModel.objects.get_or_create(namespace=namespace_str, name=repository)
+            if rmm[1]:
+                rmm = rmm[0]
+                owner_person = social_models.Person.objects.get_or_create(user=request.user)[0]
+                rmm.owner = owner_person
+                rmm.save()
+        return HttpResponse('OK', status=201)
+
+
+class RepositoryView(View):
+
+    template = 'editor/repository.html'
 
     def get(self, request, namespace, repository):
-        return HttpResponse("<html><body><h1>%s / %s</h1></body></html>" % (namespace, repository))
+        context = {}
+        context['namespace'] = namespace
+        context['repository'] = repository
+        context['users'] = []
+        mongo_ns = NamespaceModel.objects.get({'name': namespace})
+        mongo_repo = RepositoryModel.objects.get({'name': repository, 'namespace': mongo_ns.pk})
+        mongo_changes = ChangeModel.objects.raw({'repository': mongo_repo.pk})
+        for mongo_change in mongo_changes:
+            context['users'].append(mongo_change.author)
+        context['users'] = set(context['users'])
+        repo = RepositoryMetadataModel.objects.get_or_create(name=repository, namespace=namespace)
+        #if repo[1]:
+        #    repo.owner = None
+        #    repo.owning_group = None
+        repo = repo[0]
+        repo.save()
+        context['owner'] = repo.owner
+        context['group'] = repo.owning_group
+        context['files'] = []
+        mongo_repo_files = RepositoryFileModel.objects.raw({'repository': mongo_repo.pk})
+        for mongo_repo_file in mongo_repo_files:
+            context['files'].append(mongo_repo_file.file_path)
+        context['files'] = set(context['files'])
+        context['detalles'] = True
+        print("context: %s" % context)
+        return render(request, self.template, context=context)
 
 
 class GenericEditorFileView(View):
