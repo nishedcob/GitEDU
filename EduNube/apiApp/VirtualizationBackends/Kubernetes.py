@@ -99,13 +99,23 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     executor_name = 'Generic'
 
     def get_docker_registry(self):
-        return DEFAULT_DOCKER_REGISTRY.get('base', 'registry.gitlab.com')
+        # External Docker Repository as Default (gitlab.com)
+        #return DEFAULT_DOCKER_REGISTRY.get('base', 'registry.gitlab.com')
+        # Internal Docker Repository as Default (10.10.10.1:5000)
+        return DEFAULT_DOCKER_REGISTRY.get('base', '10.10.10.1:5000')
 
     def get_docker_registry_user(self):
         return DEFAULT_DOCKER_REGISTRY.get('user', 'nishedcob')
 
     def get_docker_registry_repo(self):
-        return '%s/%s' % (self.get_docker_registry_user(), DEFAULT_DOCKER_REGISTRY.get('repository', 'gitedu'))
+        # External Docker Repository as Default (gitedu in gitlab.com)
+        #repository = DEFAULT_DOCKER_REGISTRY.get('repository', 'gitedu')
+        # Internal Docker Repository with Null as Default (10.10.10.1:5000)
+        repository = DEFAULT_DOCKER_REGISTRY.get('repository', None)
+        if repository is None:
+            return '%s' % self.get_docker_registry_user()
+        else:
+            return '%s/%s' % (self.get_docker_registry_user(), repository)
 
     def get_full_docker_image_string(self):
         return '%s/%s/%s-executor' % (self.get_docker_registry(), self.get_docker_registry_repo(), self.executor_name)

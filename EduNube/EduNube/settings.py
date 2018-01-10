@@ -158,9 +158,15 @@ DEFAULT_DOCKER_TAGS = {
 }
 
 DEFAULT_DOCKER_REGISTRY = {
-    'base': 'registry.gitlab.com',
+    # External Docker Registry (gitlab.com)
+    #'base': 'registry.gitlab.com',
+    # Internal Docker Registry (10.10.10.1:5000)
+    'base': '10.10.10.1:5000',
     'user': 'nishedcob',
-    'repository': 'gitedu'
+    # External Docker Registry requires repository=gitedu (gitlab.com)
+    #'repository': 'gitedu'
+    # Internal Docker Registry uses no repository (None/Null) (10.10.10.1:5000)
+    'repository': None
 }
 
 AUTH_TOKENS_SHOW = {
@@ -181,7 +187,10 @@ GIT_SERVER_HOST = {
     'protocol': "http",
     'user': None,
     'password': None,
-    'host': '192.168.99.1',
+    # Minikube
+    #'host': '192.168.99.1',
+    # For Kubernetes on Xen
+    'host': '10.10.10.1',
     'port': None
 }
 
@@ -189,7 +198,10 @@ GIT_HTTP_ENDPOINT_HOST = {
     'protocol': "http",
     'user': None,
     'password': None,
-    'host': '192.168.99.1',
+    # Minikube
+    #'host': '192.168.99.1',
+    # For Kubernetes on Xen
+    'host': '10.10.10.1',
     'port': 8002,
     'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlZGl0X2RhdGUiOiIyMDE3LTEyLTI4IDE3OjQxOjU1LjI1NjM1NyswMDowMCIsImV4'
              'cGlyZXMiOmZhbHNlLCJhcHBfbmFtZSI6IkVkdU51YmUiLCJjcmVhdGVkX2RhdGUiOiIyMDE3LTEyLTI4IDE3OjQxOjU1LjI1NjMyMiswM'
