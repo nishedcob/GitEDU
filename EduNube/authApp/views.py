@@ -54,6 +54,9 @@ class TokensView(PermissionRequiredMixin, View):
         form_response = self.form(request.POST)
         if form_response.is_valid():
             api_token = form_response.save(commit=False)
+            print(api_token.expire_date)
+            api_token.expire_date = api_token.expire_date.__str__()
+            print(api_token.expire_date)
             update_api_token(api_token=api_token, regen_secret_key=True)
             # Update a second time to correct timestamp issue
             update_api_token(api_token=api_token, regen_secret_key=False)
@@ -143,6 +146,9 @@ class EditTokenView(PermissionRequiredMixin, View):
         form_response.instance = old_token
         if form_response.is_valid():
             api_token = form_response.save(commit=False)
+            print(api_token.expire_date)
+            api_token.expire_date = api_token.expire_date.__str__()
+            print(api_token.expire_date)
             update_api_token(api_token=api_token, regen_secret_key=False)
         else:
             context = self.build_context(form=form_response)
