@@ -253,7 +253,7 @@ CODE_PERSISTENCE_BACKEND_MANAGER_CLASS = 'ideApp.CodePersistenceBackends.backend
 EDUNUBE_CONFIG = {
     "protocol": "http",
     "host": "127.0.0.1",
-    "port": 8001,
+    "port": 8010,
     "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhcHBfbmFtZSI6IkdpdEVEVSIsImV4cGlyZXMiOmZhbHNlLCJjcmVhdGVkX2RhdGUi"
              "OiIyMDE3LTExLTEyIDE3OjMzOjE3LjY0MTY4MSIsImVkaXRfZGF0ZSI6IjIwMTctMTEtMTIgMjA6MzY6NDAuMjc5NDAyIn0.825oh2rZU"
              "lIPZFaP_UbYPDpdsXTE0XCaNsia-3NnGuc"
@@ -262,7 +262,7 @@ EDUNUBE_CONFIG = {
 GIT_SERVER_HTTP_ENDPOINT_CONFIG = {
     "protocol": "http",
     "host": "127.0.0.1",
-    "port": 8002,
+    "port": 8020,
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVzIjpmYWxzZSwiYXBwX25hbWUiOiJHaXRFRFUiLCJlZGl0X2RhdGUiOiIy"
              "MDE3LTExLTI1IDIwOjI2OjIzLjQ3MDgxNyswMDowMCIsImNyZWF0ZWRfZGF0ZSI6IjIwMTctMTEtMjUgMjA6MjY6MjMuNDcwNzUwKzAwO"
              "jAwIn0.jVHEmUAgJcQy7sU-qyULAnAiIrBAPNbeDjOiwjk5EEk"
