@@ -1,6 +1,6 @@
 # coding: utf-8
 import requests
-base_url = "http://127.0.0.1:8001/api/repospec/"
+base_url = "http://127.0.0.1:8010/api/repospec/"
 operation = "create"
 token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhcHBfbmFtZSI6IkdpdEVEVSIsImV4cGlyZXMiOmZhbHNlLCJjcmVhdGVkX2RhdGUiOiIyMDE3LTExLTEyIDE3OjMzOjE3LjY0MTY4MSIsImVkaXRfZGF0ZSI6IjIwMTctMTEtMTIgMjA6MzY6NDAuMjc5NDAyIn0.825oh2rZUlIPZFaP_UbYPDpdsXTE0XCaNsia-3NnGuc"
 payload = {'token': token}

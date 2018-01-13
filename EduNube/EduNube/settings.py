@@ -202,7 +202,7 @@ GIT_HTTP_ENDPOINT_HOST = {
     #'host': '192.168.99.1',
     # For Kubernetes on Xen
     'host': '10.10.10.1',
-    'port': 8002,
+    'port': 8020,
     'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlZGl0X2RhdGUiOiIyMDE3LTEyLTI4IDE3OjQxOjU1LjI1NjM1NyswMDowMCIsImV4'
              'cGlyZXMiOmZhbHNlLCJhcHBfbmFtZSI6IkVkdU51YmUiLCJjcmVhdGVkX2RhdGUiOiIyMDE3LTEyLTI4IDE3OjQxOjU1LjI1NjMyMiswM'
              'DowMCJ9.9sxxaa23DuXyUb_Q_t5v18dO0RkDCraBwn1mvMb-LKw'
