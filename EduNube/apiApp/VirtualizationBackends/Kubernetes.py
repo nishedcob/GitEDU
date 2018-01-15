@@ -294,8 +294,11 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         decoded_repospec = RepoSpec.decode(repospec=repospec)
         parent_path = self.build_exec_repo(repository=decoded_repospec.get('parent'), repo_path=repo_path)
         namespace_name = self.extract_ns_name.findall(repository)
-        if namespace_name is not None:
+        print(namespace_name)
+        if namespace_name is not None and type(namespace_name) == list and len(namespace_name) > 0:
             namespace_name = namespace_name[0]
+        else:
+            namespace_name = None
         repository_name = self.extract_repo_name.findall(repository)[0]
         current_repo_path = self.get_tmp_repo_path() + "/"
         if namespace_name is not None:
@@ -484,8 +487,10 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             'exec_repo_url': exec_repo_url
         }
 
-    def execute_job(self, namespace, repository, repository_url, repository_path, job_name, prep_job=False,
+    def execute_job(self, namespace, repository, repository_url, job_name, repository_path=None, prep_job=False,
                     overwrite_manifest=False):
+        if prep_job and repository_path is None:
+            raise ValueError('Repository_Path can\'t be None if Prep_Job is True')
         if not prep_job:
             prep_job = self.prepare_job(namespace=namespace, repository=repository, repository_url=repository_url)
             job_name = prep_job.get('unique_name')
