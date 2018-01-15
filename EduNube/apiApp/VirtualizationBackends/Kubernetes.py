@@ -7,7 +7,7 @@ import re
 import shutil
 import requests
 
-from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS, GIT_SERVER_HOST
+from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS, GIT_SERVER_HOST, GIT_SERVER_HOST_SSH
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
 from apiApp.Validation import RepoSpec
 from apiApp.git_server_http_endpoint import RepositoryGitSrvHTTPEpConsumer
@@ -133,7 +133,17 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
     def format_command_result(self, command_proc):
         return command_proc.stdout, command_proc.stderr, command_proc.returncode
 
+    def command_string(self, command):
+        command_str = ""
+        for word in command:
+            if command_str != "":
+                command_str += " "
+            command_str += word
+        return command_str
+
     def run_command(self, command, cwd=None):
+        print("CWD = %s" % cwd)
+        print("COMMAND = %s" % self.command_string(command))
         if cwd is None:
             cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
@@ -267,7 +277,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         return command_results
 
     def repo_sync(self, origin_repo, dest_repo, ignore):
-        command = ['rsync', '-a', "%s/" % origin_repo, dest_repo, '--exclude-from', ignore]
+        command = ['rsync', '-a', "%s/" % origin_repo, dest_repo, '--exclude-from', ignore, '--exclude=".git"']
         return self.run_command(command=command)
 
     extract_ns_name = re.compile("[hf]t?tps?://[a-zA-Z0-9-_\.]+/([a-zA-Z0-9-_]+)?/[a-zA-Z0-9-_]+\.git")
@@ -432,13 +442,15 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         unique_path = "%s/%s" % (self.get_tmp_repo_path(), unique_name)
         self.build_exec_repo(repository=repository_url, repo_path=unique_path)
         unique_backup_path = "%s/%s" % (self.get_tmp_backup_repo_path(), unique_name)
-        command = ['rsync', '-av', '--progress', unique_path, unique_backup_path]
+        command = ['rsync', '-av', '--progress', unique_path, unique_backup_path, '--exclude=".git"']
         cmd = self.run_command(command=command)
         if cmd[2] == 0:
             command = ['rm', '-rdfv', unique_path]
             cmd = self.run_command(command=command)
         remote_namespace = self.get_remote_execution_namespace()
         git_exec_repo_url = "%s/%s/%s.git" % (self.build_git_base_url(), remote_namespace, unique_name)
+        print(git_exec_repo_url)
+        print(unique_path)
         command = ['git', 'clone', git_exec_repo_url, unique_path]
         cmd = self.run_command(command=command)
         not_cloned = False
@@ -446,7 +458,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             # Failure to clone
             os.makedirs(unique_path, self.dir_mode, exist_ok=True)
             not_cloned = True
-        command = ['rsync', '-av', '--progress', unique_backup_path, unique_path]
+        command = ['rsync', '-av', '--progress', unique_backup_path, unique_path, '--exclude=".git"']
         cmd = self.run_command(command=command)
         if not_cloned:
             command = ['git', 'init']
@@ -459,8 +471,12 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         cmd = self.run_command(command=command, cwd=unique_path)
         command = ['git', 'commit', '-m', '"Update to Exec Repo"']
         cmd = self.run_command(command=command, cwd=unique_path)
-        command = ['git', 'push', 'origin', 'master']
+        git_ssh_url = "%s/%s/%s.git" % (self.build_git_base_url_ssh('bare'), remote_namespace, unique_name)
+        command = ['git', 'remote', 'add', 'save', git_ssh_url]
         cmd = self.run_command(command=command, cwd=unique_path)
+        command = ['git', 'push', 'save', 'master']
+        cmd = self.run_command(command=command, cwd=unique_path)
+        #print(cmd)
         exec_repo_url = git_exec_repo_url
         return {
             'unique_name': unique_name,
@@ -632,6 +648,28 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
 
     def result(self, id):
         return self.job_logs(job_id=id)[0]
+
+    def build_git_base_url_ssh(self, repo_type):
+        url = ''
+        if GIT_SERVER_HOST_SSH.get('alias') is not None:
+            url = GIT_SERVER_HOST_SSH.get('alias')
+        else:
+            if GIT_SERVER_HOST_SSH.get('user') is not None:
+                url = "%s@" % GIT_SERVER_HOST_SSH.get('user')
+            if GIT_SERVER_HOST_SSH.get('host') is None:
+                raise ValueError('Host can\'t be None if Alias is None!')
+            url += '%s' % GIT_SERVER_HOST_SSH.get('host')
+        url += ':'
+        if GIT_SERVER_HOST_SSH.get('base_route') is None:
+            raise ValueError('base_route can\'t be None')
+        url += GIT_SERVER_HOST_SSH.get('base_route')
+        routes = GIT_SERVER_HOST_SSH.get('routes')
+        if routes is None:
+            raise ValueError('routes can\'t be None')
+        if routes.get(repo_type) is None:
+            raise ValueError('Specified repo_type = \'%s\' within routes can\'t be None')
+        url += routes.get(repo_type)
+        return url
 
 
 class Py3KubernetesVirtualizationBackend(KubernetesVirtualizationBackend):

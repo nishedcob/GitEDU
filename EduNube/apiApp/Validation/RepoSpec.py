@@ -7,6 +7,7 @@ from apiApp.models import RepoSpec
 
 clean_repospec = re.compile('([a-zA-Z0-9_\.]+)')
 
+
 def validate_repospec(repospec=None):
     if repospec is None:
         raise ValueError("RepoSpec can't be None")

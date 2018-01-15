@@ -194,6 +194,26 @@ GIT_SERVER_HOST = {
     'port': None
 }
 
+GIT_SERVER_HOST_HTTP = GIT_SERVER_HOST
+
+GIT_SERVER_HOST_SSH = {
+    'alias': 'git',
+    'protocol': "ssh",
+    'user': 'git',
+    'password': None,
+    'identity_file': '$HOME/.ssh/id_git',
+    # Minikube
+    #'host': '192.168.99.1',
+    # For Kubernetes on Xen
+    'host': '10.10.10.1',
+    'port': None,
+    'base_route': '/home/git',
+    'routes': {
+        'bare': '/repositories',
+        'full': '/full'
+    }
+}
+
 GIT_HTTP_ENDPOINT_HOST = {
     'protocol': "http",
     'user': None,
