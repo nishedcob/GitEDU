@@ -195,89 +195,109 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         command = ['git', 'clone', repository, path]
         return self.run_command(command=command)
 
-    build_edunube_ignore_called_params = set()
+    def _concat_files(self, dest, src):
+        with open(src, 'r') as src_fd:
+            with open(dest, 'a') as dest_fd:
+                for line in src_fd:
+                    dest_fd.write(line)
+                    dest_fd.flush()
 
-    def build_edunube_ignore(self, repo_path, full_ignore_path, parent_repo_path=None):
+    def _build_edunube_ignore(self, repo_path, full_ignore_path, exists_parent=False):
+        # Get edunubeignore for current repo
+        current_edunube_ignore = repo_path + "/.edunubeignore"
+        current_edunube_ignore_path = pathlib.Path(current_edunube_ignore)
+
+        # write out its edunube ignore
+        if current_edunube_ignore_path.exists() and current_edunube_ignore_path.is_file():
+            if exists_parent:
+                # concat internal .edunubeignore to external .edunubeignore seeded from parent .edunubeignore.children
+                self._concat_files(src=current_edunube_ignore, dest=full_ignore_path)
+            else:
+                # use internal .edunubeignore
+                shutil.copy(current_edunube_ignore, full_ignore_path)
+        else:
+            if exists_parent:
+                # non existent internal .edunubeignore
+                # we don't need to do anything
+                pass
+            else:
+                # no parent so lets write out a blank external .edunubeignore
+                with open(full_ignore_path, mode='w') as full_ignore_path_fd:
+                    full_ignore_path_fd.write("")
+
+        # Get edunubeignore.children for current repo
+        current_edunube_ignore_children = current_edunube_ignore + ".children"
+        current_edunube_ignore_children_path = pathlib.Path(current_edunube_ignore_children)
+
+        # edunubeignore.children path
+        full_ignore_path_children = full_ignore_path + ".children"
+
+        if current_edunube_ignore_children_path.exists() and current_edunube_ignore_children_path.is_file():
+            # copy edunubeignore.children out of repo
+            shutil.copy(current_edunube_ignore_children, full_ignore_path_children)
+
+            # copy lines from external edunubeignore into external edunubeignore.children
+            self._concat_files(src=full_ignore_path, dest=full_ignore_path_children)
+        else:
+            # copy external edunubeignore to edunubeignore.children
+            shutil.copy(full_ignore_path, full_ignore_path_children)
+
+    build_edunube_ignore_called_params = set()
+    build_edunube_ignore_called_params_2 = set()
+
+    def build_edunube_ignore(self, repo_path, full_ignore_path, recursive_call=False):
+        # Recursive loop protection
         called_params_dict = {
             'repo_path': repo_path,
             'full_ignore_path': full_ignore_path,
-            'parent_repo_path': parent_repo_path
         }
-        called_params = "{%s}" % "'repo_path': \"{repo_path}\", 'full_ignore_path': \"{full_ignore_path}\", " \
-                        "'parent_repo_path': \"{parent_repo_path}\"".format_map(called_params_dict)
+        called_params = "{%s}" % "'repo_path': \"{repo_path}\", 'full_ignore_path': \"{full_ignore_path}\""\
+            .format_map(called_params_dict)
         print(called_params)
         if called_params in self.build_edunube_ignore_called_params:
-            print("Recursive loop detected on build_edunube_ignore! Cutting loop now...")
-            self.build_edunube_ignore_called_params.remove(called_params)
-            return
+            if called_params in self.build_edunube_ignore_called_params_2:
+                print("Recursive loop detected on build_edunube_ignore! Cutting loop now...")
+                self.build_edunube_ignore_called_params.remove(called_params)
+                self.build_edunube_ignore_called_params_2.remove(called_params)
+                return
+            self.build_edunube_ignore_called_params_2.add(called_params)
         else:
             self.build_edunube_ignore_called_params.add(called_params)
-        current_edunube_ignore = repo_path + "/.edunubeingore"
-        current_edunube_ignore_path = pathlib.Path(current_edunube_ignore)
-        if parent_repo_path is None:
-            if current_edunube_ignore_path.exists() and current_edunube_ignore_path.is_file():
-                shutil.copy(current_edunube_ignore, full_ignore_path)
-            else:
-                with open(full_ignore_path, mode='w') as full_ignore_path_fd:
-                    full_ignore_path_fd.write("")
-            return
-        parent_edunube_ingore = parent_repo_path + ".edunubeignore"
-        parent_edunube_ingore_children = parent_edunube_ingore + ".children"
-        parent_edunube_ingore_path = pathlib.Path(parent_edunube_ingore)
-        parent_edunube_ingore_path_children = pathlib.Path(parent_edunube_ingore_children)
-        if parent_edunube_ingore_path.exists():
-            if not parent_edunube_ingore_path.is_file():
-                if parent_edunube_ingore_path.is_dir():
-                    os.rmdir(parent_edunube_ingore)
-                else:
-                    os.remove(parent_edunube_ingore)
-        if parent_edunube_ingore_path_children.exists():
-            if not parent_edunube_ingore_path_children.is_file():
-                if parent_edunube_ingore_path_children.is_dir():
-                    os.rmdir(parent_edunube_ingore)
-                else:
-                    os.remove(parent_edunube_ingore)
-        if parent_edunube_ingore_path.exists() or parent_edunube_ingore_path_children.exists():
-            with open(full_ignore_path, mode='w') as full_ignore_path_fd:
-                if parent_edunube_ingore_path.exists():
-                    with open(parent_edunube_ingore, mode='r') as parent_edunube_ingore_fd:
-                        full_ignore_path_fd.write(parent_edunube_ingore_fd.read())
-                if parent_edunube_ingore_path_children.exists():
-                    with open(parent_edunube_ingore_children, mode='r') as parent_edunube_ingore_children_fd:
-                        full_ignore_path_fd.write(parent_edunube_ingore_children_fd.read())
-                if current_edunube_ignore_path.exists() and current_edunube_ignore_path.is_file():
-                    with open(current_edunube_ignore, mode='r') as current_edunube_ignore_fd:
-                        full_ignore_path_fd.write(current_edunube_ignore_fd.read())
-        else:
-            repospec_file = repo_path + "/.repospec"
-            repospec_file_path = pathlib.Path(repospec_file)
-            if not repospec_file_path.exists() or not repospec_file_path.is_file():
-                raise ValueError("Error with repository's RepoSpec")
-            with open(repospec_file, mode='r') as repospec_fd:
+
+        # get repospec for current repo
+        current_edunube_repospec = repo_path + "/.repospec"
+        current_edunube_repospec_path = pathlib.Path(current_edunube_repospec)
+
+        if current_edunube_repospec_path.exists() and current_edunube_repospec_path.is_file():
+            with open(current_edunube_repospec, mode='r') as repospec_fd:
                 repospec_data = repospec_fd.read()
             decoded_repospec = RepoSpec.decode_repospec(repospec=repospec_data)
-            repository = decoded_repospec.get('parent_repo')
-            repository_name = self.extract_repo_name.findall(repository)[0]
-            current_repo_path = self.get_tmp_repo_path() + "/" + repository_name
-            self.clone_or_pull(repository=repository, path=current_repo_path)
-            edunube_ignore_path = "%s.edunubeignore" % current_repo_path
-            parent_repospec = self.get_repospec(repository=repository)
-            decoded_parent_repospec = RepoSpec.decode_repospec(repospec=parent_repospec)
-            parent_repository = decoded_parent_repospec.get('parent_repo')
-            if parent_repository is not None:
-                parent_repository_name = self.extract_repo_name.findall(parent_repository)[0]
-                parent_repo_path = self.get_tmp_repo_path() + "/" + parent_repository_name
-                self.clone_or_pull(repository=parent_repository, path=parent_repo_path)
-                self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path,
-                                          parent_repo_path=parent_repo_path)
-            else:
-                self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path)
-            # Infinite recursive loop, why?
-            self.build_edunube_ignore(repo_path=repo_path, full_ignore_path=full_ignore_path,
-                                      parent_repo_path=parent_repo_path)
+            parent_repository = decoded_repospec.get('parent_repo')
+        else:
+            raise ValueError("Problem reading repository's repospec")
+
+        # if no parent repo:
+        if parent_repository is None:
+            self._build_edunube_ignore(repo_path=repo_path, full_ignore_path=full_ignore_path, exists_parent=False)
+        else:   # if has parent repo
+            parent_repository_name = self.extract_repo_name.findall(parent_repository)[0]
+            parent_repo_path = self.get_tmp_repo_path() + "/" + parent_repository_name
+            parent_repo_edunube_ignore = parent_repo_path + ".edunubeignore"
+            self.clone_or_pull(repository=parent_repository, path=parent_repo_path)
+            # recursively build edunube ignore of parent repo
+            self.build_edunube_ignore(repo_path=parent_repo_path, full_ignore_path=parent_repo_edunube_ignore)
+            # edunubeignore.children for parent repo
+            parent_repo_edunube_ignore_children = parent_repo_edunube_ignore + ".children"
+            # copy parent repo edunubeignore.children as seed for current edunubeignore
+            shutil.copy(parent_repo_edunube_ignore_children, full_ignore_path)
+
+            # Get edunubeignore for current repo
+            self._build_edunube_ignore(repo_path=repo_path, full_ignore_path=full_ignore_path, exists_parent=True)
+
+        # Sort and Uniq on .edunubeignore
         cmd = ['sort', full_ignore_path, ">", "%s.sorted" % full_ignore_path]
         command = self.run_command(command=cmd)
-        command_results = command
+        command_results = list(command)
         if command[2] == 0:
             command_results = [command[0], command[1], command[2]]
             cmd = ['rm', full_ignore_path]
@@ -291,6 +311,32 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                 command_results[0] += command[0]
                 command_results[1] += command[1]
                 command_results[2] += command[2]
+        print(command_results)
+
+        # edunubeignore.children path
+        full_ignore_path_children = full_ignore_path + ".children"
+
+        # Sort and Uniq on .edunubeignore
+        cmd = ['sort', full_ignore_path_children, ">", "%s.sorted" % full_ignore_path_children]
+        command = self.run_command(command=cmd)
+        command_results[0] += command[0]
+        command_results[1] += command[1]
+        command_results[2] += command[2]
+        if command[2] == 0:
+            command_results = [command[0], command[1], command[2]]
+            cmd = ['rm', full_ignore_path_children]
+            command = self.run_command(command=cmd)
+            command_results[0] += command[0]
+            command_results[1] += command[1]
+            command_results[2] += command[2]
+            if command[2] == 0:
+                cmd = ['uniq', "%s.sorted" % full_ignore_path_children, ">", full_ignore_path_children]
+                command = self.run_command(command=cmd)
+                command_results[0] += command[0]
+                command_results[1] += command[1]
+                command_results[2] += command[2]
+        print(command_results)
+
         return command_results
 
     def repo_sync(self, origin_repo, dest_repo, ignore):
@@ -324,8 +370,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         current_repo_path += repository_name
         self.clone_or_pull(repository=repository, path=current_repo_path)
         edunube_ignore_path = "%s.edunubeignore" % current_repo_path
-        self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path,
-                                  parent_repo_path=parent_path)
+        self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path)
         cmd = self.repo_sync(origin_repo=current_repo_path, dest_repo=repo_path, ignore=edunube_ignore_path)
         print(cmd)
         return repo_path
