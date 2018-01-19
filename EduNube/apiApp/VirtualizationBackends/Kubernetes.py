@@ -240,14 +240,14 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             with open(repospec_file, mode='r') as repospec_fd:
                 repospec_data = repospec_fd.read()
             decoded_repospec = RepoSpec.decode_repospec(repospec=repospec_data)
-            repository = decoded_repospec.get('parent')
+            repository = decoded_repospec.get('parent_repo')
             repository_name = self.extract_repo_name.findall(repository)[0]
             current_repo_path = self.get_tmp_repo_path() + "/" + repository_name
             self.clone_or_pull(repository=repository, path=current_repo_path)
             edunube_ignore_path = "%s.edunubeignore" % current_repo_path
             parent_repospec = self.get_repospec(repository=repository)
             decoded_parent_repospec = RepoSpec.decode_repospec(repospec=parent_repospec)
-            parent_repository = decoded_parent_repospec.get('parent')
+            parent_repository = decoded_parent_repospec.get('parent_repo')
             if parent_repository is not None:
                 parent_repository_name = self.extract_repo_name.findall(parent_repository)[0]
                 parent_repo_path = self.get_tmp_repo_path() + "/" + parent_repository_name
@@ -256,6 +256,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                                           parent_repo_path=parent_repo_path)
             else:
                 self.build_edunube_ignore(repo_path=current_repo_path, full_ignore_path=edunube_ignore_path)
+            # Infinite recursive loop, why?
             self.build_edunube_ignore(repo_path=repo_path, full_ignore_path=full_ignore_path,
                                       parent_repo_path=parent_repo_path)
         cmd = ['sort', full_ignore_path, ">", "%s.sorted" % full_ignore_path]
@@ -292,7 +293,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         repospec = self.get_repospec(repository=repository)
         RepoSpec.validate_repospec(repospec=repospec)
         decoded_repospec = RepoSpec.decode(repospec=repospec)
-        parent_path = self.build_exec_repo(repository=decoded_repospec.get('parent'), repo_path=repo_path)
+        parent_path = self.build_exec_repo(repository=decoded_repospec.get('parent_repo'), repo_path=repo_path)
         namespace_name = self.extract_ns_name.findall(repository)
         print(namespace_name)
         if namespace_name is not None and type(namespace_name) == list and len(namespace_name) > 0:
