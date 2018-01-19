@@ -195,7 +195,23 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         command = ['git', 'clone', repository, path]
         return self.run_command(command=command)
 
+    build_edunube_ignore_called_params = set()
+
     def build_edunube_ignore(self, repo_path, full_ignore_path, parent_repo_path=None):
+        called_params_dict = {
+            'repo_path': repo_path,
+            'full_ignore_path': full_ignore_path,
+            'parent_repo_path': parent_repo_path
+        }
+        called_params = "{%s}" % "'repo_path': \"{repo_path}\", 'full_ignore_path': \"{full_ignore_path}\", " \
+                        "'parent_repo_path': \"{parent_repo_path}\"".format_map(called_params_dict)
+        print(called_params)
+        if called_params in self.build_edunube_ignore_called_params:
+            print("Recursive loop detected on build_edunube_ignore! Cutting loop now...")
+            self.build_edunube_ignore_called_params.remove(called_params)
+            return
+        else:
+            self.build_edunube_ignore_called_params.add(called_params)
         current_edunube_ignore = repo_path + "/.edunubeingore"
         current_edunube_ignore_path = pathlib.Path(current_edunube_ignore)
         if parent_repo_path is None:
