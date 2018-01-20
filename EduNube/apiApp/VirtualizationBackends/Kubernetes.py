@@ -6,9 +6,11 @@ import os
 import re
 import shutil
 import requests
+import time
 
 from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS, GIT_SERVER_HOST, GIT_SERVER_HOST_SSH
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
+from apiApp.VirtualizationBackends.K8S.AuxProcesses import JobLoggingProcess
 from apiApp.Validation import RepoSpec
 from apiApp.git_server_http_endpoint import RepositoryGitSrvHTTPEpConsumer
 from apiApp import models, mongodb_models
@@ -412,37 +414,63 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                 self.execute_job(namespace=namespace, repository=repository, repository_url=repository_url,
                                  repository_path=unique_path, job_name=job_name_2, prep_job=True)
                 executed = True
-            params_dict = {
-                'namespace': namespace,
-                'repository': repository,
-                'commit_id': commit_id
-            }
-            log1_params = params_dict.copy()
-            log1_params['execution_number'] = 1
-            try:
-                executionLog1 = mongodb_models.ExecutionLogModel.objects.get(log1_params)
-            except mongodb_models.ExecutionLogModel.DoesNotExist:
-                executionLog1 = mongodb_models.ExecutionLogModel(**log1_params)
-            log2_params = params_dict.copy()
-            log2_params['execution_number'] = 1
-            try:
-                executionLog2 = mongodb_models.ExecutionLogModel.objects.get(log2_params)
-            except mongodb_models.ExecutionLogModel.DoesNotExist:
-                executionLog2 = mongodb_models.ExecutionLogModel(**log2_params)
-            if executionLog1.stdout == executionLog2.stdout and executionLog1.stderr == executionLog2.stderr:
-                executionLog1.deterministic = True
-                executionLog2.deterministic = True
-                jobSpec.deterministic = True
-                jobSpec2.deterministic = True
+                jobSpec2 = models.JobSpec.objects.get(job_name=job_name_2)
+            job1_status = self.job_status(job_id=job_name)
+            job2_status = self.job_status(job_id=job_name_2)
+            if job1_status.get("finished") and job2_status.get("finished"):
+                params_dict = {
+                    'namespace': namespace,
+                    'repository': repository,
+                    'commit_id': commit_id
+                }
+                log1_params = params_dict.copy()
+                log1_params['execution_number'] = "1"
+                try:
+                    executionLog1 = mongodb_models.ExecutionLogModel.objects.get(log1_params)
+                    print("found log 1")
+                except mongodb_models.ExecutionLogModel.DoesNotExist:
+                    executionLog1 = mongodb_models.ExecutionLogModel(**log1_params)
+                    print("created log 1")
+                print(executionLog1)
+                executionLog1.save()
+                print(executionLog1)
+                log2_params = params_dict.copy()
+                log2_params['execution_number'] = "2"
+                try:
+                    executionLog2 = mongodb_models.ExecutionLogModel.objects.get(log2_params)
+                    print("found log 2")
+                except mongodb_models.ExecutionLogModel.DoesNotExist:
+                    executionLog2 = mongodb_models.ExecutionLogModel(**log2_params)
+                    print("created log 2")
+                print(executionLog2)
+                executionLog2.save()
+                print(executionLog2)
+                if executionLog1.stdout == executionLog2.stdout and executionLog1.stderr == executionLog2.stderr:
+                    executionLog1.deterministic = True
+                    executionLog2.deterministic = True
+                    jobSpec.deterministic = True
+                    jobSpec2.deterministic = True
+                else:
+                    executionLog1.deterministic = False
+                    executionLog2.deterministic = False
+                    jobSpec.deterministic = False
+                    jobSpec2.deterministic = False
+                executionLog1.save()
+                executionLog2.save()
+                jobSpec.save()
+                jobSpec2.save()
             else:
-                executionLog1.deterministic = False
-                executionLog2.deterministic = False
-                jobSpec.deterministic = False
-                jobSpec2.deterministic = False
-            executionLog1.save()
-            executionLog2.save()
-            jobSpec.save()
-            jobSpec2.save()
+                # Waiting on Job 1 or Job 2 to finish:
+                while not job1_status.get("finished"):
+                    # check again after 1 second
+                    time.sleep(1)
+                    job1_status = self.job_status(job_id=job_name)
+                while not job2_status.get("finished"):
+                    # check again after 1 second
+                    time.sleep(1)
+                    job2_status = self.job_status(job_id=job_name_2)
+                return self.is_deterministic(namespace=namespace, repository=repository, repository_url=repository_url,
+                                             unique_path=unique_path, unique_name=unique_name)
             if executed:
                 return None, None
             else:
@@ -572,12 +600,18 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         job_spec.git_repo = repository_url
         job_spec.deterministic = None
         job_spec.save()
+        commit_id = self.get_id_last_git_commit(repository_path=repository_path)
+        orig_job_name = self.build_full_job_name(namespace=namespace, repository=repository, commit_id=commit_id)
         if not existed_previously:
-            commit_id = self.get_id_last_git_commit(repository_path=repository_path)
-            orig_job_name = self.build_full_job_name(namespace=namespace, repository=repository, commit_id=commit_id)
             job_count = models.JobNameCounter.objects.get_or_create(orig_job_name=orig_job_name)[0]
             job_count.job_count += 1
             job_count.save()
+        else:
+            job_count = models.JobNameCounter.objects.get(orig_job_name=orig_job_name)
+        jlp = JobLoggingProcess(virt_backend=self, job_id=job_name, namespace=namespace, repository=repository,
+                                commit_id=commit_id, execution_number=job_count.job_count)
+        jlp.start()
+        self.processes.append(jlp)
 
     def create_job(self, namespace, repository, repository_url):
         prep_job = self.prepare_job(namespace=namespace, repository=repository, repository_url=repository_url)
