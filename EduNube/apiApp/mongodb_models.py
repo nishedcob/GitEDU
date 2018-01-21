@@ -36,16 +36,21 @@ class ExecutionLogModel(MongoModel):
                                                                                 self.stdout, self.stderr,
                                                                                 self.deterministic, execution_time)
 
-    def build_uniq_combo(self):
-        if self.namespace is None:
+    @classmethod
+    def calc_uniq_combo(cls, namespace, repository, commit_id, execution_number):
+        if namespace is None:
             raise ValueError("Namespace can't be None")
-        if self.repository is None:
+        if repository is None:
             raise ValueError("Repository can't be None")
-        if self.commit_id is None:
+        if commit_id is None:
             raise ValueError("Commit_ID can't be None")
-        if self.execution_number is None:
+        if execution_number is None:
             raise ValueError("Execution_Number can't be None")
-        return "%s/%s@%s#%d" % (self.namespace, self.repository, self.commit_id, self.execution_number)
+        return "%s/%s@%s#%s" % (namespace, repository, commit_id, str(execution_number))
+
+    def build_uniq_combo(self):
+        return self.calc_uniq_combo(namespace=self.namespace, repository=self.repository, commit_id=self.commit_id,
+                                    execution_number=self.execution_number)
 
     def save_uniq_combo(self):
         self.uniq_combo = self.build_uniq_combo()

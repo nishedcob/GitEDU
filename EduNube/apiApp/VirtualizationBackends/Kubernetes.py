@@ -417,60 +417,57 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                 jobSpec2 = models.JobSpec.objects.get(job_name=job_name_2)
             job1_status = self.job_status(job_id=job_name)
             job2_status = self.job_status(job_id=job_name_2)
-            if job1_status.get("finished") and job2_status.get("finished"):
-                params_dict = {
-                    'namespace': namespace,
-                    'repository': repository,
-                    'commit_id': commit_id
-                }
-                log1_params = params_dict.copy()
-                log1_params['execution_number'] = "1"
+            while not job1_status.get("finished"):
+                time.sleep(1)
+                job1_status = self.job_status(job_id=job_name)
+            while not job2_status.get("finished"):
+                time.sleep(1)
+                job2_status = self.job_status(job_id=job_name_2)
+            params_dict = {
+                'namespace': namespace,
+                'repository': repository,
+                'commit_id': commit_id
+            }
+            log1_params = params_dict.copy()
+            log1_params['execution_number'] = "1"
+            log1_id = mongodb_models.ExecutionLogModel.calc_uniq_combo(**log1_params)
+            try:
+                executionLog1 = mongodb_models.ExecutionLogModel.objects.get({'_id': log1_id})
+                print("found log 1")
+            except mongodb_models.ExecutionLogModel.DoesNotExist:
+                executionLog1 = None
+            while executionLog1 is None:
+                time.sleep(1)
                 try:
-                    executionLog1 = mongodb_models.ExecutionLogModel.objects.get(log1_params)
+                    executionLog1 = mongodb_models.ExecutionLogModel.objects.get({'_id': log1_id})
                     print("found log 1")
                 except mongodb_models.ExecutionLogModel.DoesNotExist:
-                    executionLog1 = mongodb_models.ExecutionLogModel(**log1_params)
-                    print("created log 1")
-                print(executionLog1)
-                executionLog1.save()
-                print(executionLog1)
-                log2_params = params_dict.copy()
-                log2_params['execution_number'] = "2"
+                    executionLog1 = None
+            print(executionLog1)
+            log2_params = params_dict.copy()
+            log2_params['execution_number'] = "2"
+            log2_id = mongodb_models.ExecutionLogModel.calc_uniq_combo(**log2_params)
+            try:
+                executionLog2 = mongodb_models.ExecutionLogModel.objects.get({'_id': log2_id})
+                print("found log 2")
+            except mongodb_models.ExecutionLogModel.DoesNotExist:
+                executionLog2 = None
+            while executionLog2 is None:
+                time.sleep(2)
                 try:
-                    executionLog2 = mongodb_models.ExecutionLogModel.objects.get(log2_params)
+                    executionLog2 = mongodb_models.ExecutionLogModel.objects.get({'_id': log2_id})
                     print("found log 2")
                 except mongodb_models.ExecutionLogModel.DoesNotExist:
-                    executionLog2 = mongodb_models.ExecutionLogModel(**log2_params)
-                    print("created log 2")
-                print(executionLog2)
-                executionLog2.save()
-                print(executionLog2)
-                if executionLog1.stdout == executionLog2.stdout and executionLog1.stderr == executionLog2.stderr:
-                    executionLog1.deterministic = True
-                    executionLog2.deterministic = True
-                    jobSpec.deterministic = True
-                    jobSpec2.deterministic = True
-                else:
-                    executionLog1.deterministic = False
-                    executionLog2.deterministic = False
-                    jobSpec.deterministic = False
-                    jobSpec2.deterministic = False
-                executionLog1.save()
-                executionLog2.save()
-                jobSpec.save()
-                jobSpec2.save()
+                    executionLog2 = None
+            print(executionLog2)
+            if executionLog1.stdout == executionLog2.stdout and executionLog1.stderr == executionLog2.stderr:
+                jobSpec.deterministic = True
+                jobSpec2.deterministic = True
             else:
-                # Waiting on Job 1 or Job 2 to finish:
-                while not job1_status.get("finished"):
-                    # check again after 1 second
-                    time.sleep(1)
-                    job1_status = self.job_status(job_id=job_name)
-                while not job2_status.get("finished"):
-                    # check again after 1 second
-                    time.sleep(1)
-                    job2_status = self.job_status(job_id=job_name_2)
-                return self.is_deterministic(namespace=namespace, repository=repository, repository_url=repository_url,
-                                             unique_path=unique_path, unique_name=unique_name)
+                jobSpec.deterministic = False
+                jobSpec2.deterministic = False
+            jobSpec.save()
+            jobSpec2.save()
             if executed:
                 return None, None
             else:
