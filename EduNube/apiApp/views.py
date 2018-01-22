@@ -1,6 +1,8 @@
 
 import six
 import importlib
+import sys
+import requests
 
 from django.shortcuts import render, redirect
 from django.views import View
@@ -11,6 +13,8 @@ from django.http import HttpResponse, JsonResponse, Http404
 from django.core.exceptions import PermissionDenied
 
 from authApp.tokens import validate_api_token
+from apiApp.Aux.Git import build_git_base_http_url
+from apiApp.Aux.cleanup import clean_dict, clean_list
 from EduNube.settings import DEFAULT_DOCKER_TAGS, DEFAULT_DOCKER_REGISTRY, VIRTUALIZATION_BACKEND
 from apiApp.Validation import RepoSpec
 from apiApp import models
@@ -22,15 +26,24 @@ from apiApp import models
 class CodeExecutionView(View):
 
     def get_virt_backend_str(self):
-        virt_bk_str = VIRTUALIZATION_BACKEND.get(self.executor_name, None)
-        if virt_bk_str is None:
-            virt_bk_str = VIRTUALIZATION_BACKEND.get('default', None)
-        return virt_bk_str
+        if self.execution_backend is None:
+            virt_bk_str = VIRTUALIZATION_BACKEND.get(self.executor_name, None)
+            if virt_bk_str is None:
+                virt_bk_str = VIRTUALIZATION_BACKEND.get('default', None)
+            return virt_bk_str
+        else:
+            return self.execution_backend
 
     #virt_backend_str = get_virt_backend_str()
+    virt_backend_str = None
+    virt_backend = None
 
     def load_virt_backend(self):
+        if self.virt_backend_str is None:
+            self.virt_backend_str = self.get_virt_backend_str()
         load_class = self.virt_backend_str
+        module_path = None
+        class_name = None
         try:
             module_path, class_name = load_class.rsplit('.', 1)
         except ValueError:
@@ -86,23 +99,82 @@ class CodeExecutionView(View):
     def not_authorized(self, request, reason):
         raise reason
 
-    def validate_call(self, request, namespace, repository, file_path):
+    action = None
+
+    def _get_action_method(self, action=None):
+        if action is None:
+            if self.action_method is not None:
+                return self.action_method
+            if self.action is None:
+                # we could choose to raise an exception here instead
+                return None
+            action = self.action
+        if self.virt_backend is None:
+            self.virt_backend = self.load_virt_backend()
+            if self.virt_backend is None:
+                raise ValueError("No virt_backend!")
+        return getattr(self.virt_backend, action)
+
+    def get_action_method(self, action=None):
+        return self._get_action_method(action=action)
+
+    execution_backend = None
+
+    action_method = None
+
+    def clean_dict(self, entry_dict):
+        return clean_dict(entry_dict=entry_dict)
+
+    def clean_list(self, entry_list):
+        return clean_list(entry_list=entry_list)
+
+
+class CodeExecutionCreateView(CodeExecutionView):
+
+    action = 'execute'
+
+    git_base_url = None
+
+    repository_url = None
+
+    code_execution = None
+
+    def validate_call(self, request, namespace, repository):
+        self.git_base_url = build_git_base_http_url()
+        url = "%s/?p=%s/%s.git;a=summary" % (self.git_base_url, namespace, repository)
+        print("Git Test URL: %s" % url)
+        existence_test = requests.get(url)
+        if existence_test.status_code >= 400:
+            raise ValueError(
+                "Namespace/Repository: '%s/%s' doesn't exist or Git Server is having issues" % (namespace, repository)
+            )
         return None
 
-    def pre_proc(self, request, namespace, repository, file_path):
+    def pre_proc(self, request, namespace, repository):
+        self.repository_url = "%s/%s/%s.git" % (self.git_base_url, namespace, repository)
+        self.action_method = self.get_action_method()
+        if self.action_method is None:
+            raise ValueError("Action Method can't be None")
         return None
 
-    def proc(self, request, namespace, repository, file_path):
+    def proc(self, request, namespace, repository):
+        self.code_execution = self.action_method(namespace=namespace, repository=repository,
+                                                 repository_url=self.repository_url)
         return None
 
-    def post_proc(self, request, namespace, repository, file_path):
-        return None
+    def post_proc(self, request, namespace, repository):
+        if type(self.code_execution) == tuple:
+            action_method = self.get_action_method(action='status')
+            code_execution = self.code_execution
+        print(self.code_execution)
+        self.code_execution = self.clean_dict(entry_dict=self.code_execution)
+        return JsonResponse(data=self.code_execution)
 
-    def post(self, request, namespace, repository, file_path):
+    def post(self, request, namespace, repository):
         try:
             self.authenticate(request=request)
             for func in self.post_proc_steps():
-                response = func(request=request, namespace=namespace, repository=repository, file_path=file_path)
+                response = func(request=request, namespace=namespace, repository=repository)
                 if response is not None:
                     return response
             return None
@@ -110,7 +182,85 @@ class CodeExecutionView(View):
             return self.not_authorized(request=request, reason=pe)
 
 
-class ShellExecutionView(CodeExecutionView):
+class CodeExecutionIDView(CodeExecutionView):
+
+    code_exec_status = None
+
+    def does_not_exist(self, id):
+        raise ValueError("ID '%s' does not exist" % id)
+
+    def validate_call(self, request, id):
+        old_action = self.action
+        self.action = 'status'
+        status_method = self.get_action_method()
+        if status_method is None:
+            raise ValueError("Action Method can't be None")
+        if old_action == 'status':
+            self.action_method = status_method
+        else:
+            self.action = old_action
+        self.code_exec_status = status_method(id=id)
+        if not self.code_exec_status.get('exists'):
+            return self.does_not_exist(id=id)
+        return None
+
+    def pre_proc(self, request, id):
+        self.action_method = self.get_action_method()
+        if self.action_method is None:
+            raise ValueError("Action Method can't be None")
+        return None
+
+    def proc(self, request, id):
+        if self.action == 'status':
+            self.action_result = self.code_exec_status
+        else:
+            self.action_result = self.action_method(id=id)
+        return None
+
+    def post_proc(self, request, id):
+        self.action_result = self.clean_dict(entry_dict=self.action_result)
+        return JsonResponse(self.action_result)
+
+    def post(self, request, id):
+        try:
+            self.authenticate(request=request)
+            for func in self.post_proc_steps():
+                response = func(request=request, id=id)
+                if response is not None:
+                    return response
+            return None
+        except PermissionDenied as pe:
+            return self.not_authorized(request=request, reason=pe)
+
+
+class CodeExecutionStatusView(CodeExecutionIDView):
+
+    action = 'status'
+
+    def does_not_exist(self, id):
+        self.code_exec_status = self.clean_dict(entry_dict=self.code_exec_status)
+        return JsonResponse(data=self.code_exec_status)
+
+    def post_proc_steps(self):
+        return [self.validate_call, self.proc, self.post_proc]
+
+
+class CodeExecutionResultView(CodeExecutionIDView):
+
+    action = 'result'
+
+
+class GenericExecutor:
+
+    executor_name = None
+
+    # can override with:
+    #docker_image = 'registry.gitlab.com/nishedcob/gitedu/shell-executor'
+    # can override default pulled from settings with:
+    #docker_tag = None
+
+
+class ShellExecutor(GenericExecutor):
 
     executor_name = 'shell'
 
@@ -120,7 +270,7 @@ class ShellExecutionView(CodeExecutionView):
     #docker_tag = None
 
 
-class Python3ExecutionView(CodeExecutionView):
+class Python3Executor(GenericExecutor):
 
     executor_name = 'python3'
 
@@ -130,7 +280,7 @@ class Python3ExecutionView(CodeExecutionView):
     #docker_tag = None
 
 
-class PostgreSQLExecutionView(CodeExecutionView):
+class PostgreSQLExecutor(GenericExecutor):
 
     executor_name = 'postgresql'
 
@@ -138,6 +288,72 @@ class PostgreSQLExecutionView(CodeExecutionView):
     #docker_image = 'registry.gitlab.com/nishedcob/gitedu/postgresql-executor'
     # can override default pulled from settings with:
     #docker_tag = None
+
+
+class GenericExecutionBackend(GenericExecutor):
+
+    # from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
+    execution_backend = 'apiApp.VirtualizationBackends.Generic.GenericVirtualizationBackend'
+
+
+class KubernetesExecutionBackend(GenericExecutionBackend):
+
+    # from apiApp.VirtualizationBackends.Kubernetes import KubernetesVirtualizationBackend
+    execution_backend = 'apiApp.VirtualizationBackends.Kubernetes.KubernetesVirtualizationBackend'
+
+
+class ShellKubernetesExecutionBackend(ShellExecutor, GenericExecutionBackend):
+
+    # from apiApp.VirtualizationBackends.Kubernetes import ShellKubernetesVirtualizationBackend
+    execution_backend = 'apiApp.VirtualizationBackends.Kubernetes.ShellKubernetesVirtualizationBackend'
+
+
+class Py3KubernetesExecutionBackend(Python3Executor, GenericExecutionBackend):
+
+    # from apiApp.VirtualizationBackends.Kubernetes import Py3KubernetesVirtualizationBackend
+    execution_backend = 'apiApp.VirtualizationBackends.Kubernetes.Py3KubernetesVirtualizationBackend'
+
+
+class PGSQLKubernetesExecutionBackend(PostgreSQLExecutor, GenericExecutionBackend):
+
+    # from apiApp.VirtualizationBackends.Kubernetes import PGSQLKubernetesVirtualizationBackend
+    execution_backend = 'apiApp.VirtualizationBackends.Kubernetes.PGSQLKubernetesVirtualizationBackend'
+
+
+class ShellCodeExecutionCreateView(ShellKubernetesExecutionBackend, CodeExecutionCreateView):
+    pass
+
+
+class ShellCodeExecutionStatusView(ShellKubernetesExecutionBackend, CodeExecutionStatusView):
+    pass
+
+
+class ShellCodeExecutionResultView(ShellKubernetesExecutionBackend, CodeExecutionResultView):
+    pass
+
+
+class Py3CodeExecutionCreateView(Py3KubernetesExecutionBackend, CodeExecutionCreateView):
+    pass
+
+
+class Py3CodeExecutionStatusView(Py3KubernetesExecutionBackend, CodeExecutionStatusView):
+    pass
+
+
+class Py3CodeExecutionResultView(Py3KubernetesExecutionBackend, CodeExecutionResultView):
+    pass
+
+
+class PGSQLCodeExecutionCreateView(PGSQLKubernetesExecutionBackend, CodeExecutionCreateView):
+    pass
+
+
+class PGSQLCodeExecutionStatusView(PGSQLKubernetesExecutionBackend, CodeExecutionStatusView):
+    pass
+
+
+class PGSQLCodeExecutionResultView(PGSQLKubernetesExecutionBackend, CodeExecutionResultView):
+    pass
 
 
 class RepoSpecFactory:

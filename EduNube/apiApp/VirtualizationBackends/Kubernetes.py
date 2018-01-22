@@ -8,7 +8,8 @@ import shutil
 import requests
 import time
 
-from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS, GIT_SERVER_HOST, GIT_SERVER_HOST_SSH
+from EduNube.settings import DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_TAGS
+from apiApp.Aux.Git import build_git_base_http_url, build_git_base_url_ssh
 from apiApp.VirtualizationBackends.Generic import GenericVirtualizationBackend
 from apiApp.VirtualizationBackends.K8S.AuxProcesses import JobLoggingProcess
 from apiApp.Validation import RepoSpec
@@ -501,31 +502,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         return "%s-%s" % (self.build_unique_name(namespace=namespace, repository=repository), commit_id)
 
     def build_git_base_url(self):
-        protocol = GIT_SERVER_HOST.get('protocol')
-        if protocol is None:
-            raise ValueError("GIT_SERVER_HOST doesn't define a Protocol")
-        host = GIT_SERVER_HOST.get('host')
-        if host is None:
-            raise ValueError("GIT_SERVER_HOST doesn't define a Host")
-        url = "%s://" % protocol
-        print("Building Git Base URL: %s" % url)
-        user = GIT_SERVER_HOST.get('user')
-        if user is not None:
-            url = "%s%s" % (url, user)
-            print("Building Git Base URL: %s" % url)
-            password = GIT_SERVER_HOST.get('password')
-            if password is not None:
-                url = "%s:%s" % (url, password)
-                print("Building Git Base URL: %s" % url)
-            url = "%s@" % url
-            print("Building Git Base URL: %s" % url)
-        url = "%s%s" % (url, host)
-        print("Building Git Base URL: %s" % url)
-        port = GIT_SERVER_HOST.get('port')
-        if port is not None:
-            url = "%s:%s" % (url, str(port))
-            print("Building Git Base URL: %s" % url)
-        return url
+        return build_git_base_http_url()
 
     def prepare_job(self, namespace, repository, repository_url):
         unique_name = self.build_unique_name(namespace=namespace, repository=repository)
@@ -624,12 +601,12 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
             self.execute_job(namespace=namespace, repository=repository, repository_url=exec_repo_url,
                              repository_path=unique_path, job_name=job_name, prep_job=True)
             return {
-                'job_id': job_name
+                'id': job_name
             }
         else:
             if self.always_deterministic():
                 job_status = self.job_status(job_id=job_name)
-                job_status['job_id'] = job_name
+                job_status['id'] = job_name
                 if job_status.get('exists'):
                     if job_status.get('finished'):
                         job_status['log'] = self.job_logs(job_id=job_name)
@@ -646,20 +623,19 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                                                     unique_name=unique_name)
                 if determinism is None:
                     job_status = self.job_status(job_id=job_name)
-                    job_status['job_id'] = job_name
+                    job_status['id'] = job_name
                     job_status['log'] = self.job_logs(job_id=job_name)
                     return job_status
                 elif type(determinism) == tuple and determinism == (None, None):
                     job_name = self.build_new_name(name=job_name, index=2)
                     job_status = self.job_status(job_id=job_name)
-                    job_status['job_id'] = job_name
+                    job_status['id'] = job_name
                     job_status['log'] = self.job_logs(job_id=job_name)
                     return job_status
                 elif type(determinism) == bool:
                     if determinism:
                         job_status = self.job_status(job_id=job_name)
-                        job_status['job_id'] = job_name
-                        job_status['log'] = self.job_logs(job_id=job_name)
+                        job_status['exec_log'] = self.job_logs(job_id=job_name)
                         return job_status
                     else:
                         job_counter = models.JobNameCounter.objects.get(orig_job_name=job_name)
@@ -674,7 +650,7 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
                         self.execute_job(namespace=namespace, repository=repository, repository_url=exec_repo_url,
                                          repository_path=unique_path, job_name=job_name, prep_job=True)
                         return {
-                            'job_id': job_name
+                            'id': job_name
                         }
                 else:
                     raise ValueError("Invalid or Unimplemented Response from is_deterministic: %s" % determinism)
@@ -708,28 +684,46 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         return self.run_command(command=command)
 
     def job_describe(self, job_id):
-        return self.kubectl__job_id(verb='describe', job_id=job_id)
+        response = {
+            'id': job_id,
+            'logs': self.kubectl__job_id(verb='describe', job_id=job_id)
+        }
+        return response
 
     def job_get(self, job_id):
-        return self.kubectl__job_id(verb='get', job_id=job_id)
+        response = {
+            'id': job_id,
+            'logs': self.kubectl__job_id(verb='get', job_id=job_id)
+        }
+        return response
 
     def job_logs(self, job_id):
-        return self.kubectl__job_id(verb='logs', job_id=job_id)
+        response = {
+            "id": job_id,
+            "logs": self.kubectl__job_id(verb='logs', job_id=job_id)
+        }
+        return response
 
     def job_delete(self, job_id):
-        return self.kubectl__job_id(verb='delete', job_id=job_id)
+        response = {
+            "id": job_id,
+            "logs": self.kubectl__job_id(verb='delete', job_id=job_id)
+        }
+        return response
 
     executing_regex = re.compile("  0  ")
 
     def job_status(self, job_id):
-        get_job = self.job_get(job_id=job_id)
+        get_job = self.job_get(job_id=job_id).get("logs")
         status = {
+            'id': job_id,
             'exists': False
         }
         if get_job[2] == 0:
             status['exists'] = True
             get_job_str = str(get_job[0])
             status['finished'] = self.executing_regex.search(get_job_str) is None
+        status['logs'] = get_job
         return status
 
     def job_exists(self, job_id):
@@ -745,29 +739,10 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
         return self.job_status(job_id=id)
 
     def result(self, id):
-        return self.job_logs(job_id=id)[0]
+        return self.job_logs(job_id=id)
 
     def build_git_base_url_ssh(self, repo_type):
-        url = ''
-        if GIT_SERVER_HOST_SSH.get('alias') is not None:
-            url = GIT_SERVER_HOST_SSH.get('alias')
-        else:
-            if GIT_SERVER_HOST_SSH.get('user') is not None:
-                url = "%s@" % GIT_SERVER_HOST_SSH.get('user')
-            if GIT_SERVER_HOST_SSH.get('host') is None:
-                raise ValueError('Host can\'t be None if Alias is None!')
-            url += '%s' % GIT_SERVER_HOST_SSH.get('host')
-        url += ':'
-        if GIT_SERVER_HOST_SSH.get('base_route') is None:
-            raise ValueError('base_route can\'t be None')
-        url += GIT_SERVER_HOST_SSH.get('base_route')
-        routes = GIT_SERVER_HOST_SSH.get('routes')
-        if routes is None:
-            raise ValueError('routes can\'t be None')
-        if routes.get(repo_type) is None:
-            raise ValueError('Specified repo_type = \'%s\' within routes can\'t be None')
-        url += routes.get(repo_type)
-        return url
+        return build_git_base_url_ssh(repo_type=repo_type)
 
 
 class Py3KubernetesVirtualizationBackend(KubernetesVirtualizationBackend):
