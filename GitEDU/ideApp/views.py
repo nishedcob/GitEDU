@@ -6,8 +6,9 @@ import datetime
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.views import View
-#from django.http import JsonResponse
+from django.http import JsonResponse
 from django.core.exceptions import PermissionDenied
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 #from django_app_lti import models as lti_models
 from . import constants
@@ -21,6 +22,8 @@ from ideApp.models import Repository as RepositoryMetadataModel
 
 from ideApp import git_server_http_endpoint
 from ideApp import forms
+from ideApp.edunube_execute_status_client import EduNubeShellExecuteStatusConsumer, EduNubePy3ExecuteStatusConsumer,\
+    EduNubePGSQLExecuteStatusConsumer
 
 from socialApp import models as social_models
 
@@ -544,3 +547,152 @@ class CheckoutFileVersionView(View):
 
     def validate_request(self, request, namespace, repository):
         return True
+
+
+class EduNubeAPIPassthroughView(LoginRequiredMixin, View):
+
+    def not_authorized(self, request, reason):
+        raise reason
+
+    def get_proc_steps(self):
+        return []
+
+
+class EduNubeExecuteStatusAPIPassthroughView(EduNubeAPIPassthroughView):
+
+    en_es_client = None
+
+    def select_en_es_client(self, language):
+        if language == 'shell':
+            self.en_es_client = EduNubeShellExecuteStatusConsumer()
+        elif language == 'python3':
+            self.en_es_client = EduNubePy3ExecuteStatusConsumer()
+        elif language == 'postgresql':
+            self.en_es_client = EduNubePGSQLExecuteStatusConsumer()
+        else:
+            raise ValueError("Unrecognized language: '%s'" % language)
+
+
+class EduNubeExecuteAPIPassthroughView(EduNubeExecuteStatusAPIPassthroughView):
+
+    creation_result = None
+
+    def authenticate(self, request, namespace, repository):
+        # TODO: validate that request.user has operation_permission ("execute") on namespace / repository combination
+        return None
+
+    def get_proc_steps(self):
+        return [self.pre_proc_get, self.proc_get, self.exclude_info_get, self.post_proc_get]
+
+    def pre_proc_get(self, request, namespace, repository):
+        # TODO: get language for namespace/repository
+        language = 'python3'
+        self.select_en_es_client(language=language)
+        return None
+
+    def proc_get(self, request, namespace, repository):
+        return None
+
+    def exclude_keys(self):
+        return []
+
+    def exclude_info_get(self, request, namespace, repository):
+        for key in self.exclude_keys():
+            if self.creation_result.get(key, None) is not None:
+                del self.creation_result[key]
+        return None
+
+    def post_proc_get(self, request, namespace, repository):
+        return JsonResponse(self.creation_result)
+
+    def get(self, request, namespace, repository):
+        try:
+            self.authenticate(request=request, namespace=namespace, repository=repository)
+            for func in self.get_proc_steps():
+                response = func(request=request, namespace=namespace, repository=repository)
+                if response is not None:
+                    return response
+            return None
+        except PermissionDenied as pe:
+            return self.not_authorized(request=request, reason=pe)
+
+
+class RepositoryExecutionView(EduNubeExecuteAPIPassthroughView):
+
+    def exclude_keys(self):
+        return []
+
+    def proc_get(self, request, namespace, repository):
+        self.creation_result = json.loads(self.en_es_client.create(namespace=namespace, repository=repository).text)
+        return None
+
+
+class EduNubeStatusAPIPassthroughView(EduNubeExecuteStatusAPIPassthroughView):
+
+    operation_permission = None
+
+    operation_result = None
+
+    def authenticate(self, request, job_id):
+        # TODO: validate that request.user has operation_permission on namespace / repository combination
+        # TODO: (extract from job_id: namespace-repository-commit_id)
+        return None
+
+    def get_delete_keys(self):
+        return []
+
+    def get_proc_steps(self):
+        return [self.load_client, self.pre_proc_get, self.proc_get, self.post_proc_get]
+
+    def load_client(self, request, job_id):
+        # TODO: get language
+        language = 'python3'
+        self.select_en_es_client(language=language)
+        return None
+
+    def pre_proc_get(self, request, job_id):
+        return None
+
+    def proc_get(self, request, job_id):
+        for key in self.get_delete_keys():
+            if self.operation_result.get(key, None) is not None:
+                del self.operation_result[key]
+        return None
+
+    def post_proc_get(self, request, job_id):
+        return JsonResponse(self.operation_result)
+
+    def get(self, request, job_id):
+        try:
+            self.authenticate(request=request, job_id=job_id)
+            for func in self.get_proc_steps():
+                response = func(request=request, job_id=job_id)
+                if response is not None:
+                    return response
+            return None
+        except PermissionDenied as pe:
+            return self.not_authorized(request=request, reason=pe)
+
+
+class ExecutionStatusView(EduNubeStatusAPIPassthroughView):
+
+    operation_permission = 'execution_status'
+
+    def get_delete_keys(self):
+        return ['logs']
+
+    def pre_proc_get(self, request, job_id):
+        self.operation_result = json.loads(self.en_es_client.status(id=job_id).text)
+        return None
+
+
+class ExecutionResultView(EduNubeStatusAPIPassthroughView):
+
+    operation_permission = 'execution_result'
+
+    def get_delete_keys(self):
+        return []
+
+    def pre_proc_get(self, request, job_id):
+        self.operation_result = json.loads(self.en_es_client.result(id=job_id).text)
+        return None
