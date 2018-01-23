@@ -1,1 +1,1 @@
-/home/nyx/GitEDU/3rd_party/bootstrap-dashboard-template/credits.txt
+../../3rd_party/bootstrap-dashboard-template/credits.txt
