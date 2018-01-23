@@ -1,4 +1,4 @@
-from django.forms import Form, IntegerField, CharField, ChoiceField, Textarea, BooleanField
+from django.forms import Form, IntegerField, CharField, ChoiceField, Textarea, BooleanField, HiddenInput
 
 from . import constants
 
@@ -32,12 +32,18 @@ class AddCollaboratorForm(Form):
 
 
 namespace_field = CharField(label="Namespace:", max_length=50)
+repository_field = CharField(label="Repository:", max_length=50)
 
 
 class NamespaceForm(Form):
     namespace = namespace_field
 
 
+class RepositoryForm(Form):
+    namespace = CharField(widget=HiddenInput)
+    repository = repository_field
+
+
 class FullRepositoryForm(Form):
     namespace = namespace_field
-    repository = CharField(label="Repository:", max_length=50)
+    repository = repository_field

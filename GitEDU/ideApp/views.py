@@ -95,12 +95,12 @@ class FormView(View):
             'form': form
         }
 
-    def prepare_form(self, **kwargs):
+    def prepare_form(self, request, **kwargs):
         return self.form_class()
 
     def get(self, request, **kwargs):
         return render(request=request, template_name=self.template,
-                      context=self.build_context(form=self.prepare_form()))
+                      context=self.build_context(form=self.prepare_form(request=request)))
 
     def load_form(self, request, **kwargs):
         return self.form_class(request.POST)
@@ -127,6 +127,46 @@ class NewNamespaceView(FormView):
             return HttpResponse('ALREADY EXISTS', status=200)
         except NamespaceModel.DoesNotExist:
             NamespaceModel(name=namespace).save()
+        return HttpResponse('OK', status=201)
+
+
+class NewRepositoryView(FormView):
+    form_class = forms.RepositoryForm
+    template = 'editor/namespace_form_page.html'
+
+    def prepare_form(self, request, **kwargs):
+        path = request.path_info
+        # TODO: extract namespace from path
+        namespace = ''
+        return self.form_class(initial={'namespace': namespace})
+
+    def proc_form(self, form, request, **kwargs):
+        namespace = form.cleaned_data.get('namespace')
+        namespace_str = namespace
+        try:
+            namespace = NamespaceModel.objects.get({'name': namespace})
+        except NamespaceModel.DoesNotExist:
+            # TODO: raise some exception, maybe a HTTP404?
+            pass
+        repository = form.cleaned_data.get('repository')
+        try:
+            RepositoryModel.objects.get({'namespace': namespace.pk, 'name': repository})
+            rmm = RepositoryMetadataModel.objects.get_or_create(namespace=namespace_str, name=repository)
+            if rmm[1]:
+                rmm = rmm[0]
+                owner_person = social_models.Person.objects.get_or_create(user=request.user)[0]
+                rmm.owner = owner_person
+                rmm.save()
+                return HttpResponse('MOSTLY ALREADY EXISTED', status=200)
+            return HttpResponse('ALREADY EXISTS', status=200)
+        except RepositoryModel.DoesNotExist:
+            RepositoryModel(name=repository, namespace=namespace).save()
+            rmm = RepositoryMetadataModel.objects.get_or_create(namespace=namespace_str, name=repository)
+            if rmm[1]:
+                rmm = rmm[0]
+                owner_person = social_models.Person.objects.get_or_create(user=request.user)[0]
+                rmm.owner = owner_person
+                rmm.save()
         return HttpResponse('OK', status=201)
 
 

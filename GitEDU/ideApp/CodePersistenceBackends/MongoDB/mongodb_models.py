@@ -23,15 +23,35 @@ class NamespaceModel(MongoModel):
 
 
 class RepositoryModel(MongoModel):
+    combo_id = CharField()
     name = CharField()
     namespace = ReferenceField(NamespaceModel)
 
     class Meta:
-        indexes = [IndexModel([('name', TEXT), ('namespace', TEXT)], unique=True)]
+        #indexes = [IndexModel([('name', TEXT), ('namespace', TEXT)], unique=True)]
         #connection_alias = 'mongo_000'
+        indexes = [IndexModel('combo_id', unique=True)]
 
     def __str__(self):
         return "RepositoryMongoModel: %s [%s]" % (self.name, self.namespace)
+
+    @classmethod
+    def build_combo_id(cls, name, namespace):
+        if name is None:
+            raise ValueError("Name can't be None")
+        if namespace is None:
+            raise ValueError("Namespace can't be None")
+        return "%s/%s" % (namespace, name)
+
+    def _build_combo_id(self):
+        return self.build_combo_id(name=self.name, namespace=self.namespace.name)
+
+    def set_combo_id(self):
+        self.combo_id = self._build_combo_id()
+
+    def save(self, cascade=None, full_clean=True, force_insert=False):
+        self.set_combo_id()
+        super().save(cascade=cascade, full_clean=full_clean, force_insert=force_insert)
 
 
 class RepositoryFileModel(MongoModel):
