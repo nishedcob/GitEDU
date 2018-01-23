@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-HOST = "0.0.0.0"
+HOST="0.0.0.0"
 PORT_NUMBER="8000"
 PIPENV_COMMAND="pipenv2" # Disable use of pipenv because
 			 # it doesn't install some git
