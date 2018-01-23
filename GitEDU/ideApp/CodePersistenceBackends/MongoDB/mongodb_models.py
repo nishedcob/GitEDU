@@ -55,6 +55,7 @@ class RepositoryModel(MongoModel):
 
 
 class RepositoryFileModel(MongoModel):
+    combo_id = CharField()
     contents = CharField(required=False, blank=True)
     repository = ReferenceField(RepositoryModel)
     prog_language = CharField(choices=constants.LANGUAGE_NAMES)
@@ -62,8 +63,9 @@ class RepositoryFileModel(MongoModel):
     current_change_file = ReferenceField("ChangeFileModel", blank=True)
 
     class Meta:
-        indexes = [IndexModel([('file_path', TEXT), ('repository', TEXT)], unique=True)]
+        #indexes = [IndexModel([('file_path', TEXT), ('repository', TEXT)], unique=True)]
         #connection_alias = 'mongo_000'
+        indexes = [IndexModel('combo_id', unique=True)]
 
     '''
     class Meta:
@@ -73,6 +75,26 @@ class RepositoryFileModel(MongoModel):
     def __str__(self):
         return "RepositoryFileMongoModel: %s :: %s :: [%s] :: %s" % (self.file_path, self.prog_language,
                                                                      self.repository, self.contents)
+
+    @classmethod
+    def build_combo_id(cls, file_path, repository):
+        if file_path is None:
+            raise ValueError("File_Path can't be None")
+        if repository is None:
+            raise ValueError("Repository can't be None")
+        return "%s/%s" % (repository, file_path)
+
+    def _build_combo_id(self):
+        return self.build_combo_id(
+            file_path=self.file_path, repository="%s/%s" % (self.repository.namespace.name, self.repository.name)
+        )
+
+    def set_combo_id(self):
+        self.combo_id = self._build_combo_id()
+
+    def save(self, cascade=None, full_clean=True, force_insert=False):
+        self.set_combo_id()
+        super().save(cascade=cascade, full_clean=full_clean, force_insert=force_insert)
 
 
 class ChangeModel(MongoModel):
