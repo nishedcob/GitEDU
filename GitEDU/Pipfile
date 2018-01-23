@@ -12,12 +12,12 @@ python_version = "3.5"
 
 [packages]
 
-Django = "==1.10.6"
+django = "==1.10.6"
 django-app-lti = {ref = "38b32989e22b189345e421b183684f9b5453e99a", git = "https://github.com/nishedcob/django-app-lti.git", editable = true}
 django-auth-lti = {ref = "71c9da8d0aa07ebc3139bf3f113b5c521d61b1f1", git = "https://github.com/nishedcob/django-auth-lti.git", editable = true}
 django-braces = "==1.3.1"
 "httplib2" = "==0.10.3"
-ims_lti_py = {ref = "a6576d7892ea4f69b76572788b118aaa4cdcf749", git = "https://github.com/nishedcob/ims_lti_py.git", editable = true}
+ims-lti-py = {ref = "a6576d7892ea4f69b76572788b118aaa4cdcf749", git = "https://github.com/nishedcob/ims_lti_py.git", editable = true}
 lxml = "==3.8.0"
 "oauth2" = {ref = "176fc35aa35d626afcb6a23459482a4c96782c88", git = "https://github.com/nishedcob/python-oauth2.git", editable = true}
 "psycopg2" = "==2.7.1"
@@ -26,6 +26,7 @@ pymongo = "==3.5.1"
 python-gitlab = "==0.20"
 requests = "==2.13.0"
 timer = "==0.1"
+ipython = "*"
 
 
 [dev-packages]
