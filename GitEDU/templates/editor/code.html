@@ -124,7 +124,8 @@
             </div>
 
             <div id="editor" contenteditable="true" name="editor">{% if form.code.value is not None %}{{ form.code.value }}{% endif %}</div>
-            <button class="btn btn-success btn-lg" type="submit" id="save" name="save">Guardar</button>
+            {% comment %}<button class="btn btn-success btn-lg" type="submit" id="save" name="save">Guardar</button>{% endcomment %}
+            <a class="btn btn-success btn-lg" id="save" name="save">Guardar</a>
             {% if represents_change %}
                 <a class="btn btn-success btn-lg"
                    href="{% url 'ide:checkout' namespace=namespace repository=repository change=change_id %}">
@@ -132,20 +133,23 @@
                 </a>
             {% endif %}
             <script type="text/javascript">
+                save_code = function (url) {
+                    $.ajax({
+                        type: "POST",
+                        url: url,
+                        data: $("#code-meta-data-form").serialize(),
+                        success: function (data) {
+                            alert("Codigo Guardado Exitosamente!");
+                        }
+                    });
+                };
                 $(function () {
                     $('#save').click(function () {
                         var editor = ace.edit("editor");
                         var mysave = editor.getValue();
                         $('#{{form.code.auto_id}}').val(mysave);
                         var url = document.location;
-                        $.ajax({
-                            type: "POST",
-                            url: url,
-                            data: $(this).serialize(),
-                            success: function (data) {
-                                alert("Codigo Guardado Exitosamente!");
-                            }
-                        });
+                        save_code(url);
                     });
                 });
             </script>
