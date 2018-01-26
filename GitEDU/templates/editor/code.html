@@ -30,7 +30,27 @@
         {% endif %}
 
         <hr>
-        <form action="" method="post" id="code-meta-data-form">
+        {% comment %}<form action="" method="post" id="code-meta-data-form">{% endcomment %}
+        <form id="code-meta-data-form" method="post">
+            {% comment %}
+            <script type="text/javascript">
+                $('#code-meta-data-form').submit(function () {
+
+                    var url = document.location;
+
+                    $.ajax({
+                        type: "POST",
+                        url: url,
+                        data: $(this).serialize(),
+                        success: function (data) {
+                            alert(data);
+                        }
+                    });
+
+                    e.preventDefault();
+                });
+            </script>
+            {% endcomment %}
             <style type="text/css" media="screen">
                 #panel-de-control {
                     width: 45%;
@@ -117,6 +137,15 @@
                         var editor = ace.edit("editor");
                         var mysave = editor.getValue();
                         $('#{{form.code.auto_id}}').val(mysave);
+                        var url = document.location;
+                        $.ajax({
+                            type: "POST",
+                            url: url,
+                            data: $(this).serialize(),
+                            success: function (data) {
+                                alert("Codigo Guardado Exitosamente!");
+                            }
+                        });
                     });
                 });
             </script>

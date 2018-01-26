@@ -367,7 +367,8 @@ class GenericEditorFileView(View):
             'represents_change': self.represents_change,
             'editorLang': self.editorLangsAndCode,
             'namespace': namespace,
-            'repository': repository
+            'repository': repository,
+            'logged_in': request.user.is_authenticated
         }
         if self.represents_change and change_id is not None:
             context['change_id'] = change_id
