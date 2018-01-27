@@ -33,7 +33,7 @@ urlpatterns = [
     url(r'^checkout/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/(?P<change>[a-z0-9]*)/$',
         views.CheckoutFileVersionView.as_view(), name="checkout"),
     url(r'execute/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/', views.RepositoryExecutionView.as_view(),
-        name='repository-execution'),
-    url(r'execute/status/(?P<job_id>[a-zA-Z0-9-]*)/', views.ExecutionStatusView.as_view(), name='execution-status'),
-    url(r'execute/result/(?P<job_id>[a-zA-Z0-9-]*)/', views.ExecutionResultView.as_view(), name='execution-result')
+        name='repository_execution'),
+    url(r'execute/status/(?P<job_id>[a-zA-Z0-9-]*)/', views.ExecutionStatusView.as_view(), name='execution_status'),
+    url(r'execute/result/(?P<job_id>[a-zA-Z0-9-]*)/', views.ExecutionResultView.as_view(), name='execution_result')
 ]

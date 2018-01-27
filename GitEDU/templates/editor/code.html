@@ -131,27 +131,64 @@
                    href="{% url 'ide:checkout' namespace=namespace repository=repository change=change_id %}">
                     Utilizar esta version
                 </a>
+            {% else %}
+                {% if logged_in %}
+                    <a class="btn btn-success btn-lg" id="execute">Ejecutar</a>
+                {% endif %}
             {% endif %}
             <script type="text/javascript">
-                save_code = function (url) {
-                    $.ajax({
+                function save_code(url) {
+                    var save = $.ajax({
                         type: "POST",
                         url: url,
                         data: $("#code-meta-data-form").serialize(),
-                        success: function (data) {
+                        done: function (data) {
                             alert("Codigo Guardado Exitosamente!");
+                        },
+                        fail: function () {
+                            alert("Error al Guardar...");
                         }
                     });
-                };
+                    return save;
+                }
+                function execute_code() {
+                    alert("Executing...");
+                    var exec_id = "";
+                    var exec = $.getJSON(
+                        "{% url 'ide:repository_execution' namespace=namespace repository=repository %}"
+                        ).done(function (json) {
+                            alert(json);
+                            console.log(json)
+                            exec_id = json['id'];
+                            console.log(exec_id);
+                            //alert("Done: ".concat(exec_id));
+                        }).fail(function (jqxhr, textStatus, error) {
+                            var err = textStatus + ", " + error;
+                            console.log( "AJAX Fallido: " + err );
+                            alert("Ejecucion Fallo, ver log para detalles")
+                    });
+                    return exec;
+                }
                 $(function () {
                     $('#save').click(function () {
                         var editor = ace.edit("editor");
                         var mysave = editor.getValue();
                         $('#{{form.code.auto_id}}').val(mysave);
                         var url = document.location;
-                        save_code(url);
+                        save_code(url); //.done(alert("Save All Done"));
                     });
                 });
+                {% if not represents_change and logged_in %}
+                    $(function () {
+                        $('#execute').click(function () {
+                            var save_url = document.location;
+                            save_code(save_url).done(execute_code());
+                            /*.done(function () {
+                                alert("Save + Execute Done!");
+                            });*/
+                        });
+                    });
+                {% endif %}
             </script>
 
 
