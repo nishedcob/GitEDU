@@ -4,9 +4,22 @@
 
 {% block content %}
     {% load static %}
+    {% if not represents_change and logged_in %}
+        <link rel="stylesheet" href="{% static 'node_modules/xterm/dist/xterm.css' %}" />
+        <script src="{% static 'node_modules/xterm/dist/xterm.js' %}"></script>
+    {% endif %}
     <div id="panel-de-control">
         <h2 id="title" class=" navbar-custom ">Codigo</h2>
         <h3>Por <a href="/user/{{ owner }}/">{{ owner }}</a></h3>
+        {% if not represents_change and logged_in %}
+            <hr>
+            <div id="terminal"></div>
+            <script type="text/javascript">
+                var term = new Terminal();
+                term.open(document.getElementById('terminal'));
+            </script>
+        {% endif %}
+        {% comment %}
         <hr>
         <h3>Permisos Globales</h3>
         {% if new %}
@@ -15,7 +28,7 @@
         {% endif %}
         {% if orig %}
             <pre>
-                 {% comment %} <form method="post" {% if not new %}action="{% url 'global-perms-code' id %}{% endif %}">
+                 { % comment %} <form method="post" {% if not new %}action="{% url 'global-perms-code' id %}{% endif %}">
             {% csrf_token %}
                  <table class="permisos" style="padding: 0.8%">
                      {{ globalPermForm.as_table  }}
@@ -24,10 +37,11 @@
                      {% if not new %}
                          <button class="btn btn-successt" type="submit">Guardar</button>
                      {% endif %}
-        </form> {% endcomment %}
+        </form> { % endcomment %}
               </pre>
             <hr/>
         {% endif %}
+        {% endcomment %}
 
         <hr>
         {% comment %}<form action="" method="post" id="code-meta-data-form">{% endcomment %}
@@ -159,25 +173,57 @@
                             url: "{% url 'ide:repository_execution' namespace=namespace repository=repository %}",
                             async: false
                         }).done(function (json) {
-                            alert(json);
+                            //alert(json);
                             console.log(json)
                             exec_id = json['id'];
                             console.log(exec_id);
                             var exec_status = execution_status(exec_id);
                             if (exec_status !== null && exec_status !== false) {
-                                console.log("IF = {exists: " + exec_status.exists + ", finished: " + exec_status.finished + "}");
+                                console.log("IF = {exists: " + exec_status.exists + ", finished: "
+                                    + exec_status.finished + "}");
                                 if (!exec_status.finished) {
                                     var interval_loop = window.setInterval(function () {
-                                        console.log("INTERVAL LOOP = {exists: " + exec_status.exists + ", finished: " + exec_status.finished + "}");
+                                        console.log("INTERVAL LOOP = {exists: " + exec_status.exists + ", finished: "
+                                            + exec_status.finished + "}");
                                         exec_status = execution_status(exec_id);
                                         if (exec_status === null || exec_status === false || exec_status.finished) {
                                             console.log("Cutting Interval Loop...")
                                             console.log(exec_status);
                                             window.clearInterval(interval_loop);
+                                            if (exec_status.finished) {
+                                                exec_result = execution_result(exec_id);
+                                                console.log(exec_result);
+                                                term.clear();
+                                                term_text = "";
+                                                if (exec_result !== null && exec_result.logs !== null) {
+                                                    term_text = exec_result.logs[0];
+                                                    console.log("Log found as logs");
+                                                    console.log(term_text);
+                                                } else if (exec_result !== null && exec_result.log !== null) {
+                                                    if (exec_result.log.logs !== null) {
+                                                        term_text = exec_result.log.logs[0];
+                                                        console.log("Log found as log.logs");
+                                                        console.log(term_text);
+                                                    } else {
+                                                        console.log("Error with Exec_Result: No Logs");
+                                                        console.log(exec_result);
+                                                    }
+                                                } else {
+                                                    console.log("Error with Exec_Result: No Log/Logs");
+                                                    console.log(exec_result);
+                                                }
+                                                term_text.split("\n").forEach(
+                                                    function (current_value, index, initial_array) {
+                                                        console.log(current_value);
+                                                        term.writeln(current_value)
+                                                    }
+                                                );
+                                            }
                                         }
                                     }, 5000);
                                 }
                             }
+                            //alert("Execution Finished!");
                             //alert("Done: ".concat(exec_id));
                         }).fail(function (jqxhr, textStatus, error) {
                             var err = textStatus + ", " + error;
@@ -187,7 +233,7 @@
                     return code_execution;
                 }
                 function execution_status(exec_id) {
-                    var exec_status = $.getJSON({
+                    exec_status = $.getJSON({
                             url:"/ide/execute/status/{-%s-}/".replace("{-%s-}", exec_id),
                             async: false
                         }).done(function (data) {
@@ -203,6 +249,24 @@
                             //return null;
                     }).responseJSON;
                     return exec_status;
+                }
+                function execution_result(exec_id) {
+                    exec_result = $.getJSON({
+                        url:"/ide/execute/result/{-%s-}/".replace("{-%s-}", exec_id),
+                        async: false
+                    }).done(function (data) {
+                        console.log(data);
+                        /*if (data === null || data === false || !data.exists) {
+                            if (data === null || data === false) return data;
+                            else return false;
+                        }*/
+                        //return data;
+                    }).fail(function (jqxhr, textStatus, error) {
+                        var err = textStatus + ", " + error;
+                        console.log( "AJAX Fallido: " + err );
+                        //return null;
+                    }).responseJSON;
+                    return exec_result;
                 }
                 $(function () {
                     $('#save').click(function () {
@@ -277,13 +341,14 @@
                         </li>
                     {% endfor %}
                 </ol>
+                {% comment %}
                 <hr>
                 <h3 id="title" class=" navbar-custom ">Colaboradores</h3>
-                {% comment %}
+                { % comment %}
                 <a href="{% url 'collab-perms-code' id %}">Ver</a>
-                {% endcomment %}
+                { % endcomment %}
                 <h4>Agregar Colaborador</h4>
-                {% comment %}
+                { % comment %}
                 <form method="post" action="{% url 'new-collab-perms-code' id %}">
                     {% csrf_token %}
                     <table style="text-align: left">
