@@ -147,27 +147,62 @@
                         },
                         fail: function () {
                             alert("Error al Guardar...");
-                        }
+                        },
+                        async: false
                     });
                     return save;
                 }
                 function execute_code() {
                     alert("Executing...");
                     var exec_id = "";
-                    var exec = $.getJSON(
-                        "{% url 'ide:repository_execution' namespace=namespace repository=repository %}"
-                        ).done(function (json) {
+                    code_execution = $.getJSON({
+                            url: "{% url 'ide:repository_execution' namespace=namespace repository=repository %}",
+                            async: false
+                        }).done(function (json) {
                             alert(json);
                             console.log(json)
                             exec_id = json['id'];
                             console.log(exec_id);
+                            var exec_status = execution_status(exec_id);
+                            if (exec_status !== null && exec_status !== false) {
+                                console.log("IF = {exists: " + exec_status.exists + ", finished: " + exec_status.finished + "}");
+                                if (!exec_status.finished) {
+                                    var interval_loop = window.setInterval(function () {
+                                        console.log("INTERVAL LOOP = {exists: " + exec_status.exists + ", finished: " + exec_status.finished + "}");
+                                        exec_status = execution_status(exec_id);
+                                        if (exec_status === null || exec_status === false || exec_status.finished) {
+                                            console.log("Cutting Interval Loop...")
+                                            console.log(exec_status);
+                                            window.clearInterval(interval_loop);
+                                        }
+                                    }, 5000);
+                                }
+                            }
                             //alert("Done: ".concat(exec_id));
                         }).fail(function (jqxhr, textStatus, error) {
                             var err = textStatus + ", " + error;
                             console.log( "AJAX Fallido: " + err );
                             alert("Ejecucion Fallo, ver log para detalles")
                     });
-                    return exec;
+                    return code_execution;
+                }
+                function execution_status(exec_id) {
+                    var exec_status = $.getJSON({
+                            url:"/ide/execute/status/{-%s-}/".replace("{-%s-}", exec_id),
+                            async: false
+                        }).done(function (data) {
+                            console.log(data);
+                            /*if (data === null || data === false || !data.exists) {
+                                if (data === null || data === false) return data;
+                                else return false;
+                            }*/
+                            //return data;
+                        }).fail(function (jqxhr, textStatus, error) {
+                            var err = textStatus + ", " + error;
+                            console.log( "AJAX Fallido: " + err );
+                            //return null;
+                    }).responseJSON;
+                    return exec_status;
                 }
                 $(function () {
                     $('#save').click(function () {
