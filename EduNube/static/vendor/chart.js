@@ -1,1 +1,1 @@
-/home/nyx/GitEDU/3rd_party/bootstrap-dashboard-template/vendor/chart.js
+../../../3rd_party/bootstrap-dashboard-template/vendor/chart.js

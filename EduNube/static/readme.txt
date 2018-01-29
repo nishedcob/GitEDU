@@ -1,1 +1,1 @@
-/home/nyx/GitEDU/3rd_party/bootstrap-dashboard-template/readme.txt
+../../3rd_party/bootstrap-dashboard-template/readme.txt
