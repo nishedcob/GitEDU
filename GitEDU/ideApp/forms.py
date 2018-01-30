@@ -6,7 +6,7 @@ from . import constants
 class CodeForm(Form):
     file_name = CharField(label="Nombre de Archivo:")
     language = ChoiceField(label="Lenguage de Programacion:", choices=constants.LANGUAGE_NAMES)
-    code = CharField(label="", widget= Textarea({'hidden': ''}))
+    code = CharField(label="", widget=Textarea({'hidden': ''}))
 
     class Meta:
         widgets = {
@@ -33,6 +33,8 @@ class AddCollaboratorForm(Form):
 
 namespace_field = CharField(label="Namespace:", max_length=50)
 repository_field = CharField(label="Repository:", max_length=50)
+file_path_field = CharField(label="Ruta de Archivo:", max_length=255)
+language_field = ChoiceField(label="Lenguage de Programacion:", choices=constants.LANGUAGE_NAMES)
 
 
 class NamespaceForm(Form):
@@ -47,3 +49,10 @@ class RepositoryForm(Form):
 class FullRepositoryForm(Form):
     namespace = namespace_field
     repository = repository_field
+
+
+class NewRepositoryFileForm(Form):
+    namespace = CharField(widget=HiddenInput)
+    repository = CharField(widget=HiddenInput)
+    file_path = file_path_field
+    language = language_field

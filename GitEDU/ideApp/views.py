@@ -18,7 +18,7 @@ from GitEDU.settings import CODE_PERSISTENCE_BACKEND_MANAGER_CLASS, load_code_pe
 from ideApp.CodePersistenceBackends.MongoDB.backend import MongoChangeFile
 from ideApp.CodePersistenceBackends.MongoDB.mongodb_models import ChangeModel, ChangeFileModel, NamespaceModel,\
     RepositoryModel, RepositoryFileModel
-from ideApp.models import Repository as RepositoryMetadataModel
+from ideApp.models import Repository as RepositoryMetadataModel, File as RepositoryFileMetadataModel
 
 from ideApp import git_server_http_endpoint
 from ideApp import forms
@@ -204,6 +204,52 @@ class NewFullRepositoryView(FormView):
         return HttpResponse('OK', status=201)
 
 
+class NewRepositoryFileFormView(FormView):
+    form_class = forms.NewRepositoryFileForm
+    template = 'editor/new_repository_file_form_page.html'
+
+    def proc_form(self, form, request, **kwargs):
+        namespace = form.cleaned_data.get('namespace')
+        repository = form.cleaned_data.get('repository')
+        # try:
+        #     NamespaceModel.objects.get({'name': namespace})
+        # except NamespaceModel.DoesNotExist:
+        #     NamespaceModel(name=namespace).save()
+        namespace_str = namespace
+        try:
+            namespace = NamespaceModel.objects.get({'name': namespace_str})
+        except NamespaceModel.DoesNotExist:
+            raise PermissionDenied("Non-existent Namespace")
+        # try:
+        #     RepositoryModel.objects.get({'namespace': namespace.pk, 'name': repository})
+        # except RepositoryModel.DoesNotExist:
+        #     RepositoryModel(namespace=namespace, name=repository)
+        repository_str = repository
+        try:
+            repository = RepositoryModel.objects.get({'namespace': namespace.pk, 'name': repository_str})
+        except RepositoryModel.DoesNotExist:
+            raise PermissionDenied("Non-existent Repository")
+        try:
+            rmm = RepositoryMetadataModel.objects.get(namespace=namespace_str, name=repository_str)
+        except RepositoryMetadataModel.DoesNotExist:
+            raise PermissionDenied("Non-existent Repository Metadata")
+        file_path = form.cleaned_data.get('file_path')
+        language = form.cleaned_data.get('language')
+        try:
+            RepositoryFileModel.objects.get({'repository': repository.pk, 'file_path': file_path})
+            raise PermissionDenied("File already exists!")
+        except RepositoryFileModel.DoesNotExist:
+            try:
+                RepositoryFileMetadataModel.objects.get(repository=rmm, path=file_path)
+                raise PermissionDenied("File Metadata already exists!")
+            except RepositoryFileMetadataModel.DoesNotExist:
+                rfm = RepositoryFileModel(repository=repository, prog_language=language, file_path=file_path)
+                rfm.save()
+                rfmm = RepositoryFileMetadataModel(repository=rmm, path=file_path, language=language)
+                rfmm.save()
+                return HttpResponse("OK", status=201)
+
+
 class RepositoryView(View):
 
     template = 'editor/repository.html'
@@ -368,7 +414,8 @@ class GenericEditorFileView(View):
             'editorLang': self.editorLangsAndCode,
             'namespace': namespace,
             'repository': repository,
-            'logged_in': request.user.is_authenticated
+            'logged_in': request.user.is_authenticated,
+            'new_file_form': forms.NewRepositoryFileForm(initial={'namespace': namespace, 'repository': repository})
         }
         if self.represents_change and change_id is not None:
             context['change_id'] = change_id

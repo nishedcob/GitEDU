@@ -24,6 +24,7 @@ urlpatterns = [
     url(r'^ns/(?P<namespace>[a-zA-Z0-9]*)/$', views.NamespaceView.as_view(), name="namespace"),
     url(r'^new/namespace/$', views.NewNamespaceView.as_view(), name="new_namespace"),
     url(r'^new/repository/$', views.NewFullRepositoryView.as_view(), name="new_full_repository"),
+    url(r'^new/repo_file/$', views.NewRepositoryFileFormView.as_view(), name="new_repo_file"),
     url(r'^repo/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/', views.RepositoryView.as_view(),
         name="repository"),
     url(r'^rf/(?P<namespace>[a-zA-Z0-9]*)/(?P<repository>[a-zA-Z0-9]*)/(?P<file_path>[a-zA-Z0-9/]*\.[a-zA-Z0-9]*)$',

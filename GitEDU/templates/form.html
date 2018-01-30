@@ -7,6 +7,6 @@
                 {{ form.as_p }}
             {% endblock %}
             {% block form_submit %}
-                <input type="submit" value="{% block form_submit_text %}Enviar{% endblock %}">
+                <input type="submit" value="{% block form_submit_text %}Enviar{% endblock %}" class="{% block form_submit_button_classes %}{% endblock %}">
             {% endblock %}
         </form>

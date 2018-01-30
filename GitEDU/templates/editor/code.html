@@ -313,6 +313,9 @@
                 });
             </script>
         </form>
+        {% if not represents_change and logged_in %}
+            {% include 'editor/new_repository_file_form.html' with form=new_file_form only %}
+        {% endif %}
         {% if not new %}
             {% if orig %}
                 <h3 id="title" class=" navbar-custom ">Ediciones:</h3>
