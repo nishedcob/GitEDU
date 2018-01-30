@@ -20,6 +20,10 @@
             </li>
         {% endfor %}
     </ul>
+    {% if detalles %}
+        <h4>Nuevo Archivo:</h4>
+        {% include 'editor/new_repository_file_form.html' with form=new_file_form only %}
+    {% endif %}
     <h3>Usuarios Activos:</h3>
     <ul>
         {% for user in users %}

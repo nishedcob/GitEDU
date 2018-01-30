@@ -314,6 +314,7 @@
             </script>
         </form>
         {% if not represents_change and logged_in %}
+            <h4>Nuevo Archivo:</h4>
             {% include 'editor/new_repository_file_form.html' with form=new_file_form only %}
         {% endif %}
         {% if not new %}

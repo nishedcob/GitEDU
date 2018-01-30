@@ -243,7 +243,8 @@ class NewRepositoryFileFormView(FormView):
                 RepositoryFileMetadataModel.objects.get(repository=rmm, path=file_path)
                 raise PermissionDenied("File Metadata already exists!")
             except RepositoryFileMetadataModel.DoesNotExist:
-                rfm = RepositoryFileModel(repository=repository, prog_language=language, file_path=file_path)
+                rfm = RepositoryFileModel(repository=repository, prog_language=language, file_path=file_path,
+                                          contents='')
                 rfm.save()
                 rfmm = RepositoryFileMetadataModel(repository=rmm, path=file_path, language=language)
                 rfmm.save()
@@ -279,6 +280,8 @@ class RepositoryView(View):
             context['files'].append(mongo_repo_file.file_path)
         context['files'] = set(context['files'])
         context['detalles'] = True
+        context['new_file_form'] = forms.NewRepositoryFileForm(initial={'namespace': namespace,
+                                                                        'repository': repository})
         print("context: %s" % context)
         return render(request, self.template, context=context)
 
