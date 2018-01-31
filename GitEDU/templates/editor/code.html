@@ -38,8 +38,7 @@
                             <h2 class="h5 display">Editor</h2>
                         </div>
                         <div class="card-body">
-                            <div id="editor" contenteditable="true" name="editor" style="height: 408px">
-                                {% if form.code.value is not None %}{{ form.code.value }}{% endif %}</div>
+                            <div id="editor" contenteditable="true" name="editor" style="height: 408px">{% if form.code.value is not None %}{{ form.code.value }}{% endif %}</div>
                         </div>
                     </div>
                 </div>
