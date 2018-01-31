@@ -357,7 +357,7 @@ class GenericEditorFileView(View):
         orig = True
         edits = self.get_edits(namespace=namespace, repository=repository, file_path=file_path)
         global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
-        return self.render_editor(request, namespace, repository, form, global_perm_form, user, orig, edits, change)
+        return self.render_editor(request, namespace, repository, form, global_perm_form, user, orig, edits, file_path, change)
 
     def get(self, request, namespace, repository, file_path, change=None):
         self.pre_request(request=request, namespace=namespace, repository=repository, file_path=file_path,
@@ -381,7 +381,7 @@ class GenericEditorFileView(View):
             edits = self.get_edits(namespace=namespace, repository=repository, file_path=file_path)
             global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
             return self.render_editor(request, namespace, repository, recieved_form, global_perm_form, user, orig,
-                                      edits)
+                                      file_path, edits)
 
     def proc_post(self, request, namespace, repository, file_path, recieved_form, change=None):
         pass
@@ -405,7 +405,7 @@ class GenericEditorFileView(View):
         else:
             raise ValueError("'%s' is an unknown type" % pre_proc_post)
 
-    def render_editor(self, request, namespace, repository, form, global_perm_form, user, orig, edits, change_id=None):
+    def render_editor(self, request, namespace, repository, form, global_perm_form, user, orig, edits, file_path, change_id=None):
         context = {
             'form': form,
             'globalPermForm': global_perm_form,
@@ -417,6 +417,7 @@ class GenericEditorFileView(View):
             'editorLang': self.editorLangsAndCode,
             'namespace': namespace,
             'repository': repository,
+            'file_path': file_path,
             'logged_in': request.user.is_authenticated,
             'new_file_form': forms.NewRepositoryFileForm(initial={'namespace': namespace, 'repository': repository})
         }

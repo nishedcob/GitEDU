@@ -11,7 +11,7 @@
             {% if same %}
                 <hr>
                 <div class="row">
-                    <div class="col-lg-3">
+                    <div class="col-lg-3" style="margin-bottom: 50px">
                         <div class="card">
                             <div class="card-body">
                                 <p><em>Nombres:</em> {{ user.first_name }}</p>
@@ -21,7 +21,7 @@
                         </div>
                     </div>
                     <div class="col-lg-9">
-                        {% include 'editor/namespace_form.html' with form=namespace_form form_title="Crear un nuevo namespace" only %}
+                        {% include 'editor/namespace_form.html' with form=namespace_form form_title="Crear un nuevo namespace" form_col_style="margin-bottom: 50px" only %}
                     </div>
                     <div class="col-lg-12">
                         {% include 'editor/full_repository_form.html' with form=repository_form form_title="Crear un nuevo repositorio" only %}
@@ -39,7 +39,7 @@
                 </header>
                 <div class="row">
                     {% for ns, repo in personal_repos %}
-                        <div class="col-lg-4">
+                        <div class="col-lg-4" style="margin-bottom: 25px">
                             <div class="card">
                                 <div class="card-body">
                                     <p>
@@ -59,7 +59,7 @@
                 </header>
                 <div class="row">
                     {% for ns, repo in group_repos %}
-                        <div class="col-lg-4">
+                        <div class="col-lg-4" style="margin-bottom: 25px">
                             <div class="card">
                                 <div class="card-body">
                                     <p>
@@ -80,7 +80,7 @@
                 </header>
                 <div class="row">
                     {% for ns, repo in modified_repos %}
-                        <div class="col-lg-4">
+                        <div class="col-lg-4" style="margin-bottom: 25px">
                             <div class="card">
                                 <div class="card-body">
                                     <p>
@@ -100,7 +100,7 @@
                 </header>
                 <div class="row">
                     {% for code in mycode %}
-                        <div class="col-lg-4">
+                        <div class="col-lg-4" style="margin-bottom: 25px">
                             <div class="card">
                                 <div class="card-body">
                                     <p><a class="cod-lista" href="/code/{{ code.code_id }}/">{{ code.language }}
@@ -118,7 +118,7 @@
                 </header>
                 <div class="row">
                     {% for collab_code in collab_codes %}
-                        <div class="col-lg-4">
+                        <div class="col-lg-4" style="margin-bottom: 25px">
                             <div class="card">
                                 <div class="card-body">
                                     <p><a href="/code/{{ collab_code.code_id }}/">{{ collab_code.language }}
