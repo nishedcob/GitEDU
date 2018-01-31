@@ -1,59 +1,136 @@
-{% extends 'base.html' %}
+{% extends 'base.new.html' %}
 
-{% block title %}Usuario - {{username}}{% endblock %}
+{% block title %}Usuario - {{ username }}{% endblock %}
 
 {% block content %}
-    <h2 class="navbar-custom">Perfil de {{username}}</h2>
-    {% if same %}
-        <p><em>Nombres:</em> {{user.first_name}}</p>
-        <p><em>Apellidos:</em> {{user.last_name}}</p>
-        <p><em>Correo Electronico:</em> {{user.email}}</p>
-        <h3 class="titulos">Crear un nuevo namespace</h3>
-        {% include 'editor/namespace_form.html' with form=namespace_form only %}
-        <h3 class="titulos">Crear un nuevo repositorio</h3>
-        {% include 'editor/full_repository_form.html' with form=repository_form only %}
-        {% comment %}
-        <p><a class="btn-outline" href="{% url 'new-code' user.username %}">Crear nuevo archivo de codigo</a></p>
-        {% endcomment %}
-    {% endif %}
-    {% if has_personal_repos %}
-        <h3 class="titulos">Es dueño de los siguientes repositorios:</h3>
-        <ul>
-        {% for ns, repo in personal_repos %}
-            <li><a href="{% url 'ide:namespace' namespace=ns %}">{{ ns }}</a> / <a href="{% url 'ide:repository' namespace=ns repository=repo %}">{{ repo }}</a></li>
-        {% endfor %}
-        </ul>
-    {% endif %}
-    {% if has_group_repos %}
-        <h3 class="titulos">Es miembro de un grupo con los siguientes repositorios:</h3>
-        <ul>
-            {% for ns, repo in group_repos %}
-                <li><a href="{% url 'ide:namespace' namespace=ns %}">{{ ns }}</a> / <a href="{% url 'ide:repository' namespace=ns repository=repo %}">{{ repo }}</a></li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-    {% if has_modified_repos %}
-        <h3 class="titulos">Ha realizado cambios los siguientes repositorios:</h3>
-        <ul>
-            {% for ns, repo in modified_repos %}
-                <li><a href="{% url 'ide:namespace' namespace=ns %}">{{ ns }}</a> / <a href="{% url 'ide:repository' namespace=ns repository=repo %}">{{ repo }}</a></li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-    {% if tiene_codigo %}
-        <h3 class="titulos">Es dueño de(los) codigo(s):</h3>
-        {% for code in mycode %}
-            <p><a  class="cod-lista" href="/code/{{code.code_id}}/">{{code.language}} - {{code.file_name}}</a></p>
-        {% endfor %}
-    {% endif %}
-    {% if esCollab %}
-        <h3>Colabora en:</h3>
-        <ul class="navbar-fixed-top">
-        {% for collab_code in collab_codes %}
-            <li><a href="/code/{{ collab_code.code_id }}/">{{ collab_code.language }} - {{ collab_code.file_name }}</a>
-                - por <a href="{% url 'user-profile' collab_code.user_owner.username %}">
-                    {{ collab_code.user_owner.username }}</a></li>
-        {% endfor %}
-        </ul>
-    {% endif %}
+    <section class="profile">
+        <div class="container-fluid">
+            <header>
+                <h1 class="h3 display">Perfil de {{ username }}</h1>
+            </header>
+            {% if same %}
+                <hr>
+                <div class="row">
+                    <div class="col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <p><em>Nombres:</em> {{ user.first_name }}</p>
+                                <p><em>Apellidos:</em> {{ user.last_name }}</p>
+                                <p><em>Correo Electronico:</em> {{ user.email }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-9">
+                        {% include 'editor/namespace_form.html' with form=namespace_form form_title="Crear un nuevo namespace" only %}
+                    </div>
+                    <div class="col-lg-12">
+                        {% include 'editor/full_repository_form.html' with form=repository_form form_title="Crear un nuevo repositorio" only %}
+                    </div>
+                    {% comment %}
+                        <p><a class="btn-outline" href="{% url 'new-code' user.username %}">Crear nuevo archivo de
+                            codigo</a></p>
+                    {% endcomment %}
+                </div>
+            {% endif %}
+            {% if has_personal_repos %}
+                <hr>
+                <header>
+                    <h3 class="h3 display">Es dueño de los siguientes repositorios:</h3>
+                </header>
+                <div class="row">
+                    {% for ns, repo in personal_repos %}
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <p>
+                                        <a href="{% url 'ide:namespace' namespace=ns %}">{{ ns }}</a> /
+                                        <a href="{% url 'ide:repository' namespace=ns repository=repo %}">{{ repo }}</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if has_group_repos %}
+                <hr>
+                <header>
+                    <h3 class="h3 display">Es miembro de un grupo con los siguientes repositorios:</h3>
+                </header>
+                <div class="row">
+                    {% for ns, repo in group_repos %}
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <p>
+                                        <a href="{% url 'ide:namespace' namespace=ns %}">{{ ns }}</a> /
+                                        <a href="{% url 'ide:repository' namespace=ns repository=repo %}">
+                                            {{ repo }}</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if has_modified_repos %}
+                <hr>
+                <header>
+                    <h3 class="h3 display">Ha realizado cambios los siguientes repositorios:</h3>
+                </header>
+                <div class="row">
+                    {% for ns, repo in modified_repos %}
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <p>
+                                        <a href="{% url 'ide:namespace' namespace=ns %}">{{ ns }}</a> /
+                                        <a href="{% url 'ide:repository' namespace=ns repository=repo %}">{{ repo }}</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if tiene_codigo %}
+                <hr>
+                <header>
+                    <h3 class="h3 display">Es dueño de(los) codigo(s):</h3>
+                </header>
+                <div class="row">
+                    {% for code in mycode %}
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <p><a class="cod-lista" href="/code/{{ code.code_id }}/">{{ code.language }}
+                                        - {{ code.file_name }}</a></p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if esCollab %}
+                <hr>
+                <header>
+                    <h3 class="h3 display">Colabora en:</h3>
+                </header>
+                <div class="row">
+                    {% for collab_code in collab_codes %}
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <p><a href="/code/{{ collab_code.code_id }}/">{{ collab_code.language }}
+                                        - {{ collab_code.file_name }}</a>
+                                        - por <a href="{% url 'user-profile' collab_code.user_owner.username %}">
+                                            {{ collab_code.user_owner.username }}</a></p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
 {% endblock %}
