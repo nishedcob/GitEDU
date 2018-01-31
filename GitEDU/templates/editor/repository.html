@@ -1,6 +1,6 @@
 {% extends 'base.new.html' %}
 
-{% block title %}Repositorio - {{ namespace }} / {{repository}}{% endblock %}
+{% block title %}Repositorio - {{ namespace }} / {{ repository }}{% endblock %}
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item"><a href="{% url 'ide:namespace' namespace=namespace %}">{{ namespace }}</a></li>
@@ -9,73 +9,78 @@
 
 {% block content %}
     <section class="repository">
-    <div class="container-fluid">
-        <header>
-            <h1 class="h3 display">Contenidos del Repositorio {{namespace}} / {{ repository }}</h1>
-        </header>
-        <hr>
-        {% if detalles %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <p><em>Dueño:</em> <a href="{% url 'social:user' owner.user.username %}">{{ owner.user.username }}</a></p>
-                            <p><em>Grupo:</em> {{ group }}</p>
-                            <p><em>Namespace:</em> <a href="{% url 'ide:namespace' namespace=namespace %}">{{ namespace }}</a></p>
-                            {% comment %}<p><a class="btn-outline" href="{% url 'new-code' user.username %}">Crear nuevo archivo de codigo</a></p>{% endcomment %}
+        <div class="container-fluid">
+            <header>
+                <h1 class="h3 display">Contenidos del Repositorio {{ namespace }} / {{ repository }}</h1>
+            </header>
+            <hr>
+            {% if detalles %}
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <p><em>Dueño:</em> <a
+                                        href="{% url 'social:user' owner.user.username %}">{{ owner.user.username }}</a>
+                                </p>
+                                <p><em>Grupo:</em> {{ group }}</p>
+                                <p><em>Namespace:</em> <a
+                                        href="{% url 'ide:namespace' namespace=namespace %}">{{ namespace }}</a></p>
+                                {% comment %}
+                                    <p><a class="btn-outline" href="{% url 'new-code' user.username %}">Crear nuevo
+                                        archivo de codigo</a></p>{% endcomment %}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <hr>
-        {% endif %}
-        <header>
-            <h3 class="h3 display">Archivos:</h3>
-        </header>
-        <div class="row">
-            {% for file in files %}
-                <div class="col-lg-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <p>
-                                <a href="{% url 'ide:file_editor' namespace=namespace repository=repository file_path=file %}">
-                                    {{ file }}
-                                </a>
-                            </p>
+                <hr>
+            {% endif %}
+            <header>
+                <h3 class="h3 display">Archivos:</h3>
+            </header>
+            <div class="row">
+                {% for file in files %}
+                    <div class="col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <p>
+                                    <a href="{% url 'ide:file_editor' namespace=namespace repository=repository file_path=file %}">
+                                        {{ file }}
+                                    </a>
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            {% endfor %}
-        </div>
-        <hr>
-        {% if detalles %}
-            <div class="row">
-            <div class="col-lg-12">
-                {% include 'editor/new_repository_file_form.html' with form=new_file_form form_title="Nuevo Archivo:" only %}
-            </div>
+                {% endfor %}
             </div>
             <hr>
-        {% endif %}
-        <header>
-            <h3 class="h3 display">Usuarios Activos:</h3>
-        </header>
-        <div class="row">
-            {% for user in users %}
-                <div class="col-lg-3">
-                <div class="card">
-                    <div class="card-body">
-                        <p>
-                        {% if user == 'Anonymous' %}
-                            {{ user }}
-                        {% else %}
-                            <a href="{% url 'social:user' user %}">{{ user }}</a>
-                        {% endif %}
-                        </p>
+            {% if detalles %}
+                <div class="row">
+                    <div class="col-lg-12">
+                        {% include 'editor/new_repository_file_form.html' with form=new_file_form form_title="Nuevo Archivo:" only %}
                     </div>
                 </div>
-                </div>
-            {% endfor %}
+                <hr>
+            {% endif %}
+            <header>
+                <h3 class="h3 display">Usuarios Activos:</h3>
+            </header>
+            <div class="row">
+                {% for user in users %}
+                    <div class="col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <p>
+                                    {% if user == 'Anonymous' %}
+                                        {{ user }}
+                                    {% else %}
+                                        <a href="{% url 'social:user' user %}">{{ user }}</a>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
-    </div>
     </section>
 {% endblock %}
