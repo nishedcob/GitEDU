@@ -1,19 +1,50 @@
-{% extends 'base.html' %}
+{% extends 'base.new.html' %}
 
 {% block title %}Formulario Generico{% endblock %}
 
 {% block content %}
-    <h2 class="navbar-custom">{% block page_title %}Formulario Generico{% endblock %}</h2>
-    {% block form_def %}
-        <form method="{% block form_method %}post{% endblock %}" action="{% block form_target %}{% endblock %}"
-                {% block form_additional_def %}{% endblock %}>
-    {% endblock %}
-            {% csrf_token %}
-            {% block form_content %}
-                {{ form.as_p }}
-            {% endblock %}
-            {% block form_submit %}
-                <input type="submit" value="{% block form_submit_text %}Enviar{% endblock %}">
-            {% endblock %}
-        </form>
+    <section class="forms">
+        <div class="container-fluid">
+            <header>
+                <h1 class="h3 display">{% block page_title %}Formulario Generico{% endblock %}</h1>
+            </header>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-body">
+                            {% block form_def %}
+                                <form method="{% block form_method %}post{% endblock %}"
+                                      action="{% block form_target %}{% endblock %}"
+                                        {% block form_additional_def %}{% endblock %} class="form-horizontal">
+                            {% endblock %}
+                            {% csrf_token %}
+                            {% block form_errors %}
+                                {{ form.errors }}
+                            {% endblock %}
+                            {% block form_content %}
+                                {% for field in form %}
+                                    {% if not field.is_hidden %}
+                                        <div class="form-group row">
+                                            <label class="col-sm-2" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                            <div class="col-sm-10">
+                                                {{ field }}
+                                                <small class="form-text">{{ field.errors }}</small>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        {{ field }}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endblock %}
+                            {% block form_submit %}
+                                <input class="btn btn-primary" type="submit"
+                                        value="{% block form_submit_text %}Enviar{% endblock %}">
+                            {% endblock %}
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 {% endblock %}
