@@ -1,56 +1,91 @@
-{% extends 'base.html' %}
+{% extends 'base.new.html' %}
 
-{% block title %}Namespace - {{namespace.namespace}}{% endblock %}
+{% block title %}Namespace - {{ namespace.namespace }}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item active">{{ namespace.namespace }}</li>
+{% endblock %}
 
 {% block content %}
-    <h2 class="navbar-custom">Contenidos del Namespace {{namespace.namespace}}</h2>
-    {% comment %}
-    {% if detalles %}
-        <p><em>Dueno:</em> {{user.first_name}}</p>
-        <p><em>Apellidos:</em> {{user.last_name}}</p>
-        <p><em>Correo Electronico:</em> {{user.email}}</p>
-        <p><a class="btn-outline" href="{% url 'new-code' user.username %}">Crear nuevo archivo de codigo</a></p>
-    {% endif %}
-    {% if tiene_codigo %}
-        <h3 class="titulos">Es dueño de(los) codigo(s):</h3>
+    <section class="namespace">
+        <div class="container-fluid">
+            <header>
+                <h1 class="h3 display">
+                    Contenidos del Namespace {{ namespace.namespace }}
+                </h1>
+            </header>
+            {% comment %}
+                {% if detalles %}
+                    <p><em>Dueno:</em> {{ user.first_name }}</p>
+                    <p><em>Apellidos:</em> {{ user.last_name }}</p>
+                    <p><em>Correo Electronico:</em> {{ user.email }}</p>
+                    <p><a class="btn-outline" href="{% url 'new-code' user.username %}">Crear nuevo archivo de
+                        codigo</a></p>
+                {% endif %}
+                {% if tiene_codigo %}
+                    <h3 class="titulos">Es dueño de(los) codigo(s):</h3>
 
-        {% for code in mycode %}
-            <p><a  class="cod-lista" href="/code/{{code.code_id}}/">{{code.language}} - {{code.file_name}}</a></p>
+                    {% for code in mycode %}
+                        <p><a class="cod-lista" href="/code/{{ code.code_id }}/">{{ code.language }}
+                            - {{ code.file_name }}</a></p>
 
 
-        {% endfor %}
+                    {% endfor %}
 
-    {% endif %}
-    {% if esCollab %}
-        <h3>Colabora en:</h3>
-        <ul class="navbar-fixed-top">
-            {% for collab_code in collab_codes %}
-                <li><a href="/code/{{ collab_code.code_id }}/">{{ collab_code.language }} - {{ collab_code.file_name }}</a>
-                    - por <a href="{% url 'user-profile' collab_code.user_owner.username %}">
-                        {{ collab_code.user_owner.username }}</a></li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-    {% endcomment %}
-    <h3>Repositorios:</h3>
-    <ul>
-        {% for repository in repositories %}
-            <li>
-                {{ repository.namespace.namespace }} /
-                <a href="{% url 'ide:repository' namespace=repository.namespace.namespace repository=repository.repository %}">
-                    {{ repository.repository }}
-                </a>
-            </li>
-        {% endfor %}
-    </ul>
-    <h3>Usuarios Activos:</h3>
-    <ul>
-        {% for user in users %}
-            {% if user == 'Anonymous' %}
-                <li>{{ user }}</li>
-            {% else %}
-                <li><a href="{% url 'social:user' user %}">{{ user }}</a></li>
-            {% endif %}
-        {% endfor %}
-    </ul>
+                {% endif %}
+                {% if esCollab %}
+                    <h3>Colabora en:</h3>
+                    <ul class="navbar-fixed-top">
+                        {% for collab_code in collab_codes %}
+                            <li><a href="/code/{{ collab_code.code_id }}/">{{ collab_code.language }}
+                                - {{ collab_code.file_name }}</a>
+                                - por <a href="{% url 'user-profile' collab_code.user_owner.username %}">
+                                    {{ collab_code.user_owner.username }}</a></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endcomment %}
+            <hr>
+            <header>
+                <h3 class="h3 display">Repositorios:</h3>
+            </header>
+            <div class="row">
+                {% for repository in repositories %}
+                    <div class="col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <p>
+                                    {{ repository.namespace.namespace }} /
+                                    <a href="{% url 'ide:repository' namespace=repository.namespace.namespace repository=repository.repository %}">
+                                        {{ repository.repository }}
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <hr>
+            <header>
+                <h3 class="h3 display">Usuarios Activos:</h3>
+            </header>
+            <div class="row">
+                {% for user in users %}
+                    <div class="col-lg-3">
+                    <div class="card">
+                        <div class="card-body">
+                        <p>
+                            {% if user == 'Anonymous' %}
+                                {{ user }}
+                            {% else %}
+                                <a href="{% url 'social:user' user %}">{{ user }}</a>
+                            {% endif %}
+                        </p>
+                        </div>
+                    </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
 {% endblock %}
