@@ -1,12 +1,35 @@
-    {% block form_def %}
-        <form method="{% block form_method %}post{% endblock %}" action="{% block form_target %}{% endblock %}"
-                {% block form_additional_def %}{% endblock %}>
-    {% endblock %}
+<div style="{% block form_col_style %}{{ form_col_style }}{% endblock %}" class="{% block form_width %}col-lg-12{% endblock %}">
+    <div class="card">
+        <div class="card-header d-flex align-items-center">
+            <h2 class="h5 display">{% block form_title %}{{ form_title }}{% endblock %}</h2>
+        </div>
+        <div class="card-body">
+            {% block form_description %}{% endblock %}
+            {% block form_def %}
+                <form method="{% block form_method %}post{% endblock %}" action="{% block form_target %}{% endblock %}"
+                        {% block form_additional_def %}{% endblock %} class="form-horizontal">
+            {% endblock %}
             {% csrf_token %}
             {% block form_content %}
-                {{ form.as_p }}
+                {% for field in form %}
+                                    {% if not field.is_hidden %}
+                                        <div class="form-group row">
+                                            <label class="col-sm-2" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                            <div class="col-sm-10">
+                                                {{ field }}
+                                                <small class="form-text">{{ field.errors }}</small>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        {{ field }}
+                                    {% endif %}
+                                {% endfor %}
             {% endblock %}
             {% block form_submit %}
-                <input type="submit" value="{% block form_submit_text %}Enviar{% endblock %}">
+                <input type="submit" value="{% block form_submit_text %}Enviar{% endblock %}"
+                       class="{% block form_submit_button_classes %}btn btn-primary{% endblock %}">
             {% endblock %}
-        </form>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,73 +1,103 @@
-{% extends 'base.html' %}
+{% extends 'base.new.html' %}
 
 {% block title %}Registro de {{ role }}{% endblock %}
 
 {% block content %}
 
-  <h2><nav  id=""  class="navbar navbar-default navbar-fixed-top navbar-custom affix-top">Registro de {{ role }}</nav></h2>
-    <div class="formularios">
-  <form method="post" >
-    {% csrf_token %}
- {{ form.errors }}
-      <table display="block"; >
-      {% for field in form %}
-          <tr>
-                <td >{{ field.label_tag }}</td>
-                <td style="padding: 0.8%">{{ field }}</td>
-          <td> {{ field.errors }}</td>
-          </tr>
-          {% if field == form.password %}
-              <tr>
-                  <td>Confirmar Contraseña</td>
-                  <td style="padding: 0.8%">
-                      <input id="confirm_password" type="password" required>
-                  </td>
-                  <td id="equality_test"></td>
-              </tr>
-          {% endif %}
-        {% endfor %}
-      </table>
-    <button id="submit_button" class="btn btn-success btn-lg" type="submit" disabled>Registrar</button>
-  </form>
-    <script>
-        equality_tst = document.getElementById('equality_test');
-        function passwd_confirmation() {
-            confirm_pass = document.getElementById('confirm_password').value;
-            //console.log("ConfirmPass: " + confirm_pass);
-            if (confirm_pass.length > 0) {
-                passwd = document.getElementById('id_password').value;
-                //console.log("Passwd: " + passwd);
-                if (passwd.length > 0) {
-                    //console.log("Testing equality");
-                    if (confirm_pass === passwd) {
-                        //console.log("Equal")
-                        document.getElementById('submit_button').disabled = false;
-                    } else {
-                        //console.log("Not Equal");
-                        document.getElementById('submit_button').disabled = true;
-                    }
-                } else {
-                    //console.log("No Password");
-                    document.getElementById('submit_button').disabled = true;
-                }
-            } else {
-                //console.log("No Confirmation of Password");
-                document.getElementById('submit_button').disabled = true;
-            }
-            //equality_tst = document.getElementById('equality_test');
-            if (document.getElementById('submit_button').disabled) {
-                equality_tst.textContent = "Por favor confirma su contraseña.";
-            } else {
-                equality_tst.textContent = "Contraseña confirmada";
-            }
-        }
-        document.getElementById('id_password').onchange = function () {
-            passwd_confirmation();
-        };
-        document.getElementById('confirm_password').onchange = function () {
-            passwd_confirmation();
-        };
-        equality_tst.textContent = "Por favor confirma su contraseña.";
-    </script>
-    </div>
+    <section class="forms">
+        <div class="container-fluid">
+            <header>
+                <h1 class="h3 display">Registro de {{ role }}</h1>
+            </header>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <form method="post" class="form-horizontal">
+                                {% csrf_token %}
+                                {{ form.errors }}
+                                {% for field in form %}
+                                    <div class="form-group row">
+                                        <label class="col-sm-2">
+                                        {% if field == form.username %}
+                                            Nombre de Usuario:
+                                        {% elif field == form.password %}
+                                            Contraseña:
+                                        {% elif field == form.email %}
+                                            Correo Electronico:
+                                        {% elif field == form.first_name %}
+                                            Nombres:
+                                        {% elif field == form.last_name %}
+                                            Apellidos:
+                                        {% else %}
+                                            {{ field.label_tag }}
+                                        {% endif %}
+                                        </label>
+                                        <div class="col-sm-10">
+                                            {{ field }}
+                                            <small class="form-text">{{ field.errors }}</small>
+                                        </div>
+                                    </div>
+                                    {% if field == form.password %}
+                                        <div class="form-group row">
+                                            <label class="col-sm-2">Confirmar Contraseña:</label>
+                                            <div class="col-sm-10">
+                                                <input id="confirm_password" type="password" required>
+                                                <small class="form-text" id="equality_test"></small>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                <button id="submit_button" class="btn btn-primary" type="submit" disabled>
+                                    Registrar
+                                </button>
+                            </form>
+                            <script>
+                                equality_tst = document.getElementById('equality_test');
+
+                                function passwd_confirmation() {
+                                    confirm_pass = document.getElementById('confirm_password').value;
+                                    //console.log("ConfirmPass: " + confirm_pass);
+                                    if (confirm_pass.length > 0) {
+                                        passwd = document.getElementById('id_password').value;
+                                        //console.log("Passwd: " + passwd);
+                                        if (passwd.length > 0) {
+                                            //console.log("Testing equality");
+                                            if (confirm_pass === passwd) {
+                                                //console.log("Equal")
+                                                document.getElementById('submit_button').disabled = false;
+                                            } else {
+                                                //console.log("Not Equal");
+                                                document.getElementById('submit_button').disabled = true;
+                                            }
+                                        } else {
+                                            //console.log("No Password");
+                                            document.getElementById('submit_button').disabled = true;
+                                        }
+                                    } else {
+                                        //console.log("No Confirmation of Password");
+                                        document.getElementById('submit_button').disabled = true;
+                                    }
+                                    //equality_tst = document.getElementById('equality_test');
+                                    if (document.getElementById('submit_button').disabled) {
+                                        equality_tst.textContent = "Por favor confirma su contraseña.";
+                                    } else {
+                                        equality_tst.textContent = "Contraseña confirmada";
+                                    }
+                                }
+
+                                document.getElementById('id_password').onchange = function () {
+                                    passwd_confirmation();
+                                };
+                                document.getElementById('confirm_password').onchange = function () {
+                                    passwd_confirmation();
+                                };
+                                equality_tst.textContent = "Por favor confirma su contraseña.";
+                            </script>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 {% endblock %}

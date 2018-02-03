@@ -1,209 +1,485 @@
-{% extends 'base.html' %}
+{% extends 'base.new.html' %}
 
 {% block title %}Editar Codigo en Linea{% endblock %}
 
+{% block breadcrumbs %}
+    <li class="breadcrumb-item"><a href="{% url "ide:namespace" namespace %}">{{ namespace }}</a></li>
+    <li class="breadcrumb-item"><a
+            href="{% url "ide:repository" namespace=namespace repository=repository %}">{{ repository }}</a></li>
+    <li class="breadcrumb-item active">{{ file_path }}</li>
+{% endblock %}
+
 {% block content %}
     {% load static %}
-    <div id="panel-de-control">
-        <h2 id="title" class=" navbar-custom ">Codigo</h2>
-        <h3>Por <a href="/user/{{ owner }}/">{{ owner }}</a></h3>
-        <hr>
-        <h3>Permisos Globales</h3>
-        {% if new %}
-            <h4>Valores por Defecto:</h4>
-            <p>Editarlos no tendra efecto. Podrá editarlos despues de crear el codigo.</p>
-        {% endif %}
-        {% if orig %}
-            <pre>
-                 {% comment %} <form method="post" {% if not new %}action="{% url 'global-perms-code' id %}{% endif %}">
+    {% if not represents_change and logged_in %}
+        <link rel="stylesheet" href="{% static 'node_modules/xterm/dist/xterm.css' %}"/>
+        <script src="{% static 'node_modules/xterm/dist/xterm.js' %}"></script>
+    {% endif %}
+    <section class="editor" id="panel-de-control">
+        <div class="container-fluid">
+            <header>
+                <h2 id="title" class="h3 display">Codigo</h2>
+                <h3>Editando como <a href="/social/user/{{ owner }}/">{{ owner }}</a></h3>
+            </header>
+            <div class="row">
+                {% if not represents_change and logged_in %}
+                    <!--div class="col-lg-12"-->
+                    {% include 'editor/new_repository_file_form.html' with form=new_file_form form_title="Nuevo Archivo:" form_col_style="margin-bottom: 50px" only %}
+                    <!--/div-->
+                    </div>
+                    <div class="row">
+                    <hr>
+                {% endif %}
+                <!--div class="col-lg-6"-->
+
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header d-flex align-items-center">
+                            <h2 class="h5 display">Editor</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="editor" contenteditable="true" name="editor" style="height: 408px">{% if form.code.value is not None %}{{ form.code.value }}{% endif %}</div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if not represents_change and logged_in %}
+                    <hr>
+                    <!--div class="row"-->
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center">
+                                <h2 class="h5 display">Terminal</h2>
+                            </div>
+                            <div class="card-body">
+                                <div id="terminal"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--/div-->
+                    <script type="text/javascript">
+                        var term = new Terminal();
+                        term.open(document.getElementById('terminal'));
+                    </script>
+                {% endif %}
+
+                <!--/div-->
+                </div>
+            {% comment %}
+                <hr>
+                <h3>Permisos Globales</h3>
+                {% if new %}
+                    <h4>Valores por Defecto:</h4>
+                    <p>Editarlos no tendra efecto. Podrá editarlos despues de crear el codigo.</p>
+                {% endif %}
+                {% if orig %}
+                    <pre>
+                 { % comment %} <form method="post"
+                                      {% if not new %}action="{% url 'global-perms-code' id %}{% endif %}">
             {% csrf_token %}
                  <table class="permisos" style="padding: 0.8%">
-                     {{ globalPermForm.as_table  }}
+                     {{ globalPermForm.as_table }}
                  </table>
 
-                     {% if not new %}
-                         <button class="btn btn-successt" type="submit">Guardar</button>
-                     {% endif %}
-        </form> {% endcomment %}
+                        {% if not new %}
+                            <button class="btn btn-successt" type="submit">Guardar</button>
+                        {% endif %}
+        </form> { % endcomment %}
               </pre>
-            <hr/>
-        {% endif %}
+                    <hr/>
+                {% endif %}
+            {% endcomment %}
+            <hr>
+            {% comment %}
+                < form action="" method="post" id="code-meta-data-form">{% endcomment %}
+            <div class="row">
+                <div class="col-lg-12" style="margin-bottom: 50px">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="code-meta-data">
+                                <form id="code-meta-data-form" method="post">
+                                    {% comment %}
+                                        <script type="text/javascript">
+                                            $('#code-meta-data-form').submit(function () {
 
-        <hr>
-        <form action="" method="post" id="code-meta-data-form">
-            <style type="text/css" media="screen">
-                #panel-de-control {
-                    width: 45%;
-                }
+                                                var url = document.location;
 
-                #editor {
-                    margin: 0;
-                    position: fixed;
-                    float: right;
-                    top: 0;
-                    bottom: 0;
-                    left: 50%;
-                    right: 0;
-                    z-index: 0;
-                }
+                                                $.ajax({
+                                                    type: "POST",
+                                                    url: url,
+                                                    data: $(this).serialize(),
+                                                    success: function (data) {
+                                                        alert(data);
+                                                    }
+                                                });
 
-                #code-meta-data {
-                    margin: 0;
-                    margin-right: 5%;
-                    margin-bottom: 5%;
-                    position: fixed;
-                    float: right;
-                    bottom: 0;
-                    left: 60%;
-                    width: 40%;
-                    right: 0;
-                    z-index: 1;
-                    color: #fff;
-                }
+                                                e.preventDefault();
+                                            });
+                                        </script>
+                                        { % endcomment %}
+                                        <!--style type="text/css" media="screen">
+                                            #panel-de-control {
+                                                width: 45%;
+                                            }
 
-                .code-meta-data-field {
-                    display: inline-flex;
-                }
+                                            #editor {
+                                                margin: 0;
+                                                position: fixed;
+                                                float: right;
+                                                top: 0;
+                                                bottom: 0;
+                                                left: 50%;
+                                                right: 0;
+                                                z-index: 0;
+                                            }
 
-                #code-meta-data-form input,select {
-                    background: transparent;
-                    border: none;
-                    color: #fff;
-                }
+                                            #code-meta-data {
+                                                margin: 0;
+                                                margin-right: 5%;
+                                                margin-bottom: 5%;
+                                                position: fixed;
+                                                float: right;
+                                                bottom: 0;
+                                                left: 60%;
+                                                width: 40%;
+                                                right: 0;
+                                                z-index: 1;
+                                                color: #fff;
+                                            }
 
-                .code-meta-data-field-spacer {
-                    margin-left: 0.5%;
-                }
-            </style>
-            <div id="code-meta-data">
-            {% csrf_token %}
-            {% for field in form %}
-                <div class="code-meta-data-field">
-                    {{ field.errors }}
-                    {% if field.errors %}
-                        <div class="code-meta-data-field-spacer"></div>
-                    {% endif %}
-                    {{ field.label_tag }}
-                    {% if field.label_tag %}
-                        <div class="code-meta-data-field-spacer"></div>
-                    {% endif %}
-                    {% if field == form.language %}
-                        <select id="{{ field.id_for_label }}" name="{{ field.html_name }}">
-                            {% for id,name in form.fields.language.choices %}
-                                <option value="{{ id }}" {% if field.value == id %}
-                                        selected {% endif %}> {{ name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    {% else %}
-                        {{ field }}
-                    {% endif %}
-                    <div class="code-meta-data-field-spacer"></div>
+                                            .code-meta-data-field {
+                                                display: inline-flex;
+                                            }
+
+                                            #code-meta-data-form input,select {
+                                                background: transparent;
+                                                border: none;
+                                                color: #fff;
+                                            }
+
+                                            .code-meta-data-field-spacer {
+                                                margin-left: 0.5%;
+                                            }
+                                        </style-->
+                                    {% endcomment %}
+                                    {% csrf_token %}
+                                    {% for field in form %}
+                                        <div class="code-meta-data-field">
+                                            {{ field.errors }}
+                                            {% if field.errors %}
+                                                <div class="code-meta-data-field-spacer"></div>
+                                            {% endif %}
+                                            {{ field.label_tag }}
+                                            {% if field.label_tag %}
+                                                <div class="code-meta-data-field-spacer"></div>
+                                            {% endif %}
+                                            {% if field == form.language %}
+                                                <select id="{{ field.id_for_label }}" name="{{ field.html_name }}">
+                                                    {% for id,name in form.fields.language.choices %}
+                                                        <option value="{{ id }}" {% if field.value == id %}
+                                                                selected {% endif %}> {{ name }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            {% else %}
+                                                {{ field }}
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                    <div class="code-meta-data-field-spacer"></div>
+                                    {% comment %}
+                                        <button class="btn btn-success btn-lg" type="submit" id="save" name="save">
+                                            Guardar
+                                        </button>{% endcomment %}
+                                    <a class="btn btn-primary" id="save" name="save">Guardar</a>
+                                    {% comment %}
+                                        <a class="btn btn-success btn-lg" id="save" name="save">Guardar</a>
+                                    {% endcomment %}
+                                    {% if represents_change %}
+                                        {% comment %}
+                                            <a class="btn btn-success btn-lg"
+                                               href="{% url 'ide:checkout' namespace=namespace repository=repository change=change_id %}">
+                                                Utilizar esta version
+                                            </a>
+                                        {% endcomment %}
+                                        <a class="btn btn-primary"
+                                           href="{% url 'ide:checkout' namespace=namespace repository=repository change=change_id %}">
+                                            Utilizar esta version
+                                        </a>
+                                    {% else %}
+                                        {% if logged_in %}
+                                            {% comment %}
+                                                <a class="btn btn-success btn-lg" id="execute">Ejecutar</a>
+                                            {% endcomment %}
+                                            <a class="btn btn-primary" id="execute">Ejecutar</a>
+                                        {% endif %}
+                                    {% endif %}
+                                    <script type="text/javascript">
+                                        function save_code(url) {
+                                            var save = $.ajax({
+                                                type: "POST",
+                                                url: url,
+                                                data: $("#code-meta-data-form").serialize(),
+                                                done: function (data) {
+                                                    alert("Codigo Guardado Exitosamente!");
+                                                },
+                                                fail: function () {
+                                                    alert("Error al Guardar...");
+                                                },
+                                                async: false
+                                            });
+                                            return save;
+                                        }
+
+                                        function execute_code() {
+                                            alert("Executing...");
+                                            var exec_id = "";
+                                            code_execution = $.getJSON({
+                                                url: "{% url 'ide:repository_execution' namespace=namespace repository=repository %}",
+                                                async: false
+                                            }).done(function (json) {
+                                                //alert(json);
+                                                console.log(json)
+                                                exec_id = json['id'];
+                                                console.log(exec_id);
+                                                var exec_status = execution_status(exec_id);
+                                                if (exec_status !== null && exec_status !== false) {
+                                                    console.log("IF = {exists: " + exec_status.exists + ", finished: "
+                                                        + exec_status.finished + "}");
+                                                    if (!exec_status.finished) {
+                                                        var interval_loop = window.setInterval(function () {
+                                                            console.log("INTERVAL LOOP = {exists: " + exec_status.exists + ", finished: "
+                                                                + exec_status.finished + "}");
+                                                            exec_status = execution_status(exec_id);
+                                                            if (exec_status === null || exec_status === false || exec_status.finished) {
+                                                                console.log("Cutting Interval Loop...")
+                                                                console.log(exec_status);
+                                                                window.clearInterval(interval_loop);
+                                                                if (exec_status.finished) {
+                                                                    exec_result = execution_result(exec_id);
+                                                                    console.log(exec_result);
+                                                                    term.clear();
+                                                                    term_text = "";
+                                                                    if (exec_result !== null && exec_result.logs !== null) {
+                                                                        term_text = exec_result.logs[0];
+                                                                        console.log("Log found as logs");
+                                                                        console.log(term_text);
+                                                                    } else if (exec_result !== null && exec_result.log !== null) {
+                                                                        if (exec_result.log.logs !== null) {
+                                                                            term_text = exec_result.log.logs[0];
+                                                                            console.log("Log found as log.logs");
+                                                                            console.log(term_text);
+                                                                        } else {
+                                                                            console.log("Error with Exec_Result: No Logs");
+                                                                            console.log(exec_result);
+                                                                        }
+                                                                    } else {
+                                                                        console.log("Error with Exec_Result: No Log/Logs");
+                                                                        console.log(exec_result);
+                                                                    }
+                                                                    term_text.split("\n").forEach(
+                                                                        function (current_value, index, initial_array) {
+                                                                            console.log(current_value);
+                                                                            term.writeln(current_value)
+                                                                        }
+                                                                    );
+                                                                }
+                                                            }
+                                                        }, 5000);
+                                                    }
+                                                }
+                                                //alert("Execution Finished!");
+                                                //alert("Done: ".concat(exec_id));
+                                            }).fail(function (jqxhr, textStatus, error) {
+                                                var err = textStatus + ", " + error;
+                                                console.log("AJAX Fallido: " + err);
+                                                alert("Ejecucion Fallo, ver log para detalles")
+                                            });
+                                            return code_execution;
+                                        }
+
+                                        function execution_status(exec_id) {
+                                            exec_status = $.getJSON({
+                                                url: "/ide/execute/status/{-%s-}/".replace("{-%s-}", exec_id),
+                                                async: false
+                                            }).done(function (data) {
+                                                console.log(data);
+                                                /*if (data === null || data === false || !data.exists) {
+                                                    if (data === null || data === false) return data;
+                                                    else return false;
+                                                }*/
+                                                //return data;
+                                            }).fail(function (jqxhr, textStatus, error) {
+                                                var err = textStatus + ", " + error;
+                                                console.log("AJAX Fallido: " + err);
+                                                //return null;
+                                            }).responseJSON;
+                                            return exec_status;
+                                        }
+
+                                        function execution_result(exec_id) {
+                                            exec_result = $.getJSON({
+                                                url: "/ide/execute/result/{-%s-}/".replace("{-%s-}", exec_id),
+                                                async: false
+                                            }).done(function (data) {
+                                                console.log(data);
+                                                /*if (data === null || data === false || !data.exists) {
+                                                    if (data === null || data === false) return data;
+                                                    else return false;
+                                                }*/
+                                                //return data;
+                                            }).fail(function (jqxhr, textStatus, error) {
+                                                var err = textStatus + ", " + error;
+                                                console.log("AJAX Fallido: " + err);
+                                                //return null;
+                                            }).responseJSON;
+                                            return exec_result;
+                                        }
+
+                                        $(function () {
+                                            $('#save').click(function () {
+                                                var editor = ace.edit("editor");
+                                                var mysave = editor.getValue();
+                                                $('#{{form.code.auto_id}}').val(mysave);
+                                                var url = document.location;
+                                                save_code(url); //.done(alert("Save All Done"));
+                                            });
+                                        });
+                                        {% if not represents_change and logged_in %}
+                                            $(function () {
+                                                $('#execute').click(function () {
+                                                    var save_url = document.location;
+                                                    save_code(save_url).done(execute_code());
+                                                    /*.done(function () {
+                                                        alert("Save + Execute Done!");
+                                                    });*/
+                                                });
+                                            });
+                                        {% endif %}
+                                    </script>
+
+
+                                    <script src="{% static 'js/ace/src-noconflict/ace.js' %}" type="text/javascript"
+                                            charset="utf-8"></script>
+                                    <script>
+                                        //var editor = ace.edit("{{form.code.id_for_label}}");
+                                        var editor = ace.edit("editor");
+                                        editor.setTheme("ace/theme/twilight");
+
+                                        var langs ={{ editorLang|safe }};
+                                        //editor.session.setMode("ace/mode/python");// consta.editor_laguage[valordebase usercode.language]['ace']
+
+                                        editor.session.setMode("ace/mode/" +
+                                            {% if not new %}langs['{{ form.language.value }}']['ace']
+                                                {% else %}"python"{% endif %}
+                                        )
+                                        ; // consta.editor_laguage[valordebase usercode.language]['ace']
+
+                                        editor.setVisible(true);
+                                    </script>
+                                    <script type="application/javascript">
+                                        $("#{{ form.language.id_for_label }}").change(function () {
+                                            var valor = $("#{{ form.language.id_for_label }}").val();
+                                            var editor = ace.edit("editor");
+                                            var langs ={{ editorLang|safe }};
+                                            editor.session.setMode("ace/mode/" + langs[valor]['ace']);
+                                        });
+                                    </script>
+                                </form>
+                            </div>
+                        </div> <!-- end of card body -->
+                    </div> <!-- end of card -->
                 </div>
-            {% endfor %}
             </div>
 
-            <div id="editor" contenteditable="true" name="editor">{% if form.code.value is not None %}{{ form.code.value }}{% endif %}</div>
-            <button class="btn btn-success btn-lg" type="submit" id="save" name="save">Guardar</button>
-            {% if represents_change %}
-                <a class="btn btn-success btn-lg"
-                   href="{% url 'ide:checkout' namespace=namespace repository=repository change=change_id %}">
-                    Utilizar esta version
-                </a>
+            {% if not new %}
+                {% if orig %}
+                    <header>
+                        <h3 id="title" class="h3 display">Ediciones:</h3>
+                    </header>
+                    <div class="row">
+                        {% for e in edits %}
+                            <div class="col-lg-4" style="margin-bottom: 25px">
+                                <div class="card">
+                                    <div class="card-header d-flex align-items-center">
+                                        <h2 class="h5 display">
+                                            <a class="formularios"
+                                               href="{% url 'ide:change_file_editor' namespace=e.namespace repository=e.repository change=e.id file_path=e.file_path %}">
+                                                {{ e.id }}
+                                            </a> - <a class="formularios"
+                                                      href="{% url 'ide:namespace' namespace=e.namespace %}">
+                                            {{ e.namespace }}
+                                        </a> - <a class="formularios"
+                                                  href="{% url 'ide:repository' namespace=e.namespace repository=e.repository %}">
+                                            {{ e.repository }}
+                                        </a> - <a class="formularios"
+                                                  href="{% url 'ide:file_editor' namespace=e.namespace repository=e.repository file_path=e.file_path %}">
+                                            {{ e.file_path }}
+                                        </a>
+                                        </h2>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>
+                                            Por: <a class="formularios" href="{% url "social:user" user=e.author %}">
+                                            {{ e.author }}
+                                        </a>
+                                        </p>
+                                        <p>{{ e.timestamp }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        {% comment %}
+                            <hr>
+                            <h3 id="title" class=" navbar-custom ">Colaboradores</h3>
+                            { % comment %}
+                            <a href="{% url 'collab-perms-code' id %}">Ver</a>
+                            { % endcomment %}
+                            <h4>Agregar Colaborador</h4>
+                            { % comment %}
+                            <form method="post" action="{% url 'new-collab-perms-code' id %}">
+                                {% csrf_token %}
+                                <table style="text-align: left">
+                                    {{ collabForm.as_table }}
+                                </table>
+                                <button class="btn btn-success btn-lg" type="submit">Agregar Colaborador</button>
+                            </form>
+                        {% endcomment %}
+                        <hr>
+                        {% comment %}
+                            <script src="https://togetherjs.com/togetherjs-min.js"></script>
+                            <!--button onclick="TogetherJS(this); return false;">Empezar Sesion de TogetherJS</button-->
+                            <script>
+                                $(document).ready(function () {
+                                    TogetherJS(this);
+                                    return false;
+                                });
+                            </script>
+                        {% endcomment %}
+                    </div>
+                {% else %}
+                    <header>
+                        <h3 id="title" class="h3 display">Modificó:</h3>
+                    </header>
+                    <div class="row">
+                        {% for e in edits %}
+                            <div class="col-lg-4" style="margin-bottom: 25px">
+                                <div class="card">
+                                    <div class="card-header d-flex align-items-center">
+                                        <h2 class="h5 display">
+                                            <a href="/code/{{ original.code_id }}/">{{ original.file_name }}</a>
+                                        </h2>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>{{ thisEdit.timestamp }}</p>
+                                        <p><a href="/user/{{ modifiedBy.username }}/">{{ modifiedBy.username }}</a></p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             {% endif %}
-            <script type="text/javascript">
-                $(function () {
-                    $('#save').click(function () {
-                        var editor = ace.edit("editor");
-                        var mysave = editor.getValue();
-                        $('#{{form.code.auto_id}}').val(mysave);
-                    });
-                });
-            </script>
-
-
-            <script src="{% static 'js/ace/src-noconflict/ace.js' %}" type="text/javascript" charset="utf-8"></script>
-            <script>
-                //var editor = ace.edit("{{form.code.id_for_label}}");
-                var editor = ace.edit("editor");
-                editor.setTheme("ace/theme/twilight");
-
-                var langs ={{ editorLang|safe }};
-                //editor.session.setMode("ace/mode/python");// consta.editor_laguage[valordebase usercode.language]['ace']
-
-                editor.session.setMode("ace/mode/" + {% if not new %}langs['{{ form.language.value }}']['ace']{% else %}"python"{% endif %}); // consta.editor_laguage[valordebase usercode.language]['ace']
-
-                editor.setVisible(true);
-            </script>
-            <script type="application/javascript">
-                $("#{{ form.language.id_for_label }}").change(function () {
-                    var valor = $("#{{ form.language.id_for_label }}").val();
-                    var editor = ace.edit("editor");
-                    var langs ={{ editorLang|safe }};
-                    editor.session.setMode("ace/mode/" + langs[valor]['ace']);
-                });
-            </script>
-        </form>
-        {% if not new %}
-            {% if orig %}
-                <h3 id="title" class=" navbar-custom ">Ediciones:</h3>
-                <ol>
-                    {% for e in edits %}
-                        <li>
-                            <a class="formularios"
-                               href="{% url 'ide:change_file_editor' namespace=e.namespace repository=e.repository change=e.id file_path=e.file_path %}">
-                                {{ e.id }}
-                            </a> - <a class="formularios" href="{% url 'ide:namespace' namespace=e.namespace %}">
-                                {{ e.namespace }}
-                            </a> - <a class="formularios" href="{% url 'ide:repository' namespace=e.namespace repository=e.repository %}">
-                                {{ e.repository }}
-                            </a> - <a class="formularios"
-                                      href="{% url 'ide:file_editor' namespace=e.namespace repository=e.repository file_path=e.file_path %}">
-                                {{ e.file_path }}
-                            </a>
-                            <ul>
-                                <li>
-                                    Por: <a class="formularios" href="{% url "social:user" user=e.author %}">
-                                        {{ e.author }}
-                                    </a>
-                                </li>
-                                <li>{{ e.timestamp }}</li>
-                            </ul>
-                        </li>
-                    {% endfor %}
-                </ol>
-                <hr>
-                <h3 id="title" class=" navbar-custom ">Colaboradores</h3>
-                {% comment %}
-                <a href="{% url 'collab-perms-code' id %}">Ver</a>
-                {% endcomment %}
-                <h4>Agregar Colaborador</h4>
-                {% comment %}
-                <form method="post" action="{% url 'new-collab-perms-code' id %}">
-                    {% csrf_token %}
-                    <table style="text-align: left">
-                    {{ collabForm.as_table }}
-                        </table>
-                    <button class="btn btn-success btn-lg" type="submit">Agregar Colaborador</button>
-                </form>
-                {% endcomment %}
-                <hr>
-                {% comment %}
-                <script src="https://togetherjs.com/togetherjs-min.js"></script>
-                <!--button onclick="TogetherJS(this); return false;">Empezar Sesion de TogetherJS</button-->
-                <script>
-                    $(document).ready(function () {
-                        TogetherJS(this);
-                        return false;
-                    });
-                </script>
-                {% endcomment %}
-            {% else %}
-                <h3 id="title" class=" navbar-custom ">Modificó:</h3>
-                <p><a href="/code/{{ original.code_id }}/">{{ original.file_name }}</a></p>
-                <p>{{ thisEdit.timestamp }}</p>
-                <p><a href="/user/{{ modifiedBy.username }}/">{{ modifiedBy.username }}</a></p>
-            {% endif %}
-        {% endif %}
-    </div>
+        </div>
+    </section>
 {% endblock %}

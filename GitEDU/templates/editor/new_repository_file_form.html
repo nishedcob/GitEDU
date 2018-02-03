@@ -1,0 +1,11 @@
+{% extends 'form.html' %}
+
+{% block form_target %}{% url 'ide:new_repo_file' %}{% endblock %}
+
+{% block form_additional_def %}target="_blank"{% endblock %}
+
+{% block form_submit_text %}Crear Archivo{% endblock %}
+
+{% comment %}
+{% block form_submit_button_classes %}btn btn-success btn-lg{% endblock %}
+{% endcomment %}

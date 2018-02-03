@@ -18,7 +18,7 @@ from GitEDU.settings import CODE_PERSISTENCE_BACKEND_MANAGER_CLASS, load_code_pe
 from ideApp.CodePersistenceBackends.MongoDB.backend import MongoChangeFile
 from ideApp.CodePersistenceBackends.MongoDB.mongodb_models import ChangeModel, ChangeFileModel, NamespaceModel,\
     RepositoryModel, RepositoryFileModel
-from ideApp.models import Repository as RepositoryMetadataModel
+from ideApp.models import Repository as RepositoryMetadataModel, File as RepositoryFileMetadataModel
 
 from ideApp import git_server_http_endpoint
 from ideApp import forms
@@ -204,6 +204,53 @@ class NewFullRepositoryView(FormView):
         return HttpResponse('OK', status=201)
 
 
+class NewRepositoryFileFormView(FormView):
+    form_class = forms.NewRepositoryFileForm
+    template = 'editor/new_repository_file_form_page.html'
+
+    def proc_form(self, form, request, **kwargs):
+        namespace = form.cleaned_data.get('namespace')
+        repository = form.cleaned_data.get('repository')
+        # try:
+        #     NamespaceModel.objects.get({'name': namespace})
+        # except NamespaceModel.DoesNotExist:
+        #     NamespaceModel(name=namespace).save()
+        namespace_str = namespace
+        try:
+            namespace = NamespaceModel.objects.get({'name': namespace_str})
+        except NamespaceModel.DoesNotExist:
+            raise PermissionDenied("Non-existent Namespace")
+        # try:
+        #     RepositoryModel.objects.get({'namespace': namespace.pk, 'name': repository})
+        # except RepositoryModel.DoesNotExist:
+        #     RepositoryModel(namespace=namespace, name=repository)
+        repository_str = repository
+        try:
+            repository = RepositoryModel.objects.get({'namespace': namespace.pk, 'name': repository_str})
+        except RepositoryModel.DoesNotExist:
+            raise PermissionDenied("Non-existent Repository")
+        try:
+            rmm = RepositoryMetadataModel.objects.get(namespace=namespace_str, name=repository_str)
+        except RepositoryMetadataModel.DoesNotExist:
+            raise PermissionDenied("Non-existent Repository Metadata")
+        file_path = form.cleaned_data.get('file_path')
+        language = form.cleaned_data.get('language')
+        try:
+            RepositoryFileModel.objects.get({'repository': repository.pk, 'file_path': file_path})
+            raise PermissionDenied("File already exists!")
+        except RepositoryFileModel.DoesNotExist:
+            try:
+                RepositoryFileMetadataModel.objects.get(repository=rmm, path=file_path)
+                raise PermissionDenied("File Metadata already exists!")
+            except RepositoryFileMetadataModel.DoesNotExist:
+                rfm = RepositoryFileModel(repository=repository, prog_language=language, file_path=file_path,
+                                          contents='')
+                rfm.save()
+                rfmm = RepositoryFileMetadataModel(repository=rmm, path=file_path, language=language)
+                rfmm.save()
+                return HttpResponse("OK", status=201)
+
+
 class RepositoryView(View):
 
     template = 'editor/repository.html'
@@ -233,6 +280,8 @@ class RepositoryView(View):
             context['files'].append(mongo_repo_file.file_path)
         context['files'] = set(context['files'])
         context['detalles'] = True
+        context['new_file_form'] = forms.NewRepositoryFileForm(initial={'namespace': namespace,
+                                                                        'repository': repository})
         print("context: %s" % context)
         return render(request, self.template, context=context)
 
@@ -308,7 +357,7 @@ class GenericEditorFileView(View):
         orig = True
         edits = self.get_edits(namespace=namespace, repository=repository, file_path=file_path)
         global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
-        return self.render_editor(request, namespace, repository, form, global_perm_form, user, orig, edits, change)
+        return self.render_editor(request, namespace, repository, form, global_perm_form, user, orig, edits, file_path, change)
 
     def get(self, request, namespace, repository, file_path, change=None):
         self.pre_request(request=request, namespace=namespace, repository=repository, file_path=file_path,
@@ -332,7 +381,7 @@ class GenericEditorFileView(View):
             edits = self.get_edits(namespace=namespace, repository=repository, file_path=file_path)
             global_perm_form = self.global_permission_form_class(initial=self.global_permission_initial)
             return self.render_editor(request, namespace, repository, recieved_form, global_perm_form, user, orig,
-                                      edits)
+                                      file_path, edits)
 
     def proc_post(self, request, namespace, repository, file_path, recieved_form, change=None):
         pass
@@ -356,7 +405,7 @@ class GenericEditorFileView(View):
         else:
             raise ValueError("'%s' is an unknown type" % pre_proc_post)
 
-    def render_editor(self, request, namespace, repository, form, global_perm_form, user, orig, edits, change_id=None):
+    def render_editor(self, request, namespace, repository, form, global_perm_form, user, orig, edits, file_path, change_id=None):
         context = {
             'form': form,
             'globalPermForm': global_perm_form,
@@ -367,7 +416,10 @@ class GenericEditorFileView(View):
             'represents_change': self.represents_change,
             'editorLang': self.editorLangsAndCode,
             'namespace': namespace,
-            'repository': repository
+            'repository': repository,
+            'file_path': file_path,
+            'logged_in': request.user.is_authenticated,
+            'new_file_form': forms.NewRepositoryFileForm(initial={'namespace': namespace, 'repository': repository})
         }
         if self.represents_change and change_id is not None:
             context['change_id'] = change_id

@@ -12,6 +12,18 @@ class Repository(models.Model):
     name = models.CharField(max_length=50, null=False)
     owner = models.ForeignKey(Person, null=True, blank=True)
     owning_group = models.ForeignKey(Group, null=True, blank=True)
+    template = models.ForeignKey('RepositoryTemplate', null=True, blank=True)
+
+
+class ProgramingLanguage(models.Model):
+    name = models.CharField(max_length=100, null=False, blank=False, unique=True)
+
+
+class RepositoryTemplate(models.Model):
+    name = models.CharField(max_length=100, null=False, blank=False)
+    repository_url = models.CharField(max_length=255, null=False, blank=False, unique=True)
+    related_repository = models.ForeignKey(Repository, null=True, blank=True)
+    programing_language = models.ForeignKey(ProgramingLanguage, null=False, blank=False)
 
 
 class File(models.Model):
