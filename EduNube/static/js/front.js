@@ -1,0 +1,1 @@
+../../../3rd_party/bootstrap-dashboard-template/js/front.js

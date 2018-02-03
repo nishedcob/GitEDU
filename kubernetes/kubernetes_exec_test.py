@@ -7,7 +7,10 @@ from apiApp.VirtualizationBackends.Kubernetes import Py3KubernetesVirtualization
 # values for test:
 kvb = Py3KubernetesVirtualizationBackend()
 job_name = 'py3-pytest-3'
-git_repo = 'https://gitlab.com/nishedcob/python3-code-executor-template.git'
+# with minikube
+#git_repo = 'http://192.168.99.1/python3-code-executor-template.git'
+# with Kubernetes on Xen
+git_repo = 'http://10.10.10.1/python3-code-executor-template.git'
 kubernetes_working_tmp_dir = '/tmp'
 
 # prepare test manifest
