@@ -131,6 +131,8 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
+STATIC_ROOT = "/static/service/uwsgi/edunube/static"
+
 NOSQL_DATABASES = {
     'nosql': {
         'NAME': 'eduNubeDB',
