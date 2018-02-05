@@ -7,9 +7,9 @@
 #
 # To enable this hook, rename this file to "post-receive".
 
-BASE_PATH="/home/uwsgi/GitEDU/GitEDU"
+BASE_PATH="/home/uwsgi/GitEDU"
 GIT_DIR_PATH="$BASE_PATH/.git"
-DEPLOY_SCRIPT_PATH="$BASE_PATH/bin/deploy.sh"
+DEPLOY_SCRIPT_PATH="$BASE_PATH/GitEDU/bin/deploy.sh"
 CHECKOUT="checkout"
 SERVICE_NAME="GitEDU"
 DEPLOYMENT_BRANCH="gitedu-deploy"
