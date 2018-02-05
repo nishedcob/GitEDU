@@ -148,6 +148,8 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
+STATIC_ROOT = "/static/service/uwsgi/gitedu/static"
+
 LOGIN_URL = '/auth/login'
 LOGIN_REDIRECT_URL = '/'
 
