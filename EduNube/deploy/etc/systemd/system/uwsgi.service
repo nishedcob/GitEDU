@@ -1,0 +1,16 @@
+[Unit]
+Description=uWSGI Emperor service
+
+[Service]
+ExecStart=/usr/local/bin/uwsgi --emperor /etc/uwsgi/sites
+Restart=always
+KillSignal=SIGQUIT
+Type=notify
+NotifyAccess=all
+User=uwsgi
+Group=uwsgi
+
+[Install]
+WantedBy=multi-user.target
+
+
