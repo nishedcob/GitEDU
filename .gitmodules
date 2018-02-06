@@ -13,3 +13,6 @@
 [submodule "GitEDU-forked-libs"]
 	path = GitEDU-forked-libs
 	url = https://gitlab.com/nishedcob/Thesis-GE-Libraries.git
+[submodule "UTPL-Engineering-Thesis"]
+	path = UTPL-Engineering-Thesis
+	url = https://gitlab.com/nishedcob/UTPL-Engineering-Thesis.git
