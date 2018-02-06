@@ -10,3 +10,6 @@
 [submodule "GitServerHTTPEndpoint"]
 	path = GitServerHTTPEndpoint
 	url = https://gitlab.com/nishedcob/GitServerHTTPEndpoint.git
+[submodule "GitEDU-forked-libs"]
+	path = GitEDU-forked-libs
+	url = https://gitlab.com/nishedcob/Thesis-GE-Libraries.git
