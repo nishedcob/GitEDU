@@ -7,3 +7,6 @@
 [submodule "kubernetes/postgresql-code-executor-template"]
 	path = kubernetes/postgresql-code-executor-template
 	url = https://gitlab.com/nishedcob/postgresql-code-executor-template.git
+[submodule "GitServerHTTPEndpoint"]
+	path = GitServerHTTPEndpoint
+	url = https://gitlab.com/nishedcob/GitServerHTTPEndpoint.git
