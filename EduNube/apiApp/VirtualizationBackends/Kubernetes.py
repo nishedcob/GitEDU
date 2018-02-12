@@ -482,12 +482,24 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
 
     commit_id_regex = re.compile("commit ([0-9a-f]*)\\\\n")
 
-    def get_id_last_git_commit(self, repository_path):
+    def commit_repo(self, repository_path, message='Commit by EduNube', from_func=None):
+        command = ["git", "commit", "-m", "'%s'" % message]
+        cmd = self.run_command(command=command, cwd=repository_path)
+        if cmd[2] != 0:
+            raise ValueError("Failure to commit '%s'" % repository_path)
+
+    def get_id_last_git_commit(self, repository_path, recursive_call=False):
         command = ["git", "show", "HEAD"]
         cmd = self.run_command(command=command, cwd=repository_path)
         if cmd[2] != 0:
-            # No commits yet?
-            return None
+            if not recursive_call:
+                self.commit_repo(repository_path=repository_path, from_func=self.get_id_last_git_commit)
+                return self.get_id_last_git_commit(repository_path=repository_path, recursive_call=True)
+            else:
+                raise ValueError("Recursive loop in get_id_last_git_commit('%s')" % repository_path)
+            # Previously:
+            # # No commits yet?
+            # return None
         return self.commit_id_regex.findall(str(cmd[0]))[0]
 
     def build_unique_name(self, namespace, repository):
