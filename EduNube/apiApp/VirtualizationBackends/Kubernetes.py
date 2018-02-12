@@ -482,12 +482,45 @@ class KubernetesVirtualizationBackend(GenericVirtualizationBackend):
 
     commit_id_regex = re.compile("commit ([0-9a-f]*)\\\\n")
 
-    def get_id_last_git_commit(self, repository_path):
+    def commit_repo(self, repository_path, message='Commit by EduNube', from_func=None, last_exit_code=None):
+        command = ["git", "commit", "-m", "'%s'" % message]
+        cmd = self.run_command(command=command, cwd=repository_path)
+        if cmd[2] != 0:
+            if last_exit_code != 128 and cmd[2] == 128:
+                git_config_template = ['git', 'config']
+                git_config_global_template = git_config_template.copy()
+                git_config_global_template.append('--global')
+                git_config_email = git_config_global_template.copy()
+                git_config_email.append("user.email")
+                git_config_email.append('"python3@uwsgi.app.server"')
+                git_config_name = git_config_global_template.copy()
+                git_config_name.append("user.name")
+                git_config_name.append('"Python 3 uWSGI"')
+                commit_cmd = cmd
+                for git_config_cmd in [git_config_email, git_config_name]:
+                    cmd = self.run_command(command=git_config_cmd, cwd=repository_path)
+                    if cmd[2] != 0:
+                        print(git_config_cmd)
+                        print("stdout: '''\n%s\n'''" % cmd[0])
+                        print("stderr: '''\n%s\n'''" % cmd[1])
+                return self.commit_repo(repository_path=repository_path, message=message, from_func=from_func,
+                                        last_exit_code=commit_cmd[2])
+                # git config --global user.email "you@example.com"
+                # git config --global user.name "Your Name"
+            raise ValueError("Failure to commit '%s'" % repository_path)
+
+    def get_id_last_git_commit(self, repository_path, recursive_call=False):
         command = ["git", "show", "HEAD"]
         cmd = self.run_command(command=command, cwd=repository_path)
         if cmd[2] != 0:
-            # No commits yet?
-            return None
+            if not recursive_call:
+                self.commit_repo(repository_path=repository_path, from_func=self.get_id_last_git_commit)
+                return self.get_id_last_git_commit(repository_path=repository_path, recursive_call=True)
+            else:
+                raise ValueError("Recursive loop in get_id_last_git_commit('%s')" % repository_path)
+            # Previously:
+            # # No commits yet?
+            # return None
         return self.commit_id_regex.findall(str(cmd[0]))[0]
 
     def build_unique_name(self, namespace, repository):
