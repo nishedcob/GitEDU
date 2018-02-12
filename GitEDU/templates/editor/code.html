@@ -286,6 +286,40 @@
                                                                 }
                                                             }
                                                         }, 5000);
+                                                    } else {
+                                                        if (exec_status === null || exec_status === false || exec_status.finished) {
+                                                            console.log("Cutting Interval Loop...")
+                                                            console.log(exec_status);
+                                                            if (exec_status.finished) {
+                                                                exec_result = execution_result(exec_id);
+                                                                console.log(exec_result);
+                                                                term.clear();
+                                                                term_text = "";
+                                                                if (exec_result !== null && exec_result.logs !== null) {
+                                                                    term_text = exec_result.logs[0];
+                                                                    console.log("Log found as logs");
+                                                                    console.log(term_text);
+                                                                } else if (exec_result !== null && exec_result.log !== null) {
+                                                                    if (exec_result.log.logs !== null) {
+                                                                        term_text = exec_result.log.logs[0];
+                                                                        console.log("Log found as log.logs");
+                                                                        console.log(term_text);
+                                                                    } else {
+                                                                        console.log("Error with Exec_Result: No Logs");
+                                                                        console.log(exec_result);
+                                                                    }
+                                                                } else {
+                                                                    console.log("Error with Exec_Result: No Log/Logs");
+                                                                    console.log(exec_result);
+                                                                }
+                                                                term_text.split("\n").forEach(
+                                                                    function (current_value, index, initial_array) {
+                                                                        console.log(current_value);
+                                                                        term.writeln(current_value)
+                                                                    }
+                                                                );
+                                                            }
+                                                        }
                                                     }
                                                 }
                                                 //alert("Execution Finished!");
