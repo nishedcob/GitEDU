@@ -16,3 +16,6 @@
 [submodule "UTPL-Engineering-Thesis"]
 	path = UTPL-Engineering-Thesis
 	url = https://gitlab.com/nishedcob/UTPL-Engineering-Thesis.git
+[submodule "UTPL-GP4.2-Thesis-Defense"]
+	path = UTPL-GP4.2-Thesis-Defense
+	url = https://github.com/nishedcob/UTPL-GP4.2.git
