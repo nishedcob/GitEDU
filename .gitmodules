@@ -19,3 +19,6 @@
 [submodule "UTPL-GP4.2-Thesis-Defense"]
 	path = UTPL-GP4.2-Thesis-Defense
 	url = https://github.com/nishedcob/UTPL-GP4.2.git
+[submodule "Ansible-Deploy"]
+	path = Ansible-Deploy
+	url = https://github.com/nishedcob/GitEDU-Ansible.git
