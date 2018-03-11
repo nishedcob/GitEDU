@@ -11,7 +11,7 @@ from ideApp import forms as ide_forms
 from socialApp import models as social_models
 
 # Create your views here.
-manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
+#manager = load_code_persistence_backend_manager(CODE_PERSISTENCE_BACKEND_MANAGER_CLASS)
 
 
 class UserView(View):

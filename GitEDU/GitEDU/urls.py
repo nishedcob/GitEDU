@@ -17,7 +17,7 @@ from django.conf.urls import url, include
 from django.contrib import admin
 
 #from ideApp import urls as ide_urls
-import ideApp.urls
+#import ideApp.urls
 import authApp.urls
 import socialApp.urls
 
@@ -27,6 +27,6 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^auth/', include(authApp.urls, namespace="auth")),
     url(r'^lti/', include(django_app_lti.urls, namespace="lti")),
-    url(r'^ide/', include(ideApp.urls, namespace="ide")),
+    #url(r'^ide/', include(ideApp.urls, namespace="ide")),
     url(r'^social/', include(socialApp.urls, namespace="social"))
 ]
