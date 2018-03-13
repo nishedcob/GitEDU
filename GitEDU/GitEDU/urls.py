@@ -19,7 +19,7 @@ from django.contrib import admin
 #from ideApp import urls as ide_urls
 #import ideApp.urls
 import authApp.urls
-import socialApp.urls
+#import socialApp.urls
 
 import django_app_lti.urls
 
@@ -28,5 +28,5 @@ urlpatterns = [
     url(r'^auth/', include(authApp.urls, namespace="auth")),
     url(r'^lti/', include(django_app_lti.urls, namespace="lti")),
     #url(r'^ide/', include(ideApp.urls, namespace="ide")),
-    url(r'^social/', include(socialApp.urls, namespace="social"))
+    #url(r'^social/', include(socialApp.urls, namespace="social"))
 ]
